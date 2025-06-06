@@ -7,7 +7,6 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-wishlist/node_modules
 backend/node_modules
 node_modules/
 .DS_Store
@@ -15,6 +14,9 @@ dist
 dist-ssr
 coverage
 *.local
+
+
+*/*-firebase-adminsdk-*.json
 
 
 */.env
@@ -33,3 +35,20 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+
+# Firebase
+firebase-debug.log
+firebase-debug.*.log
+.firebase/
+.firebaserc
+firebase.json
+service-account-key.json
+serviceAccountKey.json
+firebase-adminsdk-*.json
+*firebase-adminsdk*.json
+.env.local
+.env.production
+.env.development
+firebase-config.js
+firebaseConfig.js
+backend/firebase-key.json

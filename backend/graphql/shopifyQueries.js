@@ -114,9 +114,45 @@ const GET_PRODUCT_BY_ID_WITH_IMAGES = (productId) => `{
   }
 }`;
 
+// Get products by collection handle
+const GET_PRODUCTS_BY_COLLECTION = (collectionHandle) => `{
+  collectionByHandle(handle: "${collectionHandle}") {
+   id
+    title
+    products(first: 50) {
+      edges {
+        node {
+          id
+          title
+          handle
+          description
+          variants(first: 1) {
+            edges {
+              node {
+                price
+              }
+            }
+          }
+          images(first: 10) {
+            edges {
+              node {
+                id
+                url
+                altText
+              }
+            }
+          }
+        }
+      }
+    }
+      
+  }
+}`;
+
 module.exports = {
   GET_PRODUCTS,
   GET_PRODUCT_BY_ID,
   GET_PRODUCTS_WITH_IMAGES,
   GET_PRODUCT_BY_ID_WITH_IMAGES,
+  GET_PRODUCTS_BY_COLLECTION,
 };
