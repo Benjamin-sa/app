@@ -34,7 +34,6 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { useNotificationStore } from '@/stores/notification';
 import { apiService } from '@/services/api.service';
 import Button from '@/components/common/Button.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
@@ -47,8 +46,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['success', 'cancel']);
-
-const notificationStore = useNotificationStore();
 
 const form = ref({
     content: ''

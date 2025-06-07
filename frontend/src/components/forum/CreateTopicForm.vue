@@ -22,11 +22,9 @@
                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 :disabled="loading">
                 <option value="">Select a category</option>
-                <option value="general">General Discussion</option>
-                <option value="technical">Technical Help</option>
-                <option value="maintenance">Maintenance</option>
-                <option value="rides">Rides & Events</option>
-                <option value="marketplace">Marketplace</option>
+                <option v-for="category in AVAILABLE_CATEGORIES" :key="category" :value="category">
+                    {{ getCategoryLabel(category) }}
+                </option>
             </select>
         </div>
 
@@ -154,8 +152,9 @@
 import { ref, computed } from 'vue';
 import { useNotificationStore } from '@/stores/notification';
 import { useApi } from '@/composables/useApi';
-import forumService from '@/services/forum.service';
-import topicService from '@/services/topic.service';
+import apiService from '@/services/api.service';
+import { getCategoryLabel } from '@/utils/helpers';
+import { AVAILABLE_CATEGORIES } from '@/utils/constants.repository';
 import Button from '@/components/common/Button.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
 import { XMarkIcon, PhotoIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
@@ -254,9 +253,18 @@ const uploadImages = async () => {
             const formData = new FormData();
             formData.append('images', image.file);
 
-            // Use execute from useApi, but handle progress manually for individual images
-            const result = await forumService.uploadImages(formData, (progress) => {
-                image.progress = progress;
+            // Use apiService directly instead of forumService
+            const result = await apiService.post("/forum/upload/images", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+                onUploadProgress: (progressEvent) => {
+                    if (progressEvent.total) {
+                        image.progress = Math.round(
+                            (progressEvent.loaded * 100) / progressEvent.total
+                        );
+                    }
+                },
             });
 
             if (result.success) {
@@ -312,7 +320,7 @@ const handleSubmit = async () => {
             .filter(img => img.url && !img.error)
             .map(img => img.url);
 
-        return await topicService.createTopic({
+        return await apiService.post('/forum/topics', {
             title: form.value.title.trim(),
             category: form.value.category,
             content: form.value.content.trim(),

@@ -3,15 +3,18 @@
  * Handles all answer-related operations
  */
 
-const { firestore } = require("../../config/firebase");
-const admin = require("firebase-admin");
-const { COLLECTIONS, validators } = require("../../models/forum.models");
+const firebaseQueries = require("../../queries/firebase.queries");
+const {
+  COLLECTIONS,
+  validators,
+  Answer,
+} = require("../../models/forum.models");
 const UserService = require("./user.service");
 const imageService = require("../image.service");
 
 class AnswerService {
   constructor() {
-    this.db = firestore;
+    this.queries = firebaseQueries;
   }
 
   async createAnswer(answerData, images = []) {
@@ -23,15 +26,11 @@ class AnswerService {
       }
 
       // Check if topic exists and is not locked
-      const topicDoc = await this.db
-        .collection(COLLECTIONS.TOPICS)
-        .doc(topicId)
-        .get();
-      if (!topicDoc.exists) {
+      const topic = await this.queries.getTopicById(topicId);
+      if (!topic) {
         throw new Error("Topic not found");
       }
 
-      const topic = topicDoc.data();
       if (topic.isLocked) {
         throw new Error("Topic is locked");
       }
@@ -43,37 +42,26 @@ class AnswerService {
 
       let imageRecords = [];
       if (images && images.length > 0) {
-        imageRecords = await imageService.uploadMultipleImages(
-          images,
-          "forum/answers"
-        );
+        imageRecords = await imageService.uploadImages(images, "forum/answers");
       }
 
       const answer = {
+        ...Answer,
         topicId,
         content,
         authorId,
         authorDisplayName: author.displayName,
         authorAvatar: author.avatar,
         images: imageRecords,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        isAccepted: false,
-        isDeleted: false,
-        votes: { upvotes: 0, downvotes: 0, score: 0 },
         parentAnswerId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
-      const docRef = await this.db.collection(COLLECTIONS.ANSWERS).add(answer);
+      const docRef = await this.queries.createAnswer(answer);
 
       // Update topic stats
-      await this.db
-        .collection(COLLECTIONS.TOPICS)
-        .doc(topicId)
-        .update({
-          answerCount: admin.firestore.FieldValue.increment(1),
-          lastActivity: admin.firestore.FieldValue.serverTimestamp(),
-        });
+      await this.queries.updateTopicAnswerCount(topicId, 1);
 
       // Update user stats
       await UserService.incrementUserStats(authorId, "answers_posted");
@@ -88,22 +76,13 @@ class AnswerService {
     try {
       const { limit = 20 } = options;
 
-      const snapshot = await this.db
-        .collection(COLLECTIONS.ANSWERS)
-        .where("topicId", "==", topicId)
-        .limit(limit)
-        .get();
-
-      let answers = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const answers = await this.queries.getAnswersByTopic(topicId, { limit });
 
       // Filter out deleted answers client-side
-      answers = answers.filter((answer) => !answer.isDeleted);
+      const filteredAnswers = answers.filter((answer) => !answer.isDeleted);
 
       return {
-        answers,
+        answers: filteredAnswers,
         lastDoc: null, // Simplified pagination
         hasMore: false,
       };

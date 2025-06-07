@@ -3,13 +3,12 @@
  * Handles all voting-related operations
  */
 
-const { firestore } = require("../../config/firebase");
-const admin = require("firebase-admin");
-const { COLLECTIONS } = require("../../models/forum.models");
+const firebaseQueries = require("../../queries/firebase.queries");
+const { COLLECTIONS, Vote } = require("../../models/forum.models");
 
 class VotingService {
   constructor() {
-    this.db = firestore;
+    this.queries = firebaseQueries;
   }
 
   async vote(userId, targetId, targetType, voteType) {
@@ -23,87 +22,98 @@ class VotingService {
         throw new Error("Invalid target type");
       }
 
-      const voteId = `${userId}_${targetId}`;
-      const voteRef = this.db.collection(COLLECTIONS.VOTES).doc(voteId);
-      const targetCollection =
-        targetType === "topic" ? COLLECTIONS.TOPICS : COLLECTIONS.ANSWERS;
-      const targetRef = this.db.collection(targetCollection).doc(targetId);
+      // Use transaction to ensure data consistency
+      return await this.queries.runTransaction(async (transaction) => {
+        // Get current vote and target document
+        const existingVote = await this.queries.getUserVote(userId, targetId);
+        const target =
+          targetType === "topic"
+            ? await this.queries.getTopicById(targetId)
+            : await this.queries.getAnswerById(targetId);
 
-      let result = {};
-
-      await this.db.runTransaction(async (transaction) => {
-        const voteDoc = await transaction.get(voteRef);
-        const targetDoc = await transaction.get(targetRef);
-
-        if (!targetDoc.exists) {
+        if (!target) {
           throw new Error(`${targetType} not found`);
         }
 
-        const currentVotes = targetDoc.data().votes || {
+        const currentVotes = target.votes || {
           upvotes: 0,
           downvotes: 0,
           score: 0,
         };
-        let newVotes = { ...currentVotes };
+
+        let voteChanges = { upvotes: 0, downvotes: 0, score: 0 };
         let userVote = null;
 
-        if (voteDoc.exists) {
-          const existingVote = voteDoc.data();
-
+        if (existingVote) {
           if (voteType === null || existingVote.voteType === voteType) {
             // Remove vote
-            transaction.delete(voteRef);
+            await this.queries.deleteVote(userId, targetId);
             if (existingVote.voteType === "up") {
-              newVotes.upvotes = Math.max(0, newVotes.upvotes - 1);
+              voteChanges.upvotes = -1;
             } else if (existingVote.voteType === "down") {
-              newVotes.downvotes = Math.max(0, newVotes.downvotes - 1);
+              voteChanges.downvotes = -1;
             }
             userVote = null;
           } else {
             // Change vote
-            transaction.update(voteRef, {
+            const voteData = {
+              ...Vote,
+              userId,
+              targetId,
+              targetType,
               voteType,
-              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
+              createdAt: this.queries.getServerTimestamp(),
+            };
+            await this.queries.upsertVote(voteData);
 
             if (voteType === "up") {
-              newVotes.upvotes += 1;
+              voteChanges.upvotes = 1;
               if (existingVote.voteType === "down") {
-                newVotes.downvotes = Math.max(0, newVotes.downvotes - 1);
+                voteChanges.downvotes = -1;
               }
             } else if (voteType === "down") {
-              newVotes.downvotes += 1;
+              voteChanges.downvotes = 1;
               if (existingVote.voteType === "up") {
-                newVotes.upvotes = Math.max(0, newVotes.upvotes - 1);
+                voteChanges.upvotes = -1;
               }
             }
             userVote = voteType;
           }
         } else if (voteType) {
           // New vote (only if voteType is not null)
-          transaction.set(voteRef, {
+          const voteData = {
+            ...Vote,
             userId,
             targetId,
             targetType,
             voteType,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
+            createdAt: this.queries.getServerTimestamp(),
+          };
+          await this.queries.upsertVote(voteData);
 
           if (voteType === "up") {
-            newVotes.upvotes += 1;
+            voteChanges.upvotes = 1;
           } else if (voteType === "down") {
-            newVotes.downvotes += 1;
+            voteChanges.downvotes = 1;
           }
           userVote = voteType;
         }
 
-        newVotes.score = newVotes.upvotes - newVotes.downvotes;
-        transaction.update(targetRef, {
-          votes: newVotes,
-          lastActivity: admin.firestore.FieldValue.serverTimestamp(),
-        });
+        voteChanges.score = voteChanges.upvotes - voteChanges.downvotes;
 
-        result = {
+        // Update vote counts on target
+        await this.queries.updateVoteCounts(targetId, targetType, voteChanges);
+
+        const newVotes = {
+          upvotes: Math.max(0, currentVotes.upvotes + voteChanges.upvotes),
+          downvotes: Math.max(
+            0,
+            currentVotes.downvotes + voteChanges.downvotes
+          ),
+          score: currentVotes.score + voteChanges.score,
+        };
+
+        return {
           success: true,
           newVoteCount: newVotes.score,
           userVote: userVote,
@@ -111,8 +121,6 @@ class VotingService {
           downvotes: newVotes.downvotes,
         };
       });
-
-      return result;
     } catch (error) {
       throw new Error(`Failed to vote: ${error.message}`);
     }
@@ -120,18 +128,8 @@ class VotingService {
 
   async getUserVote(userId, targetId) {
     try {
-      const voteId = `${userId}_${targetId}`;
-      const voteDoc = await this.db
-        .collection(COLLECTIONS.VOTES)
-        .doc(voteId)
-        .get();
-
-      if (voteDoc.exists) {
-        const voteData = voteDoc.data();
-        return voteData.voteType;
-      }
-
-      return null;
+      const vote = await this.queries.getUserVote(userId, targetId);
+      return vote ? vote.voteType : null;
     } catch (error) {
       throw new Error(`Failed to get user vote: ${error.message}`);
     }

@@ -3,7 +3,7 @@
  * Sets up default categories and forum structure
  */
 
-const { firestore } = require("../config/firebase");
+const firebaseQueries = require("../queries/firebase.queries");
 const { COLLECTIONS } = require("../models/forum.models");
 
 // Default forum categories
@@ -66,17 +66,7 @@ const defaultCategories = [
 async function initializeCategories() {
   try {
     console.log("Initializing forum categories...");
-
-    const batch = firestore.batch();
-
-    for (const category of defaultCategories) {
-      const categoryRef = firestore
-        .collection(COLLECTIONS.CATEGORIES)
-        .doc(category.id);
-      batch.set(categoryRef, category, { merge: true });
-    }
-
-    await batch.commit();
+    await firebaseQueries.initializeCategories(defaultCategories);
     console.log("Forum categories initialized successfully");
   } catch (error) {
     console.error("Error initializing categories:", error);
@@ -90,19 +80,7 @@ async function initializeCategories() {
 async function initializeStats() {
   try {
     console.log("Initializing forum statistics...");
-
-    const statsRef = firestore.collection(COLLECTIONS.STATS).doc("global");
-    await statsRef.set(
-      {
-        totalUsers: 0,
-        totalTopics: 0,
-        totalAnswers: 0,
-        totalViews: 0,
-        lastUpdated: firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
-
+    await firebaseQueries.initializeStats();
     console.log("Forum statistics initialized successfully");
   } catch (error) {
     console.error("Error initializing statistics:", error);
@@ -124,8 +102,6 @@ async function createSampleAdmin() {
       displayName: "Forum Administrator",
       avatar: "",
       bio: "Forum Administrator",
-      joinedDate: firestore.FieldValue.serverTimestamp(),
-      lastActive: firestore.FieldValue.serverTimestamp(),
       reputation: 1000,
       topics_created: 0,
       answers_posted: 0,
@@ -134,10 +110,7 @@ async function createSampleAdmin() {
       isModerator: true,
     };
 
-    await firestore
-      .collection(COLLECTIONS.USERS)
-      .doc("admin-sample")
-      .set(adminUser, { merge: true });
+    await firebaseQueries.createAdminUser(adminUser);
     console.log("Sample admin user created successfully");
   } catch (error) {
     console.error("Error creating sample admin user:", error);

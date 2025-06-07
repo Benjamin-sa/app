@@ -111,21 +111,15 @@ const productBrand = computed(() => {
 // Get primary collection
 const primaryCollection = computed(() => {
     if (props.product.collections && props.product.collections.length > 0) {
-        return props.product.collections[0];
+        // [0] is main category and contains all products so it hase no value 
+        return props.product.collections[1];
     }
     return null;
 });
 
-const getCategoryClass = (category) => {
-    const classes = {
-        helmets: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-        jackets: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-        gloves: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-        boots: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-        parts: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
-        accessories: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-    };
-    return classes[category] || 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400';
+const getCategoryClass = () => {
+    // Use a consistent style for all categories
+    return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400';
 };
 
 const toggleWishlist = async () => {

@@ -13,7 +13,7 @@
                     <!-- Vote Section -->
                     <div class="flex-shrink-0">
                         <VoteButton :value="answer.votes?.score || 0" :user-vote="answer.userVote"
-                            @vote="(voteData) => $emit('vote', answer.id, voteData)" />
+                            @vote="(voteData) => $emit('vote', answer.id, 'answer', voteData)" />
                     </div>
 
                     <!-- Content -->
@@ -83,7 +83,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notification';
 import { apiService } from '@/services/api.service';

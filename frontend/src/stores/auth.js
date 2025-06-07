@@ -17,7 +17,7 @@ export const useAuthStore = defineStore("auth", () => {
   );
   const userAvatar = computed(() => user.value?.photoURL || null);
 
-  // Get current token from Firebase (no localStorage)
+  // Get current token from Firebase
   const getCurrentToken = async () => {
     try {
       const firebaseUser = await authService.getCurrentUser();
@@ -31,7 +31,6 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
-  // Simplified token refresh - only for manual refresh if needed
   const refreshToken = async () => {
     try {
       const firebaseUser = await authService.getCurrentUser();
@@ -52,8 +51,7 @@ export const useAuthStore = defineStore("auth", () => {
   // Helper function to merge Firebase user with backend data
   const mergeUserData = async (firebaseUser) => {
     try {
-      // Firebase automatically handles token - no need to store it
-      const response = await apiService.getCurrentUser();
+      const response = await apiService.getCurrentUserFromApi();
       if (response.success && response.data) {
         // User exists in backend, merge data
         return { ...firebaseUser, ...response.data };
@@ -63,7 +61,7 @@ export const useAuthStore = defineStore("auth", () => {
         await syncUserWithBackend(firebaseUser);
 
         // Try to get user data again after sync
-        const syncResponse = await apiService.getCurrentUser();
+        const syncResponse = await apiService.getCurrentUserFromApi();
         if (syncResponse.success && syncResponse.data) {
           return { ...firebaseUser, ...syncResponse.data };
         }
@@ -78,7 +76,7 @@ export const useAuthStore = defineStore("auth", () => {
           await syncUserWithBackend(firebaseUser);
 
           // Try again after sync
-          const retryResponse = await apiService.getCurrentUser();
+          const retryResponse = await apiService.getCurrentUserFromApi();
           if (retryResponse.success && retryResponse.data) {
             return { ...firebaseUser, ...retryResponse.data };
           }

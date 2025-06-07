@@ -37,7 +37,8 @@
                         <!-- Vote Section -->
                         <div class="flex-shrink-0 order-2 lg:order-1">
                             <VoteButton :value="topic.votes?.score || 0" :user-vote="topic.userVote"
-                                :loading="votingLoading" @vote="handleTopicVote" size="lg" />
+                                :loading="votingLoading" @vote="(voteData) => handleVote(topic.id, 'topic', voteData)"
+                                size="lg" />
                         </div>
 
                         <!-- Main Content -->
@@ -135,7 +136,7 @@
             <div v-if="authStore.isAuthenticated"
                 class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
                 <div class="flex flex-wrap gap-2">
-                    <Button v-if="canEditTopic" variant="outline" size="sm" @click="showEditTopic = true"
+                    <Button v-if="canEditTopic" variant="outline" size="sm" @click="handleEditTopic"
                         class="border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
                         <PencilIcon class="w-4 h-4 mr-2" />
                         Edit Topic
@@ -166,7 +167,8 @@
                 </div>
 
                 <AnswerList :answers="answers" :loading="answersLoading" :topic-author-id="topic.author?.id"
-                    @vote="handleAnswerVote" @edit="handleAnswerEdit" @delete="handleAnswerDelete" />
+                    @vote="(answerId, voteData) => handleVote(answerId, 'answer', voteData)" @edit="handleAnswerEdit"
+                    @delete="handleAnswerDelete" />
             </div>
 
             <!-- Answer Form -->
@@ -200,10 +202,24 @@
             </div>
         </Modal>
 
-        <!-- Edit Topic Modal -->
-        <Modal v-if="showEditTopic" title="Edit Topic" @close="showEditTopic = false">
-            <EditTopicForm :topic="topic" @success="handleTopicUpdated" @cancel="showEditTopic = false" />
-        </Modal>
+        <!-- Debug: Simple test modal -->
+        <div v-if="showEditTopic" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            @click="showEditTopic = false">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+                @click.stop>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Edit Topic</h2>
+                    <button @click="showEditTopic = false" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <EditTopicForm v-if="topic" :topic="topic" @success="handleTopicUpdated"
+                    @cancel="showEditTopic = false" />
+            </div>
+        </div>
 
         <!-- Delete Confirmation Modal -->
         <Modal v-if="showDeleteConfirm" title="Delete Topic" @close="showDeleteConfirm = false">
@@ -230,7 +246,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notification';
 import { apiService } from '@/services/api.service';
-import { formatDate, formatContent } from '@/utils/helpers';
+import { formatDate, formatContent, formatNumber, getCategoryClass, getCategoryLabel } from '@/utils/helpers';
 import Button from '@/components/common/Button.vue';
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
 import Modal from '@/components/common/Modal.vue';
@@ -266,39 +282,78 @@ const showAnswerForm = ref(false);
 const showEditTopic = ref(false);
 const showDeleteConfirm = ref(false);
 const selectedImage = ref(null);
+const editLoading = ref(false);
 
 const canEditTopic = computed(() => {
-    return authStore.user && topic.value &&
-        (authStore.user.id === topic.value.author?.id ||
-            (authStore.user.role === 'admin' && authStore.user.id === topic.value.author?.id));
+    if (!authStore.user || !topic.value) return false;
+
+    // Author can edit their own topic
+    if (authStore.user.id === topic.value.authorId) return true;
+
+    // Admin can edit any topic
+    if (authStore.user.role === 'admin') return true;
+
+    return false;
 });
 
 const canDeleteTopic = computed(() => {
-    return authStore.user && topic.value &&
-        (authStore.user.id === topic.value.author?.id ||
-            (authStore.user.role === 'admin' && authStore.user.id === topic.value.author?.id));
+    if (!authStore.user || !topic.value) return false;
+
+    // Author can delete their own topic
+    if (authStore.user.id === topic.value.authorId) return true;
+
+    // Admin can delete any topic
+    if (authStore.user.role === 'admin') return true;
+
+    return false;
 });
 
-const getCategoryClass = (category) => {
-    const classes = {
-        general: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800',
-        technical: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800',
-        maintenance: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800',
-        rides: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800',
-        marketplace: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800'
-    };
-    return classes[category] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600';
-};
+// Unified voting function for both topics and answers
+const handleVote = async (targetId, targetType, { voteType, previousVote }) => {
+    if (!authStore.isAuthenticated) {
+        notificationStore.info('Sign in required', 'Please sign in to vote.');
+        return;
+    }
 
-const getCategoryLabel = (category) => {
-    const labels = {
-        general: 'General',
-        technical: 'Technical',
-        maintenance: 'Maintenance',
-        rides: 'Rides & Events',
-        marketplace: 'Marketplace'
-    };
-    return labels[category] || category;
+    try {
+        // Set loading state based on target type
+        if (targetType === 'topic') {
+            votingLoading.value = true;
+        }
+
+        const response = await apiService.vote(targetId.trim(), targetType, voteType);
+
+        if (response.success) {
+            // Update the appropriate data based on target type
+            if (targetType === 'topic') {
+                topic.value.votes = { score: response.data.newVoteCount };
+                topic.value.userVote = response.data.userVote;
+            } else if (targetType === 'answer') {
+                const answerIndex = answers.value.findIndex(a => a.id === targetId);
+                if (answerIndex !== -1) {
+                    answers.value[answerIndex].votes = { score: response.data.newVoteCount };
+                    answers.value[answerIndex].userVote = response.data.userVote;
+                }
+            }
+
+            // Show user-friendly feedback
+            const targetName = targetType === 'topic' ? 'topic' : 'answer';
+            if (voteType === null) {
+                notificationStore.success('Vote removed', `Your vote on this ${targetName} has been removed.`);
+            } else if (previousVote) {
+                notificationStore.success('Vote changed', `Changed from ${previousVote}vote to ${voteType}vote on this ${targetName}.`);
+            } else {
+                notificationStore.success('Vote recorded', `Your ${voteType}vote on this ${targetName} has been recorded.`);
+            }
+        }
+    } catch (error) {
+        const targetName = targetType === 'topic' ? 'topic' : 'answer';
+        notificationStore.error('Vote failed', `Unable to record your vote on this ${targetName}. Please try again.`, { duration: 5000 });
+    } finally {
+        if (targetType === 'topic') {
+            votingLoading.value = false;
+        }
+    }
 };
 
 const loadTopic = async () => {
@@ -336,7 +391,6 @@ const loadAnswers = async () => {
         answersLoading.value = true;
         const response = await apiService.get(`/forum/topics/${route.params.id}/answers`);
         answers.value = response.data.answers || [];
-
         // Load user votes for answers if authenticated
         if (authStore.isAuthenticated && answers.value.length > 0) {
             await loadAnswerVotes();
@@ -363,69 +417,6 @@ const loadAnswerVotes = async () => {
         await Promise.all(votePromises);
     } catch (error) {
         console.error('Error loading answer votes:', error);
-    }
-};
-
-const handleTopicVote = async ({ voteType, previousVote }) => {
-    if (!authStore.isAuthenticated) {
-        notificationStore.info('Sign in required', 'Please sign in to vote on topics.');
-        return;
-    }
-
-    try {
-        votingLoading.value = true;
-        const response = await apiService.vote(topic.value.id, 'topic', voteType);
-
-        if (response.success) {
-            // Update topic data with server response
-            topic.value.votes = { score: response.data.newVoteCount };
-            topic.value.userVote = response.data.userVote;
-
-            // Show user-friendly feedback
-            if (voteType === null) {
-                notificationStore.success('Vote removed', 'Your vote has been removed.');
-            } else if (previousVote) {
-                notificationStore.success('Vote changed', `Changed from ${previousVote}vote to ${voteType}vote.`);
-            } else {
-                notificationStore.success('Vote recorded', `Your ${voteType}vote has been recorded.`);
-            }
-        }
-    } catch (error) {
-        console.error('Vote failed:', error);
-        notificationStore.error('Vote failed', 'Unable to record your vote. Please try again.', { duration: 5000 });
-    } finally {
-        votingLoading.value = false;
-    }
-};
-
-const handleAnswerVote = async (answerId, { voteType, previousVote }) => {
-    if (!authStore.isAuthenticated) {
-        notificationStore.info('Sign in required', 'Please sign in to vote on answers.');
-        return;
-    }
-
-    try {
-        const response = await apiService.vote(answerId, 'answer', voteType);
-
-        if (response.success) {
-            const answerIndex = answers.value.findIndex(a => a.id === answerId);
-            if (answerIndex !== -1) {
-                answers.value[answerIndex].votes = { score: response.data.newVoteCount };
-                answers.value[answerIndex].userVote = response.data.userVote;
-            }
-
-            // Show user-friendly feedback
-            if (voteType === null) {
-                notificationStore.success('Vote removed', 'Your vote has been removed.');
-            } else if (previousVote) {
-                notificationStore.success('Vote changed', `Changed from ${previousVote}vote to ${voteType}vote.`);
-            } else {
-                notificationStore.success('Vote recorded', `Your ${voteType}vote has been recorded.`);
-            }
-        }
-    } catch (error) {
-        console.error('Error voting on answer:', error);
-        notificationStore.error('Vote failed', 'Unable to record your vote. Please try again.', { duration: 5000 });
     }
 };
 
@@ -472,13 +463,14 @@ const handleAnswerDelete = async (answerId) => {
     }
 };
 
-const formatNumber = (num) => {
-    if (num >= 1000000) {
-        return (num / 1000000).toFixed(1) + 'M';
-    } else if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'K';
+const handleEditTopic = () => {
+    console.log('Edit topic clicked, topic:', topic.value); // Debug log
+    if (!topic.value) {
+        notificationStore.error('Error', 'Topic data not available. Please refresh the page.');
+        return;
     }
-    return num.toString();
+    console.log('Setting showEditTopic to true'); // Debug log
+    showEditTopic.value = true;
 };
 
 const openImageModal = (imageUrl) => {

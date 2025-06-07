@@ -3,13 +3,15 @@
  * Handles all topic-related operations
  */
 
-const admin = require("firebase-admin");
+const firebaseQueries = require("../../queries/firebase.queries");
 const { COLLECTIONS, validators } = require("../../models/forum.models");
 const imageService = require("../image.service");
 
-const db = admin.firestore();
-
 class TopicService {
+  constructor() {
+    this.queries = firebaseQueries;
+  }
+
   async createTopic(topicData, uploadedFiles = []) {
     try {
       // Validate topic data
@@ -28,7 +30,7 @@ class TopicService {
       // Process uploaded files (if any)
       let imageRecords = [];
       if (uploadedFiles.length > 0) {
-        imageRecords = await imageService.uploadMultipleImages(
+        imageRecords = await imageService.uploadImages(
           uploadedFiles,
           "forum/topics"
         );
@@ -55,11 +57,7 @@ class TopicService {
       const allImages = [...imageRecords, ...preUploadedImages];
 
       // Get author info
-      const authorDoc = await db
-        .collection(COLLECTIONS.USERS)
-        .doc(topicData.authorId)
-        .get();
-      const authorData = authorDoc.exists ? authorDoc.data() : null;
+      const authorData = await this.queries.getUserById(topicData.authorId);
 
       // Create topic document
       const topicDoc = {
@@ -72,9 +70,6 @@ class TopicService {
         category: topicData.category,
         tags: topicData.tags || [],
         images: allImages,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        lastActivity: admin.firestore.FieldValue.serverTimestamp(),
         viewCount: 0,
         answerCount: 0,
         isPinned: false,
@@ -88,14 +83,15 @@ class TopicService {
       };
 
       // Create topic in Firestore
-      const topicRef = await db.collection(COLLECTIONS.TOPICS).add(topicDoc);
+      const topicRef = await this.queries.createTopic(topicDoc);
 
       // Update user stats
-      if (authorDoc.exists) {
-        await authorDoc.ref.update({
-          topics_created: admin.firestore.FieldValue.increment(1),
-          lastActive: admin.firestore.FieldValue.serverTimestamp(),
-        });
+      if (authorData) {
+        await this.queries.incrementUserStats(
+          topicData.authorId,
+          "topics_created"
+        );
+        await this.queries.updateUserActivity(topicData.authorId);
       }
 
       // Return created topic with ID
@@ -116,33 +112,19 @@ class TopicService {
     try {
       const { limit = 20 } = options;
 
-      // Simple query without any where clauses or ordering to avoid index requirements
-      const snapshot = await db
-        .collection(COLLECTIONS.TOPICS)
-        .limit(parseInt(limit))
-        .get();
+      // Use the abstraction layer to get topics
+      const topics = await this.queries.getTopics({
+        limit: parseInt(limit),
+        orderBy: "createdAt",
+        orderDirection: "desc",
+      });
 
-      // Filter out deleted topics and apply any sorting in memory
-      const topics = snapshot.docs
-        .map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate(),
-            updatedAt: data.updatedAt?.toDate(),
-            lastActivity: data.lastActivity?.toDate(),
-          };
-        })
-        .filter((topic) => !topic.isDeleted)
-        .sort(
-          (a, b) => (b.createdAt || new Date(0)) - (a.createdAt || new Date(0))
-        )
-        .slice(0, parseInt(limit));
+      // Filter out deleted topics
+      const filteredTopics = topics.filter((topic) => !topic.isDeleted);
 
       return {
-        topics,
-        hasMore: snapshot.size === parseInt(limit),
+        topics: filteredTopics,
+        hasMore: topics.length === parseInt(limit),
       };
     } catch (error) {
       console.error("Error fetching topics:", error);
@@ -152,48 +134,23 @@ class TopicService {
 
   async getTopicById(topicId, userId = null) {
     try {
-      const topicDoc = await db
-        .collection(COLLECTIONS.TOPICS)
-        .doc(topicId)
-        .get();
+      const topic = await this.queries.getTopicById(topicId);
 
-      if (!topicDoc.exists) {
+      if (!topic || topic.isDeleted) {
         return null;
       }
 
-      const topicData = topicDoc.data();
-
-      if (topicData.isDeleted) {
-        return null;
-      }
-
-      // Increment view count (async, don't wait)
-      this.incrementViewCount(topicId);
-
-      // Get user's vote if logged in
-      let userVote = null;
+      // Increment view count if user is provided
       if (userId) {
-        const voteDoc = await db
-          .collection(COLLECTIONS.VOTES)
-          .where("userId", "==", userId)
-          .where("targetId", "==", topicId)
-          .where("targetType", "==", "topic")
-          .limit(1)
-          .get();
+        await this.queries.incrementTopicViews(topicId);
+        // Update view count in returned object
+        topic.viewCount = (topic.viewCount || 0) + 1;
 
-        if (!voteDoc.empty) {
-          userVote = voteDoc.docs[0].data().voteType;
-        }
+        // Get user's vote if logged in
+        topic.userVote = await this.queries.getUserVote(userId, topicId);
       }
 
-      return {
-        id: topicDoc.id,
-        ...topicData,
-        userVote,
-        createdAt: topicData.createdAt?.toDate(),
-        updatedAt: topicData.updatedAt?.toDate(),
-        lastActivity: topicData.lastActivity?.toDate(),
-      };
+      return topic;
     } catch (error) {
       console.error("Error fetching topic:", error);
       throw error;
@@ -202,12 +159,7 @@ class TopicService {
 
   async incrementViewCount(topicId) {
     try {
-      await db
-        .collection(COLLECTIONS.TOPICS)
-        .doc(topicId)
-        .update({
-          viewCount: admin.firestore.FieldValue.increment(1),
-        });
+      await this.queries.incrementTopicViews(topicId);
     } catch (error) {
       console.error("Error incrementing view count:", error);
     }
@@ -217,45 +169,12 @@ class TopicService {
     try {
       const { limit = 20, category = null } = options;
 
-      let query = db
-        .collection(COLLECTIONS.TOPICS)
-        .where("isDeleted", "==", false);
-
-      if (category) {
-        query = query.where("category", "==", category);
-      }
-
-      // Note: Firestore doesn't support full-text search natively
-      // For production, you'd want to use Algolia or similar
-      // For now, we'll do a simple title search
-      const snapshot = await query
-        .orderBy("lastActivity", "desc")
-        .limit(100) // Get more docs to filter
-        .get();
-
-      const topics = [];
-      const searchLower = searchTerm.toLowerCase();
-
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const titleMatch = data.title.toLowerCase().includes(searchLower);
-        const contentMatch = data.content.toLowerCase().includes(searchLower);
-        const tagMatch = data.tags.some((tag) =>
-          tag.toLowerCase().includes(searchLower)
-        );
-
-        if (titleMatch || contentMatch || tagMatch) {
-          topics.push({
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate(),
-            updatedAt: data.updatedAt?.toDate(),
-            lastActivity: data.lastActivity?.toDate(),
-          });
-        }
+      const topics = await this.queries.searchTopics(searchTerm, {
+        limit,
+        category,
       });
 
-      return topics.slice(0, limit);
+      return topics;
     } catch (error) {
       console.error("Error searching topics:", error);
       throw error;
@@ -264,26 +183,7 @@ class TopicService {
 
   async getForumStats() {
     try {
-      const [topicsSnapshot, usersSnapshot] = await Promise.all([
-        db.collection(COLLECTIONS.TOPICS).where("isDeleted", "==", false).get(),
-        db.collection(COLLECTIONS.USERS).get(),
-      ]);
-
-      const totalViews = topicsSnapshot.docs.reduce((sum, doc) => {
-        return sum + (doc.data().viewCount || 0);
-      }, 0);
-
-      const totalAnswers = topicsSnapshot.docs.reduce((sum, doc) => {
-        return sum + (doc.data().answerCount || 0);
-      }, 0);
-
-      return {
-        totalUsers: usersSnapshot.size,
-        totalTopics: topicsSnapshot.size,
-        totalAnswers,
-        totalViews,
-        lastUpdated: new Date(),
-      };
+      return await this.queries.getForumStats();
     } catch (error) {
       console.error("Error getting forum stats:", error);
       throw error;

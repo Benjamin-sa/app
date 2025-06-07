@@ -7,6 +7,7 @@ const admin = require("firebase-admin");
 const sharp = require("sharp");
 const { v4: uuidv4 } = require("uuid");
 const path = require("path");
+const firebaseQueries = require("../queries/firebase.queries");
 
 class ImageService {
   constructor() {
@@ -20,7 +21,7 @@ class ImageService {
   /**
    * Validate uploaded image file
    */
-  validateImage(file) {
+  _validateImage(file) {
     const errors = [];
 
     // Check file size
@@ -47,7 +48,7 @@ class ImageService {
   /**
    * Process and optimize image
    */
-  async processImage(buffer, filename) {
+  async _processImage(buffer, filename) {
     try {
       const image = sharp(buffer);
       const metadata = await image.metadata();
@@ -90,7 +91,7 @@ class ImageService {
   /**
    * Upload image to Firebase Storage
    */
-  async uploadToStorage(buffer, filename, folder = "forum/images") {
+  async _uploadToStorage(buffer, filename, folder = "forum/images") {
     try {
       const fileId = uuidv4();
       const extension = ".webp"; // Changed to WebP
@@ -128,24 +129,27 @@ class ImageService {
   async uploadImage(file, folder = "forum/images") {
     try {
       // Validate image
-      const validation = this.validateImage(file);
+      const validation = this._validateImage(file);
       if (!validation.isValid) {
         throw new Error(validation.errors.join(", "));
       }
 
       // Process image
-      const processed = await this.processImage(file.buffer, file.originalname);
+      const processed = await this._processImage(
+        file.buffer,
+        file.originalname
+      );
 
       // Upload all versions
       const [originalUpload, thumbnailUpload, mediumUpload] = await Promise.all(
         [
-          this.uploadToStorage(processed.original, file.originalname, folder),
-          this.uploadToStorage(
+          this._uploadToStorage(processed.original, file.originalname, folder),
+          this._uploadToStorage(
             processed.thumbnail,
             file.originalname,
             `${folder}/thumbnails`
           ),
-          this.uploadToStorage(
+          this._uploadToStorage(
             processed.medium,
             file.originalname,
             `${folder}/medium`
@@ -165,7 +169,7 @@ class ImageService {
         width: processed.metadata.width,
         height: processed.metadata.height,
         mimeType: "image/webp", // Changed to WebP MIME type
-        uploadedAt: admin.firestore.FieldValue.serverTimestamp(),
+        uploadedAt: firebaseQueries.getServerTimestamp(),
       };
 
       return imageRecord;
@@ -200,14 +204,6 @@ class ImageService {
   }
 
   /**
-   * Upload multiple images
-   * @deprecated Use uploadImages instead
-   */
-  async uploadMultipleImages(files, folder = "forum/images") {
-    return this.uploadImages(files, folder);
-  }
-
-  /**
    * Delete image from storage
    */
   async deleteImage(imageRecord) {
@@ -216,14 +212,14 @@ class ImageService {
 
       // Extract file paths from URLs and delete each version
       if (imageRecord.url) {
-        const originalPath = this.extractStoragePathFromUrl(imageRecord.url);
+        const originalPath = this._extractStoragePathFromUrl(imageRecord.url);
         if (originalPath) {
           deletePromises.push(this.bucket.file(originalPath).delete());
         }
       }
 
       if (imageRecord.thumbnailUrl) {
-        const thumbnailPath = this.extractStoragePathFromUrl(
+        const thumbnailPath = this._extractStoragePathFromUrl(
           imageRecord.thumbnailUrl
         );
         if (thumbnailPath) {
@@ -232,7 +228,7 @@ class ImageService {
       }
 
       if (imageRecord.mediumUrl) {
-        const mediumPath = this.extractStoragePathFromUrl(
+        const mediumPath = this._extractStoragePathFromUrl(
           imageRecord.mediumUrl
         );
         if (mediumPath) {
@@ -252,7 +248,7 @@ class ImageService {
   /**
    * Extract storage path from Firebase Storage URL
    */
-  extractStoragePathFromUrl(url) {
+  _extractStoragePathFromUrl(url) {
     try {
       // Handle both signed URLs and public URLs
       const urlObj = new URL(url);
@@ -308,4 +304,13 @@ class ImageService {
   }
 }
 
-module.exports = new ImageService();
+const imageService = new ImageService();
+
+module.exports = {
+  uploadImage: imageService.uploadImage.bind(imageService),
+  uploadImages: imageService.uploadImages.bind(imageService),
+  deleteImage: imageService.deleteImage.bind(imageService),
+  getImageUrl: imageService.getImageUrl.bind(imageService),
+  getResponsiveImageData:
+    imageService.getResponsiveImageData.bind(imageService),
+};

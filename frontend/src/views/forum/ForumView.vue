@@ -122,8 +122,8 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import topicService from '@/services/topic.service';
 import { debounce } from '@/utils/helpers';
+import { apiService } from '@/services/api.service';
 import Button from '@/components/common/Button.vue';
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
 import TopicCard from '@/components/forum/TopicCard.vue';
@@ -158,7 +158,7 @@ const loadTopics = async () => {
         loading.value = true;
         error.value = null;
 
-        const result = await topicService.getTopics(
+        const result = await apiService.getTopics(
             currentPage.value,
             20,
             searchQuery.value,

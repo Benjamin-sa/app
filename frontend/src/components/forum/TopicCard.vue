@@ -13,11 +13,6 @@
 
         <div class="p-4 sm:p-6">
             <div class="flex items-start space-x-3 sm:space-x-4">
-                <!-- Vote Section -->
-                <div class="flex flex-col items-center flex-shrink-0">
-                    <VoteButton :value="topic.votes?.score || topic.voteCount || 0" :user-vote="topic.userVote"
-                        @vote="handleVote" size="sm" />
-                </div>
 
                 <!-- Content Section -->
                 <div class="flex-1 min-w-0">
@@ -110,11 +105,8 @@
 </template>
 
 <script setup>
-import { useAuthStore } from '@/stores/auth';
-import { useNotificationStore } from '@/stores/notification';
-import { apiService } from '@/services/api.service';
-import { formatDate } from '@/utils/helpers';
-import VoteButton from '@/components/forum/VoteButton.vue';
+
+import { formatDate, getCategoryClass, getCategoryLabel } from '@/utils/helpers';
 import {
     ChatBubbleLeftIcon,
     EyeIcon,
@@ -131,31 +123,6 @@ const props = defineProps({
 
 const emit = defineEmits(['vote-updated']);
 
-const authStore = useAuthStore();
-const notificationStore = useNotificationStore();
-
-const getCategoryClass = (category) => {
-    const classes = {
-        general: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-        technical: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-        maintenance: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-        rides: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-        marketplace: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-    };
-    return classes[category] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-};
-
-const getCategoryLabel = (category) => {
-    const labels = {
-        general: 'General',
-        technical: 'Technical',
-        maintenance: 'Maintenance',
-        rides: 'Rides & Events',
-        marketplace: 'Marketplace'
-    };
-    return labels[category] || category;
-};
-
 const formatViewCount = (count) => {
     if (count >= 1000000) {
         return (count / 1000000).toFixed(1) + 'M';
@@ -165,29 +132,6 @@ const formatViewCount = (count) => {
     return count.toString();
 };
 
-const handleVote = async (voteData) => {
-    if (!authStore.isAuthenticated) {
-        notificationStore.info('Sign in required', 'Please sign in to vote on topics.');
-        return;
-    }
-
-    try {
-        const response = await apiService.vote(props.topic.id, 'topic', voteData.voteType);
-
-        if (response.success) {
-            // Update topic data with new structure
-            if (props.topic.votes) {
-                props.topic.votes.score = response.data.newVoteCount;
-            } else {
-                props.topic.voteCount = response.data.newVoteCount;
-            }
-            props.topic.userVote = response.data.userVote;
-        }
-    } catch (error) {
-        console.error('Vote failed:', error);
-        notificationStore.error('Vote failed', 'Please try again.');
-    }
-};
 </script>
 
 <style scoped>

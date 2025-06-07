@@ -30,12 +30,9 @@
                     <select v-model="selectedCategory"
                         class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         <option value="">All Collections</option>
-                        <option value="helmets">Helmets</option>
-                        <option value="jackets">Jackets</option>
-                        <option value="gloves">Gloves</option>
-                        <option value="boots">Boots</option>
-                        <option value="parts">Parts</option>
-                        <option value="accessories">Accessories</option>
+                        <option v-for="collection in collections" :key="collection.id" :value="collection.handle">
+                            {{ collection.title }}
+                        </option>
                     </select>
                 </div>
             </div>
@@ -84,6 +81,7 @@ const selectedCategory = ref('');
 const loading = ref(false);
 
 const products = ref([]);
+const collections = ref([]);
 
 const debouncedSearch = debounce(() => {
     loadProducts();
@@ -120,6 +118,16 @@ const loadProducts = async () => {
     }
 };
 
+const loadCollections = async () => {
+    try {
+        const response = await apiService.getCollections();
+        collections.value = response.success && Array.isArray(response.data) ? response.data : [];
+    } catch (error) {
+        console.error('Error loading collections:', error);
+        collections.value = [];
+    }
+};
+
 const clearFilters = () => {
     searchQuery.value = '';
     selectedCategory.value = '';
@@ -133,5 +141,6 @@ watch(selectedCategory, () => {
 
 onMounted(() => {
     loadProducts();
+    loadCollections();
 });
 </script>

@@ -3,7 +3,7 @@ const config = require("../config/shopify");
 const queries = require("../graphql/shopifyQueries");
 
 // Helper function to execute Shopify GraphQL queries
-async function executeShopifyQuery(query) {
+async function _executeShopifyQuery(query) {
   try {
     const response = await axios({
       url: config.url,
@@ -19,7 +19,7 @@ async function executeShopifyQuery(query) {
 }
 
 // Helper function to format product data
-function formatProduct(
+function _formatProduct(
   product,
   includeImages = false,
   includeCollections = false
@@ -52,24 +52,12 @@ function formatProduct(
   return formattedProduct;
 }
 
-// Get products from Shopify
-async function getProducts(limit = 10) {
-  try {
-    const query = queries.GET_PRODUCTS(limit);
-    const data = await executeShopifyQuery(query);
-    return data.data.products.edges.map((edge) => formatProduct(edge.node));
-  } catch (error) {
-    console.error("Error fetching products from Shopify:", error);
-    throw error;
-  }
-}
-
 async function getProductsByCollection(collectionHandle) {
   try {
     const query = queries.GET_PRODUCTS_BY_COLLECTION(collectionHandle);
-    const data = await executeShopifyQuery(query);
+    const data = await _executeShopifyQuery(query);
     return data.data.collectionByHandle.products.edges.map((edge) =>
-      formatProduct(edge.node, true, true)
+      _formatProduct(edge.node, true, true)
     );
   } catch (error) {
     console.error("Error fetching products from collection:", error);
@@ -77,15 +65,18 @@ async function getProductsByCollection(collectionHandle) {
   }
 }
 
-// Get a single product by ID
-async function getProductById(productId) {
+async function getAllCollections() {
   try {
-    const query = queries.GET_PRODUCT_BY_ID(productId);
-    const data = await executeShopifyQuery(query);
-    const product = data.data.product;
-    return product ? formatProduct(product) : null;
+    const query = queries.GET_ALL_COLLECTIONS();
+    const data = await _executeShopifyQuery(query);
+    return data.data.collections.edges.map((edge) => ({
+      id: edge.node.id.split("/").pop(),
+      title: edge.node.title,
+      handle: edge.node.handle,
+      description: edge.node.description || "",
+    }));
   } catch (error) {
-    console.error(`Error fetching product ${productId} from Shopify:`, error);
+    console.error("Error fetching collections from Shopify:", error);
     throw error;
   }
 }
@@ -94,9 +85,9 @@ async function getProductById(productId) {
 async function getProductsWithImages(limit = 200) {
   try {
     const query = queries.GET_PRODUCTS_WITH_IMAGES(limit);
-    const data = await executeShopifyQuery(query);
+    const data = await _executeShopifyQuery(query);
     return data.data.products.edges.map((edge) =>
-      formatProduct(edge.node, true, true)
+      _formatProduct(edge.node, true, true)
     );
   } catch (error) {
     console.error("Error fetching products with images from Shopify:", error);
@@ -108,9 +99,9 @@ async function getProductsWithImages(limit = 200) {
 async function getProductByIdWithImages(productId) {
   try {
     const query = queries.GET_PRODUCT_BY_ID_WITH_IMAGES(productId);
-    const data = await executeShopifyQuery(query);
+    const data = await _executeShopifyQuery(query);
     const product = data.data.product;
-    return product ? formatProduct(product, true, true) : null;
+    return product ? _formatProduct(product, true, true) : null;
   } catch (error) {
     console.error(
       `Error fetching product ${productId} with images from Shopify:`,
@@ -121,11 +112,8 @@ async function getProductByIdWithImages(productId) {
 }
 
 module.exports = {
-  getProducts,
-  getProductById,
   getProductsWithImages,
   getProductByIdWithImages,
   getProductsByCollection,
-  executeShopifyQuery,
-  formatProduct,
+  getAllCollections,
 };

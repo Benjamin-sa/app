@@ -82,7 +82,7 @@ class ApiService {
     return this.client.post("/auth/logout");
   }
 
-  async getCurrentUser() {
+  async getCurrentUserFromApi() {
     return this.client.get("/auth/me");
   }
 
@@ -133,85 +133,34 @@ class ApiService {
 
   // Voting endpoints
   async vote(targetId, targetType, voteType) {
+    console.log("API vote request:", {
+      targetId: targetId.trim(),
+      targetType,
+      voteType,
+    });
+
     return this.post("/forum/vote", {
-      targetId,
+      targetId: targetId.trim(),
       targetType,
       voteType,
     });
   }
 
   async getUserVote(targetId) {
-    return this.get(`/forum/vote/${targetId}`);
+    console.log("request getUserVote", targetId);
+
+    // Validate targetId to prevent API errors
+    if (!targetId || typeof targetId !== "string" || targetId.trim() === "") {
+      console.error("getUserVote: Invalid targetId:", targetId);
+      throw new Error("Invalid target ID: must be a non-empty string");
+    }
+
+    return this.get(`/forum/vote/${targetId.trim()}`);
   }
 
-  // Deprecated methods - Use general HTTP methods instead
-  // These are kept for backward compatibility but should be migrated
-
-  /** @deprecated Use apiService.get(`/forum/topics/${id}`) instead */
-  async getTopic(id) {
-    return this.get(`/forum/topics/${id}`);
-  }
-
-  /** @deprecated Use apiService.post('/forum/topics', topicData) instead */
-  async createTopic(topicData) {
-    return this.post("/forum/topics", topicData);
-  }
-
-  /** @deprecated Use apiService.put(`/forum/topics/${id}`, topicData) instead */
-  async updateTopic(id, topicData) {
-    return this.put(`/forum/topics/${id}`, topicData);
-  }
-
-  /** @deprecated Use apiService.delete(`/forum/topics/${id}`) instead */
-  async deleteTopic(id) {
-    return this.delete(`/forum/topics/${id}`);
-  }
-
-  /** @deprecated Use apiService.post(`/forum/topics/${topicId}/answers`, answerData) instead */
-  async createAnswer(topicId, answerData) {
-    return this.post(`/forum/topics/${topicId}/answers`, answerData);
-  }
-
-  /** @deprecated Use apiService.put(`/forum/topics/${topicId}/answers/${answerId}`, answerData) instead */
-  async updateAnswer(topicId, answerId, answerData) {
-    return this.put(`/forum/topics/${topicId}/answers/${answerId}`, answerData);
-  }
-
-  /** @deprecated Use apiService.delete(`/forum/topics/${topicId}/answers/${answerId}`) instead */
-  async deleteAnswer(topicId, answerId) {
-    return this.delete(`/forum/topics/${topicId}/answers/${answerId}`);
-  }
-
-  /** @deprecated Use apiService.post(`/forum/topics/${topicId}/answers/${answerId}/vote`, { vote }) instead */
-  async voteAnswer(topicId, answerId, vote) {
-    return this.post(`/forum/topics/${topicId}/answers/${answerId}/vote`, {
-      vote,
-    });
-  }
-
-  /** @deprecated Use apiService.post(`/forum/topics/${topicId}/answers/${answerId}/best`) instead */
-  async markBestAnswer(topicId, answerId) {
-    return this.post(`/forum/topics/${topicId}/answers/${answerId}/best`);
-  }
-
-  /** @deprecated Use apiService.get(`/products/${id}`) instead */
-  async getProduct(id) {
-    return this.get(`/products/${id}`);
-  }
-
-  /** @deprecated Use apiService.get('/products/categories') instead */
-  async getProductCategories() {
-    return this.get("/products/categories");
-  }
-
-  /** @deprecated Use apiService.get(`/users/${userId}`) instead */
-  async getUserProfile(userId) {
-    return this.get(`/users/${userId}`);
-  }
-
-  /** @deprecated Use apiService.put(`/users/${userId}`, profileData) instead */
-  async updateUserProfile(userId, profileData) {
-    return this.put(`/users/${userId}`, profileData);
+  // Get collections from Shopify
+  async getCollections() {
+    return this.get("/products/collections");
   }
 }
 

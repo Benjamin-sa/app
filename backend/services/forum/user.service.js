@@ -3,13 +3,12 @@
  * Handles all user-related operations
  */
 
-const { firestore } = require("../../config/firebase");
-const admin = require("firebase-admin");
-const { COLLECTIONS, validators } = require("../../models/forum.models");
+const firebaseQueries = require("../../queries/firebase.queries");
+const { validators, UserProfile } = require("../../models/forum.models");
 
 class UserService {
   constructor() {
-    this.db = firestore;
+    this.queries = firebaseQueries;
   }
 
   async createUserProfile(userData) {
@@ -44,35 +43,20 @@ class UserService {
       }
 
       const userProfile = {
+        ...UserProfile,
         uid,
         username,
         email,
         displayName: displayName || username,
         avatar: avatar || "",
-        bio: "",
-        location: "",
-        website: "",
-        joinedDate: admin.firestore.FieldValue.serverTimestamp(),
-        lastActive: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        reputation: 0,
-        topics_created: 0,
-        answers_posted: 0,
-        products_count: 0,
+        joinedDate: this.queries.getServerTimestamp(),
+        lastActive: this.queries.getServerTimestamp(),
+        updatedAt: this.queries.getServerTimestamp(),
         isVerified: emailVerified || false,
-        isAdmin: false,
-        isModerator: false,
-        show_email: false,
-        allow_messages: true,
-        interests: [],
-        social_links: {},
         authProvider: authProvider || "email",
       };
 
-      await this.db
-        .collection(COLLECTIONS.USERS)
-        .doc(uid)
-        .set(userProfile, { merge: true });
+      await this.queries.createUser(uid, userProfile);
       return userProfile;
     } catch (error) {
       throw new Error(`Failed to create user profile: ${error.message}`);
@@ -81,8 +65,7 @@ class UserService {
 
   async getUserProfile(uid) {
     try {
-      const doc = await this.db.collection(COLLECTIONS.USERS).doc(uid).get();
-      return doc.exists ? { id: doc.id, ...doc.data() } : null;
+      return await this.queries.getUserById(uid);
     } catch (error) {
       throw new Error(`Failed to get user profile: ${error.message}`);
     }
@@ -90,15 +73,7 @@ class UserService {
 
   async getUserByUsername(username) {
     try {
-      const snapshot = await this.db
-        .collection(COLLECTIONS.USERS)
-        .where("username", "==", username)
-        .limit(1)
-        .get();
-
-      return snapshot.empty
-        ? null
-        : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+      return await this.queries.getUserByUsername(username);
     } catch (error) {
       throw new Error(`Failed to get user by username: ${error.message}`);
     }
@@ -106,9 +81,7 @@ class UserService {
 
   async updateUserActivity(uid) {
     try {
-      await this.db.collection(COLLECTIONS.USERS).doc(uid).update({
-        lastActive: admin.firestore.FieldValue.serverTimestamp(),
-      });
+      await this.queries.updateUserActivity(uid);
     } catch (error) {
       console.error("Failed to update user activity:", error);
     }
@@ -116,12 +89,7 @@ class UserService {
 
   async incrementUserStats(uid, field) {
     try {
-      await this.db
-        .collection(COLLECTIONS.USERS)
-        .doc(uid)
-        .update({
-          [field]: admin.firestore.FieldValue.increment(1),
-        });
+      await this.queries.incrementUserStats(uid, field);
     } catch (error) {
       console.error(`Failed to increment user stat ${field}:`, error);
     }
@@ -204,10 +172,10 @@ class UserService {
       }
 
       // Add update timestamp
-      filteredData.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+      filteredData.updatedAt = this.queries.getServerTimestamp();
 
       // Update the user profile
-      await this.db.collection(COLLECTIONS.USERS).doc(uid).update(filteredData);
+      await this.queries.updateUser(uid, filteredData);
 
       // Return updated profile
       return await this.getUserProfile(uid);

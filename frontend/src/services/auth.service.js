@@ -11,7 +11,7 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 
-// Firebase configuration - these should be in environment variables
+// Firebase configuration
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
