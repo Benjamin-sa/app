@@ -13,7 +13,7 @@
                     <!-- Vote Section -->
                     <div class="flex-shrink-0">
                         <VoteButton :value="answer.votes?.score || 0" :user-vote="answer.userVote"
-                            @vote="(voteData) => $emit('vote', answer.id, 'answer', voteData)" />
+                            @vote="(voteData) => $emit('vote', answer.id, voteData)" />
                     </div>
 
                     <!-- Content -->

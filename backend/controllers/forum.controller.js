@@ -3,7 +3,6 @@ const topicService = require("../services/forum/topic.service");
 const answerService = require("../services/forum/answer.service");
 const votingService = require("../services/forum/voting.service");
 const imageService = require("../services/image.service");
-const cacheService = require("../services/cache.service");
 
 class ForumController {
   // ==================== USER METHODS ====================
@@ -12,35 +11,27 @@ class ForumController {
   async getUserProfile(req, res) {
     try {
       const { uid } = req.params;
-      const cacheKey = `user:profile:${uid}`;
 
-      // Try to get from cache first
-      let profile = await cacheService.get(cacheKey);
-
-      if (!profile) {
-        profile = await userService.getUserProfile(uid);
-
-        if (profile) {
-          // Cache for 5 minutes
-          await cacheService.set(cacheKey, profile, 300);
-        }
-      }
-
-      if (!profile) {
-        return res.status(404).json({
-          success: false,
-          error: "User not found",
-        });
-      }
+      const profile = await userService.getUserProfile(uid);
 
       res.json({
         success: true,
         data: profile,
       });
     } catch (error) {
-      res.status(500).json({
+      console.error("FORUM_CONTROLLER_ERROR: Get User Profile Error:", error);
+
+      let statusCode = 500;
+      if (error.message.includes("VALIDATION_ERROR")) {
+        statusCode = 400;
+      } else if (error.message.includes("NOT_FOUND_ERROR")) {
+        statusCode = 404;
+      }
+
+      res.status(statusCode).json({
         success: false,
-        error: error.message,
+        error: `FORUM_CONTROLLER_ERROR: ${error.message}`,
+        errorSource: "forum_controller",
       });
     }
   }
@@ -49,82 +40,30 @@ class ForumController {
   async getUserByUsername(req, res) {
     try {
       const { username } = req.params;
-      const cacheKey = `user:username:${username}`;
 
-      // Try to get from cache first
-      let profile = await cacheService.get(cacheKey);
-
-      if (!profile) {
-        profile = await userService.getUserByUsername(username);
-
-        if (profile) {
-          // Cache for 5 minutes
-          await cacheService.set(cacheKey, profile, 300);
-        }
-      }
-
-      if (!profile) {
-        return res.status(404).json({
-          success: false,
-          error: "User not found",
-        });
-      }
+      const profile = await userService.getUserByUsername(username);
 
       res.json({
         success: true,
         data: profile,
       });
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        error: error.message,
-      });
-    }
-  }
-
-  // ==================== IMAGE METHODS ====================
-
-  // Upload single or multiple images for forum posts
-  async uploadImages(req, res) {
-    try {
-      if (!req.files || req.files.length === 0) {
-        return res.status(400).json({
-          success: false,
-          error: "No files uploaded",
-        });
-      }
-
-      if (req.files.length > 5) {
-        return res.status(400).json({
-          success: false,
-          error: "Maximum 5 images allowed",
-        });
-      }
-
-      console.log("Received files:", req.files.length, "files");
-
-      const imageRecords = await imageService.uploadImages(
-        req.files,
-        "forum/images"
+      console.error(
+        "FORUM_CONTROLLER_ERROR: Get User By Username Error:",
+        error
       );
 
-      const responseData = imageRecords.map((record) => ({
-        id: record.id,
-        url: record.url,
-        thumbnailUrl: record.thumbnailUrl,
-        mediumUrl: record.mediumUrl,
-      }));
+      let statusCode = 500;
+      if (error.message.includes("VALIDATION_ERROR")) {
+        statusCode = 400;
+      } else if (error.message.includes("NOT_FOUND_ERROR")) {
+        statusCode = 404;
+      }
 
-      // Always return single object for single file, array for multiple
-      res.json({
-        success: true,
-        data: req.files.length === 1 ? responseData[0] : responseData,
-      });
-    } catch (error) {
-      console.error("Image upload error:", error);
-      res.status(400).json({
+      res.status(statusCode).json({
         success: false,
-        error: error.message,
+        error: `FORUM_CONTROLLER_ERROR: ${error.message}`,
+        errorSource: "forum_controller",
       });
     }
   }
@@ -137,48 +76,84 @@ class ForumController {
       const { title, content, category, tags, images } = req.body;
 
       // Parse images if sent as string
-      let imageUrls = [];
+      let imageData = [];
       if (images) {
-        if (typeof images === "string") {
-          try {
-            imageUrls = JSON.parse(images);
-          } catch (e) {
-            imageUrls = [images];
+        try {
+          if (typeof images === "string") {
+            try {
+              imageData = JSON.parse(images);
+            } catch (e) {
+              imageData = [{ url: images }];
+            }
+          } else if (Array.isArray(images)) {
+            imageData = images;
           }
-        } else if (Array.isArray(images)) {
-          imageUrls = images;
+        } catch (parseError) {
+          return res.status(400).json({
+            success: false,
+            error: `FORUM_CONTROLLER_ERROR: Failed to parse images data - ${parseError.message}`,
+            errorSource: "forum_controller",
+          });
         }
       }
 
+      // Handle file uploads if any
+      if (req.files && req.files.length > 0) {
+        try {
+          const imageRecords = await imageService.uploadImages(
+            req.files,
+            "forum/topics"
+          );
+          imageData = [...imageData, ...imageRecords];
+        } catch (uploadError) {
+          return res.status(400).json({
+            success: false,
+            error: `FORUM_CONTROLLER_ERROR: Image upload failed - ${uploadError.message}`,
+            errorSource: "forum_controller",
+          });
+        }
+      }
+
+      // Construct topic data
       const topicData = {
         title,
         content,
         authorId: req.user.uid,
         category,
         tags: tags ? (typeof tags === "string" ? JSON.parse(tags) : tags) : [],
-        images: imageUrls,
+        images: imageData,
       };
 
-      // No uploaded files - images are pre-uploaded URLs
-      const topic = await topicService.createTopic(topicData, []);
+      // Create topic through service
+      const topic = await topicService.createTopic(topicData);
 
       // Update user activity
-      await userService.updateUserActivity(req.user.uid);
-
-      // Invalidate relevant caches
-      await cacheService.invalidatePattern("topics:*");
-      await cacheService.invalidatePattern("forum:stats");
-      await cacheService.invalidatePattern(`user:*:${req.user.uid}`);
+      try {
+        await userService.updateUserActivity(req.user.uid);
+      } catch (activityError) {
+        console.warn(
+          `FORUM_CONTROLLER_WARNING: Failed to update user activity - ${activityError.message}`
+        );
+      }
 
       res.status(201).json({
         success: true,
         data: topic,
       });
     } catch (error) {
-      console.error("Create topic error:", error);
-      res.status(400).json({
+      console.error("FORUM_CONTROLLER_ERROR: Topic creation failed:", error);
+
+      let statusCode = 500;
+      if (error.message.includes("VALIDATION_ERROR")) {
+        statusCode = 400;
+      } else if (error.message.includes("NOT_FOUND_ERROR")) {
+        statusCode = 404;
+      }
+
+      res.status(statusCode).json({
         success: false,
-        error: error.message,
+        error: `FORUM_CONTROLLER_ERROR: ${error.message}`,
+        errorSource: "forum_controller",
       });
     }
   }
@@ -201,29 +176,59 @@ class ForumController {
         sortOrder,
       };
 
-      // Create cache key based on query parameters
-      const cacheKey = `topics:list:${JSON.stringify(options)}`;
+      const result = await topicService.getTopics(options);
 
-      // Try to get from cache first
-      let result = await cacheService.get(cacheKey);
+      // Enrich each topic with author profile and vote counts
+      const enrichedTopics = await Promise.all(
+        result.topics.map(async (topic) => {
+          try {
+            // Get topic author profile
+            const authorProfile = await userService.getUserProfile(
+              topic.authorId
+            );
+            topic.author = authorProfile;
 
-      if (!result) {
-        result = await topicService.getTopics(options);
+            // Get topic votes
+            const topicVotes = await votingService.getTopicVotes(topic.id);
+            topic.votes = topicVotes;
 
-        if (result) {
-          // Cache for 2 minutes
-          await cacheService.set(cacheKey, result, 120);
-        }
-      }
+            // Get user's vote on this topic if user is authenticated
+            if (req.user?.uid) {
+              topic.userVote = await votingService.getUserVote(
+                req.user.uid,
+                topic.id
+              );
+            }
+
+            return topic;
+          } catch (enrichError) {
+            console.warn(
+              `FORUM_CONTROLLER_WARNING: Failed to enrich topic ${topic.id} - ${enrichError.message}`
+            );
+            // Return topic without enrichment rather than failing
+            return topic;
+          }
+        })
+      );
+
+      result.topics = enrichedTopics;
 
       res.json({
         success: true,
         data: result,
       });
     } catch (error) {
-      res.status(500).json({
+      console.error("FORUM_CONTROLLER_ERROR: Get Topics Error:", error);
+
+      let statusCode = 500;
+      if (error.message.includes("VALIDATION_ERROR")) {
+        statusCode = 400;
+      }
+
+      res.status(statusCode).json({
         success: false,
-        error: error.message,
+        error: `FORUM_CONTROLLER_ERROR: ${error.message}`,
+        errorSource: "forum_controller",
       });
     }
   }
@@ -233,25 +238,87 @@ class ForumController {
     try {
       const { id } = req.params;
       const userId = req.user?.uid || null;
-      const cacheKey = `topic:${id}:user:${userId || "anonymous"}`;
 
-      // Try to get from cache first
-      let topic = await cacheService.get(cacheKey);
+      const topic = await topicService.getTopicById(id, userId);
 
-      if (!topic) {
-        topic = await topicService.getTopicById(id, userId);
+      // Enrich topic with author profile
+      try {
+        const authorProfile = await userService.getUserProfile(topic.authorId);
+        topic.author = authorProfile;
+      } catch (authorError) {
+        console.warn(
+          `FORUM_CONTROLLER_WARNING: Failed to get author profile - ${authorError.message}`
+        );
+      }
 
-        if (topic) {
-          // Cache for 3 minutes
-          await cacheService.set(cacheKey, topic, 180);
+      // Get topic votes
+      try {
+        const topicVotes = await votingService.getTopicVotes(id);
+        topic.votes = topicVotes;
+      } catch (voteError) {
+        console.warn(
+          `FORUM_CONTROLLER_WARNING: Failed to get topic votes - ${voteError.message}`
+        );
+        topic.votes = { upvotes: 0, downvotes: 0, score: 0 };
+      }
+
+      // Get user's vote on this topic if user is authenticated
+      if (userId) {
+        try {
+          topic.userVote = await votingService.getUserVote(userId, id);
+        } catch (userVoteError) {
+          console.warn(
+            `FORUM_CONTROLLER_WARNING: Failed to get user vote - ${userVoteError.message}`
+          );
         }
       }
 
-      if (!topic) {
-        return res.status(404).json({
-          success: false,
-          error: "Topic not found",
-        });
+      // Get answers for this topic
+      try {
+        const answersResult = await answerService.getAnswersByTopic(id);
+        const answers = answersResult.answers || [];
+
+        // Enrich each answer with author profile and votes
+        const enrichedAnswers = await Promise.all(
+          answers.map(async (answer) => {
+            try {
+              // Get answer author profile
+              const answerAuthor = await userService.getUserProfile(
+                answer.authorId
+              );
+              answer.author = answerAuthor;
+
+              // Get answer votes
+              const answerVotes = await votingService.getAnswerVotes(answer.id);
+              answer.votes = answerVotes;
+
+              // Get user's vote on this answer if user is authenticated
+              if (userId) {
+                answer.userVote = await votingService.getUserVote(
+                  userId,
+                  answer.id
+                );
+              }
+
+              return answer;
+            } catch (answerEnrichError) {
+              console.warn(
+                `FORUM_CONTROLLER_WARNING: Failed to enrich answer ${answer.id} - ${answerEnrichError.message}`
+              );
+              return answer;
+            }
+          })
+        );
+
+        // Add enriched answers to topic
+        topic.answers = enrichedAnswers;
+        topic.answerCount = enrichedAnswers.length;
+      } catch (answersError) {
+        console.warn(
+          `FORUM_CONTROLLER_WARNING: Failed to get answers - ${answersError.message}`
+        );
+        topic.answers = [];
+        topic.answerCount = 0;
       }
 
       res.json({
@@ -259,9 +326,19 @@ class ForumController {
         data: topic,
       });
     } catch (error) {
-      res.status(500).json({
+      console.error("FORUM_CONTROLLER_ERROR: Get Topic By ID Error:", error);
+
+      let statusCode = 500;
+      if (error.message.includes("VALIDATION_ERROR")) {
+        statusCode = 400;
+      } else if (error.message.includes("NOT_FOUND_ERROR")) {
+        statusCode = 404;
+      }
+
+      res.status(statusCode).json({
         success: false,
-        error: error.message,
+        error: `FORUM_CONTROLLER_ERROR: ${error.message}`,
+        errorSource: "forum_controller",
       });
     }
   }
@@ -271,41 +348,29 @@ class ForumController {
     try {
       const { q: searchTerm, category, limit = 20 } = req.query;
 
-      if (!searchTerm || searchTerm.trim().length < 2) {
-        return res.status(400).json({
-          success: false,
-          error: "Search term must be at least 2 characters",
-        });
-      }
-
       const options = {
         limit: parseInt(limit),
         category,
       };
 
-      // Create cache key for search
-      const cacheKey = `search:${searchTerm.trim()}:${JSON.stringify(options)}`;
-
-      // Try to get from cache first
-      let topics = await cacheService.get(cacheKey);
-
-      if (!topics) {
-        topics = await topicService.searchTopics(searchTerm.trim(), options);
-
-        if (topics) {
-          // Cache search results for 5 minutes
-          await cacheService.set(cacheKey, topics, 300);
-        }
-      }
+      const topics = await topicService.searchTopics(searchTerm, options);
 
       res.json({
         success: true,
         data: topics,
       });
     } catch (error) {
-      res.status(500).json({
+      console.error("FORUM_CONTROLLER_ERROR: Search Topics Error:", error);
+
+      let statusCode = 500;
+      if (error.message.includes("VALIDATION_ERROR")) {
+        statusCode = 400;
+      }
+
+      res.status(statusCode).json({
         success: false,
-        error: error.message,
+        error: `FORUM_CONTROLLER_ERROR: ${error.message}`,
+        errorSource: "forum_controller",
       });
     }
   }
@@ -318,87 +383,62 @@ class ForumController {
       const { topicId } = req.params;
       const { content, parentAnswerId } = req.body;
 
-      // Process uploaded images if any
-      let imageUrls = [];
+      // Handle image uploads if any
+      let imageData = [];
       if (req.files && req.files.length > 0) {
-        const imageRecords = await imageService.uploadImages(
-          req.files,
-          "forum/answers"
-        );
-        imageUrls = imageRecords.map((record) => record.url);
+        try {
+          const imageRecords = await imageService.uploadImages(
+            req.files,
+            "forum/answers"
+          );
+          imageData = imageRecords;
+        } catch (uploadError) {
+          return res.status(400).json({
+            success: false,
+            error: `FORUM_CONTROLLER_ERROR: Image upload failed - ${uploadError.message}`,
+            errorSource: "forum_controller",
+          });
+        }
       }
 
+      // Construct answer data
       const answerData = {
         content,
         authorId: req.user.uid,
         topicId,
         parentAnswerId: parentAnswerId || null,
-        images: imageUrls,
+        images: imageData,
       };
 
       const answer = await answerService.createAnswer(answerData);
 
       // Update user activity
-      await userService.updateUserActivity(req.user.uid);
-
-      // Invalidate relevant caches
-      await cacheService.invalidatePattern(`topic:${topicId}:*`);
-      await cacheService.invalidatePattern(`answers:${topicId}:*`);
-      await cacheService.invalidatePattern("forum:stats");
+      try {
+        await userService.updateUserActivity(req.user.uid);
+      } catch (activityError) {
+        console.warn(
+          `FORUM_CONTROLLER_WARNING: Failed to update user activity - ${activityError.message}`
+        );
+      }
 
       res.status(201).json({
         success: true,
         data: answer,
       });
     } catch (error) {
-      console.error("Create answer error:", error);
-      res.status(400).json({
-        success: false,
-        error: error.message,
-      });
-    }
-  }
+      console.error("FORUM_CONTROLLER_ERROR: Create Answer Error:", error);
 
-  // Get answers for a topic
-  async getTopicAnswers(req, res) {
-    try {
-      const { topicId } = req.params;
-      const {
-        limit = 20,
-        page = 1,
-        sortBy = "createdAt",
-        sortOrder = "desc",
-      } = req.query;
-
-      const options = {
-        limit: parseInt(limit),
-        page: parseInt(page),
-        sortBy,
-        sortOrder,
-      };
-
-      const cacheKey = `answers:${topicId}:${JSON.stringify(options)}`;
-
-      // Try to get from cache first
-      let answers = await cacheService.get(cacheKey);
-
-      if (!answers) {
-        answers = await answerService.getAnswersByTopic(topicId, options);
-
-        if (answers) {
-          // Cache for 3 minutes
-          await cacheService.set(cacheKey, answers, 180);
-        }
+      let statusCode = 500;
+      if (error.message.includes("VALIDATION_ERROR")) {
+        statusCode = 400;
+      } else if (error.message.includes("NOT_FOUND_ERROR")) {
+        statusCode = 404;
       }
 
-      res.json({
-        success: true,
-        data: answers,
-      });
-    } catch (error) {
-      res.status(500).json({
+      res.status(statusCode).json({
         success: false,
-        error: error.message,
+        error: `FORUM_CONTROLLER_ERROR: ${error.message}`,
+        errorSource: "forum_controller",
       });
     }
   }
@@ -411,57 +451,31 @@ class ForumController {
       const { targetId, targetType, voteType } = req.body;
       const userId = req.user.uid;
 
-      // Validate required parameters
-      if (!targetId || typeof targetId !== "string" || targetId.trim() === "") {
-        return res.status(400).json({
-          success: false,
-          error: "Invalid target ID",
-        });
-      }
-
-      if (!userId || typeof userId !== "string" || userId.trim() === "") {
-        return res.status(400).json({
-          success: false,
-          error: "User not authenticated",
-        });
-      }
-
-      if (!["topic", "answer"].includes(targetType)) {
-        return res.status(400).json({
-          success: false,
-          error: "Invalid target type",
-        });
-      }
-
-      // Allow null for vote removal, or "up"/"down" for voting
-      if (voteType !== null && !["up", "down"].includes(voteType)) {
-        return res.status(400).json({
-          success: false,
-          error: "Invalid vote type. Must be 'up', 'down', or null",
-        });
-      }
-
       const result = await votingService.vote(
         userId,
-        targetId.trim(),
+        targetId,
         targetType,
         voteType
       );
-
-      // Invalidate relevant caches
-      await cacheService.invalidatePattern(`vote:${targetId}:*`);
-      await cacheService.invalidatePattern(`topic:${targetId}:*`);
-      await cacheService.invalidatePattern(`user:*:${userId}`);
 
       res.json({
         success: true,
         data: result,
       });
     } catch (error) {
-      console.error("Vote error:", error);
-      res.status(400).json({
+      console.error("FORUM_CONTROLLER_ERROR: Vote Error:", error);
+
+      let statusCode = 500;
+      if (error.message.includes("VALIDATION_ERROR")) {
+        statusCode = 400;
+      } else if (error.message.includes("NOT_FOUND_ERROR")) {
+        statusCode = 404;
+      }
+
+      res.status(statusCode).json({
         success: false,
-        error: error.message,
+        error: `FORUM_CONTROLLER_ERROR: ${error.message}`,
+        errorSource: "forum_controller",
       });
     }
   }
@@ -471,26 +485,27 @@ class ForumController {
     try {
       const { targetId } = req.params;
       const userId = req.user.uid;
-      const cacheKey = `vote:${targetId}:user:${userId}`;
 
-      // Try to get from cache first
-      let vote = await cacheService.get(cacheKey);
-
-      if (vote === null) {
-        vote = await votingService.getUserVote(userId, targetId);
-
-        // Cache for 10 minutes
-        await cacheService.set(cacheKey, vote || {}, 600);
-      }
+      const vote = await votingService.getUserVote(userId, targetId);
 
       res.json({
         success: true,
         data: vote,
       });
     } catch (error) {
-      res.status(500).json({
+      console.error("FORUM_CONTROLLER_ERROR: Get User Vote Error:", error);
+
+      let statusCode = 500;
+      if (error.message.includes("VALIDATION_ERROR")) {
+        statusCode = 400;
+      } else if (error.message.includes("NOT_FOUND_ERROR")) {
+        statusCode = 404;
+      }
+
+      res.status(statusCode).json({
         success: false,
-        error: error.message,
+        error: `FORUM_CONTROLLER_ERROR: ${error.message}`,
+        errorSource: "forum_controller",
       });
     }
   }
@@ -500,37 +515,46 @@ class ForumController {
   // Get forum statistics
   async getForumStats(req, res) {
     try {
-      const cacheKey = "forum:stats";
+      const topicStats = await topicService.getTopicStats();
 
-      // Try to get from cache first
-      let stats = await cacheService.get(cacheKey);
+      // Handle missing methods gracefully
+      let userStats = {};
+      let answerStats = {};
 
-      if (!stats) {
-        // Gather statistics from various services
-        const topicStats = await topicService.getTopicStats();
-        const userStats = await userService.getUserStats();
-        const answerStats = await answerService.getAnswerStats();
-
-        stats = {
-          topics: topicStats,
-          users: userStats,
-          answers: answerStats,
-          lastUpdated: new Date(),
-        };
-
-        // Cache for 30 minutes
-        await cacheService.set(cacheKey, stats, 1800);
+      try {
+        userStats = await userService.getUserStats();
+      } catch (userStatsError) {
+        console.warn(
+          `FORUM_CONTROLLER_WARNING: Failed to get user stats - ${userStatsError.message}`
+        );
       }
+
+      try {
+        answerStats = await answerService.getAnswerStats();
+      } catch (answerStatsError) {
+        console.warn(
+          `FORUM_CONTROLLER_WARNING: Failed to get answer stats - ${answerStatsError.message}`
+        );
+      }
+
+      const stats = {
+        topics: topicStats,
+        users: userStats,
+        answers: answerStats,
+        lastUpdated: new Date(),
+      };
 
       res.json({
         success: true,
         data: stats,
       });
     } catch (error) {
-      console.error("Forum stats error:", error);
+      console.error("FORUM_CONTROLLER_ERROR: Get Forum Stats Error:", error);
+
       res.status(500).json({
         success: false,
-        error: error.message,
+        error: `FORUM_CONTROLLER_ERROR: ${error.message}`,
+        errorSource: "forum_controller",
       });
     }
   }

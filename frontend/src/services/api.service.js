@@ -70,10 +70,6 @@ class ApiService {
     return this.client.post("/auth/login", credentials);
   }
 
-  async register(userData) {
-    return this.client.post("/auth/register", userData);
-  }
-
   async syncUser(userData) {
     return this.client.post("/auth/sync", userData);
   }

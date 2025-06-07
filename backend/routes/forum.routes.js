@@ -24,19 +24,6 @@ router.get(
   forumController.getUserByUsername.bind(forumController)
 );
 
-// ==================== IMAGE UPLOAD ROUTES ====================
-
-/**
- * POST /api/forum/upload/images
- * Upload single or multiple images for forum posts
- */
-router.post(
-  "/upload/images",
-  authenticate,
-  uploadMultiple,
-  forumController.uploadImages.bind(forumController)
-);
-
 // ==================== TOPIC ROUTES ====================
 
 /**
@@ -46,6 +33,7 @@ router.post(
 router.post(
   "/topics",
   authenticate,
+  uploadMultiple,
   forumController.createTopic.bind(forumController)
 );
 
@@ -78,15 +66,6 @@ router.post(
   authenticate,
   uploadMultiple,
   forumController.createAnswer.bind(forumController)
-);
-
-/**
- * GET /api/forum/topics/:topicId/answers
- * Get answers for a topic
- */
-router.get(
-  "/topics/:topicId/answers",
-  forumController.getTopicAnswers.bind(forumController)
 );
 
 // ==================== VOTING ROUTES ====================

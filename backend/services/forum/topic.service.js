@@ -1,122 +1,114 @@
 /**
  * Topic Service for Forum
- * Handles all topic-related operations
+ * Handles all topic-related operations with validation
  */
 
 const firebaseQueries = require("../../queries/firebase.queries");
-const { COLLECTIONS, validators } = require("../../models/forum.models");
-const imageService = require("../image.service");
+const { validators, Topic } = require("../../models/forum.models");
 
 class TopicService {
   constructor() {
     this.queries = firebaseQueries;
   }
 
-  async createTopic(topicData, uploadedFiles = []) {
+  async createTopic(topicData) {
     try {
-      // Validate topic data
-      if (!validators.isValidTopicTitle(topicData.title)) {
-        throw new Error("Title must be between 5 and 200 characters");
-      }
+      const {
+        title,
+        content,
+        category,
+        tags = [],
+        images = [],
+        authorId,
+      } = topicData;
 
-      if (!validators.isValidContent(topicData.content)) {
-        throw new Error("Content must be between 10 and 10000 characters");
-      }
-
-      if (!validators.isValidCategory(topicData.category)) {
-        throw new Error("Valid category is required");
-      }
-
-      // Process uploaded files (if any)
-      let imageRecords = [];
-      if (uploadedFiles.length > 0) {
-        imageRecords = await imageService.uploadImages(
-          uploadedFiles,
-          "forum/topics"
+      // Validate required fields
+      if (!title || !content || !category || !authorId) {
+        throw new Error(
+          "TOPIC_SERVICE_VALIDATION_ERROR: Title, content, category, and author ID are required"
         );
       }
 
-      // Process pre-uploaded image URLs
-      let preUploadedImages = [];
-      if (topicData.images && topicData.images.length > 0) {
-        preUploadedImages = topicData.images.map((imageUrl) => {
-          // If it's already a proper image object, return it
-          if (typeof imageUrl === "object" && imageUrl.url) {
-            return imageUrl;
-          }
-          // If it's just a URL string, create image object
-          return {
-            url: imageUrl,
-            thumbnailUrl: imageUrl,
-            mediumUrl: imageUrl,
-          };
-        });
+      // Validate title
+      if (
+        !validators.isValidTitle ||
+        typeof title !== "string" ||
+        title.trim().length < 5 ||
+        title.trim().length > 200
+      ) {
+        throw new Error(
+          "TOPIC_SERVICE_VALIDATION_ERROR: Title must be between 5 and 200 characters"
+        );
       }
 
-      // Combine all images
-      const allImages = [...imageRecords, ...preUploadedImages];
+      // Validate content
+      if (!validators.isValidContent(content)) {
+        throw new Error("TOPIC_SERVICE_VALIDATION_ERROR: Content");
+      }
 
-      // Get author info
-      const authorData = await this.queries.getUserById(topicData.authorId);
+      if (!validators.isValidCategory(category)) {
+        throw new Error(
+          "TOPIC_SERVICE_VALIDATION_ERROR: Valid category is required"
+        );
+      }
 
-      // Create topic document
+      // Validate required fields
+      if (!authorId) {
+        throw new Error(
+          "TOPIC_SERVICE_VALIDATION_ERROR: Author ID is required"
+        );
+      }
+
+      // Create topic document using the model
       const topicDoc = {
-        title: topicData.title.trim(),
-        content: topicData.content.trim(),
-        authorId: topicData.authorId,
-        authorDisplayName:
-          authorData?.displayName || authorData?.username || "Anonymous",
-        authorAvatar: authorData?.avatar || "",
-        category: topicData.category,
-        tags: topicData.tags || [],
-        images: allImages,
-        viewCount: 0,
-        answerCount: 0,
-        isPinned: false,
-        isLocked: false,
-        isDeleted: false,
-        votes: {
-          upvotes: 0,
-          downvotes: 0,
-          score: 0,
-        },
+        ...Topic,
+        title: title.trim(),
+        content: content.trim(),
+        authorId,
+        category,
+        tags,
+        images, // Images already have ISO string timestamps from image service
       };
 
-      // Create topic in Firestore
+      // Create topic in Firestore (timestamps will be added by firebase.queries)
       const topicRef = await this.queries.createTopic(topicDoc);
 
-      // Update user stats
-      if (authorData) {
-        await this.queries.incrementUserStats(
-          topicData.authorId,
-          "topics_created"
-        );
-        await this.queries.updateUserActivity(topicData.authorId);
-      }
+      // Retrieve the created topic with actual server timestamps and ID
+      const createdTopic = await this.queries.getTopicById(topicRef.id);
 
-      // Return created topic with ID
-      return {
-        id: topicRef.id,
-        ...topicDoc,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        lastActivity: new Date(),
-      };
+      return createdTopic;
     } catch (error) {
-      console.error("Error creating topic:", error);
-      throw error;
+      // Enhanced error handling with context
+      if (error.message.startsWith("TOPIC_SERVICE_")) {
+        throw error;
+      }
+      throw new Error(
+        `TOPIC_SERVICE_ERROR: Failed to create topic - ${error.message}`
+      );
     }
   }
 
   async getTopics(options = {}) {
     try {
-      const { limit = 20 } = options;
+      const {
+        limit = 20,
+        category,
+        sortBy = "createdAt",
+        sortOrder = "desc",
+      } = options;
 
-      // Use the abstraction layer to get topics
+      // Validate limit
+      if (limit && (isNaN(limit) || limit < 1 || limit > 100)) {
+        throw new Error(
+          "TOPIC_SERVICE_VALIDATION_ERROR: Limit must be between 1 and 100"
+        );
+      }
+
       const topics = await this.queries.getTopics({
         limit: parseInt(limit),
-        orderBy: "createdAt",
-        orderDirection: "desc",
+        category,
+        orderBy: sortBy,
+        orderDirection: sortOrder,
       });
 
       // Filter out deleted topics
@@ -127,47 +119,68 @@ class TopicService {
         hasMore: topics.length === parseInt(limit),
       };
     } catch (error) {
-      console.error("Error fetching topics:", error);
-      throw error;
+      if (error.message.startsWith("TOPIC_SERVICE_")) {
+        throw error;
+      }
+      throw new Error(
+        `TOPIC_SERVICE_ERROR: Failed to get topics - ${error.message}`
+      );
     }
   }
 
   async getTopicById(topicId, userId = null) {
     try {
+      if (!topicId) {
+        throw new Error("TOPIC_SERVICE_VALIDATION_ERROR: Topic ID is required");
+      }
+
       const topic = await this.queries.getTopicById(topicId);
 
       if (!topic || topic.isDeleted) {
-        return null;
+        throw new Error(
+          "TOPIC_SERVICE_NOT_FOUND_ERROR: Topic not found or has been deleted"
+        );
       }
 
       // Increment view count if user is provided
       if (userId) {
         await this.queries.incrementTopicViews(topicId);
-        // Update view count in returned object
         topic.viewCount = (topic.viewCount || 0) + 1;
-
-        // Get user's vote if logged in
-        topic.userVote = await this.queries.getUserVote(userId, topicId);
       }
 
       return topic;
     } catch (error) {
-      console.error("Error fetching topic:", error);
-      throw error;
-    }
-  }
-
-  async incrementViewCount(topicId) {
-    try {
-      await this.queries.incrementTopicViews(topicId);
-    } catch (error) {
-      console.error("Error incrementing view count:", error);
+      if (error.message.startsWith("TOPIC_SERVICE_")) {
+        throw error;
+      }
+      throw new Error(
+        `TOPIC_SERVICE_ERROR: Failed to get topic - ${error.message}`
+      );
     }
   }
 
   async searchTopics(searchTerm, options = {}) {
     try {
       const { limit = 20, category = null } = options;
+
+      if (!searchTerm || searchTerm.trim().length === 0) {
+        throw new Error(
+          "TOPIC_SERVICE_VALIDATION_ERROR: Search term is required"
+        );
+      }
+
+      if (searchTerm.length < 2) {
+        throw new Error(
+          "TOPIC_SERVICE_VALIDATION_ERROR: Search term must be at least 2 characters"
+        );
+      }
+
+      // Validate limit
+      if (limit && (isNaN(limit) || limit < 1 || limit > 100)) {
+        throw new Error(
+          "TOPIC_SERVICE_VALIDATION_ERROR: Limit must be between 1 and 100"
+        );
+      }
 
       const topics = await this.queries.searchTopics(searchTerm, {
         limit,
@@ -176,17 +189,22 @@ class TopicService {
 
       return topics;
     } catch (error) {
-      console.error("Error searching topics:", error);
-      throw error;
+      if (error.message.startsWith("TOPIC_SERVICE_")) {
+        throw error;
+      }
+      throw new Error(
+        `TOPIC_SERVICE_ERROR: Failed to search topics - ${error.message}`
+      );
     }
   }
 
-  async getForumStats() {
+  async getTopicStats() {
     try {
-      return await this.queries.getForumStats();
+      return await this.queries.getTopicStats();
     } catch (error) {
-      console.error("Error getting forum stats:", error);
-      throw error;
+      throw new Error(
+        `TOPIC_SERVICE_ERROR: Failed to get topic stats - ${error.message}`
+      );
     }
   }
 }

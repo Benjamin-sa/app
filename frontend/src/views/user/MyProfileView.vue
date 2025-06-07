@@ -30,7 +30,6 @@
             </ProfileTabs>
         </div>
 
-        <!-- Original Edit Profile Modal - uncommented for testing -->
         <EditProfileForm :open="showEditModal" :user="userProfile" @close="showEditModal = false"
             @updated="handleProfileSaved" />
     </div>

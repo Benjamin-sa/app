@@ -22,7 +22,7 @@
                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 :disabled="loading">
                 <option value="">Select a category</option>
-                <option v-for="category in AVAILABLE_CATEGORIES" :key="category" :value="category">
+                <option v-for="category in FORUM_CATEGORIES" :key="category" :value="category">
                     {{ getCategoryLabel(category) }}
                 </option>
             </select>
@@ -98,17 +98,6 @@
                     class="relative group aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
                     <img :src="image.preview" :alt="`Preview ${index + 1}`" class="w-full h-full object-cover">
 
-                    <!-- Upload Progress -->
-                    <div v-if="image.uploading"
-                        class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                        <div class="text-white text-center">
-                            <div
-                                class="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2">
-                            </div>
-                            <p class="text-sm">{{ image.progress }}%</p>
-                        </div>
-                    </div>
-
                     <!-- Remove Button -->
                     <button v-if="!image.uploading" type="button" @click="removeImage(index)"
                         class="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20"
@@ -154,7 +143,7 @@ import { useNotificationStore } from '@/stores/notification';
 import { useApi } from '@/composables/useApi';
 import apiService from '@/services/api.service';
 import { getCategoryLabel } from '@/utils/helpers';
-import { AVAILABLE_CATEGORIES } from '@/utils/constants.repository';
+import { FORUM_CATEGORIES } from '@/utils/constants.repository';
 import Button from '@/components/common/Button.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
 import { XMarkIcon, PhotoIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
@@ -221,10 +210,7 @@ const handleFileSelect = async (event) => {
         const imageObj = {
             file,
             preview,
-            uploading: false,
-            progress: 0,
-            error: false,
-            url: null
+            error: false
         };
 
         form.value.images.push(imageObj);
@@ -240,47 +226,6 @@ const removeImage = (index) => {
         URL.revokeObjectURL(image.preview);
     }
     form.value.images.splice(index, 1);
-};
-
-const uploadImages = async () => {
-    const uploadPromises = form.value.images.map(async (image, index) => {
-        if (image.url || image.uploading || image.error) return;
-
-        try {
-            image.uploading = true;
-            image.progress = 0;
-
-            const formData = new FormData();
-            formData.append('images', image.file);
-
-            // Use apiService directly instead of forumService
-            const result = await apiService.post("/forum/upload/images", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-                onUploadProgress: (progressEvent) => {
-                    if (progressEvent.total) {
-                        image.progress = Math.round(
-                            (progressEvent.loaded * 100) / progressEvent.total
-                        );
-                    }
-                },
-            });
-
-            if (result.success) {
-                image.url = result.data.url;
-                image.uploading = false;
-            } else {
-                throw new Error(result.message || 'Upload failed');
-            }
-        } catch (err) {
-            console.error('Image upload error:', err);
-            image.error = true;
-            image.uploading = false;
-        }
-    });
-
-    await Promise.all(uploadPromises);
 };
 
 const resetForm = () => {
@@ -306,26 +251,26 @@ const handleSubmit = async () => {
     if (!isFormValid.value) return;
 
     const result = await execute(async () => {
-        // Upload images first
-        await uploadImages();
+        // Create FormData to handle both text data and files
+        const formData = new FormData();
 
-        // Check if any image uploads failed
-        const failedUploads = form.value.images.filter(img => img.error);
-        if (failedUploads.length > 0) {
-            throw new Error('Some images failed to upload. Please try again or remove them.');
-        }
+        // Add text fields
+        formData.append('title', form.value.title.trim());
+        formData.append('category', form.value.category);
+        formData.append('content', form.value.content.trim());
+        formData.append('tags', JSON.stringify(form.value.tags));
 
-        // Get only the URLs from successfully uploaded images
-        const imageUrls = form.value.images
-            .filter(img => img.url && !img.error)
-            .map(img => img.url);
+        // Add image files
+        form.value.images.forEach((image, index) => {
+            if (image.file) {
+                formData.append('images', image.file);
+            }
+        });
 
-        return await apiService.post('/forum/topics', {
-            title: form.value.title.trim(),
-            category: form.value.category,
-            content: form.value.content.trim(),
-            tags: form.value.tags,
-            images: imageUrls
+        return await apiService.post('/forum/topics', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
         });
     }, {
         successMessage: 'Your topic has been posted successfully.',

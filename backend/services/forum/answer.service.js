@@ -1,6 +1,6 @@
 /**
  * Answer Service for Forum
- * Handles all answer-related operations
+ * Handles basic answer CRUD operations with Firebase
  */
 
 const firebaseQueries = require("../../queries/firebase.queries");
@@ -9,66 +9,76 @@ const {
   validators,
   Answer,
 } = require("../../models/forum.models");
-const UserService = require("./user.service");
-const imageService = require("../image.service");
 
 class AnswerService {
   constructor() {
     this.queries = firebaseQueries;
   }
 
-  async createAnswer(answerData, images = []) {
+  async createAnswer(answerData) {
     try {
-      const { topicId, content, authorId, parentAnswerId = null } = answerData;
+      const {
+        topicId,
+        content,
+        authorId,
+        parentAnswerId = null,
+        images = [],
+      } = answerData;
 
+      // Validate required fields
+      if (!topicId || !authorId || !content) {
+        throw new Error(
+          "ANSWER_SERVICE_VALIDATION_ERROR: Topic ID, author ID, and content are required"
+        );
+      }
+
+      // Validate content
       if (!validators.isValidContent(content)) {
-        throw new Error("Content must be between 10 and 10000 characters");
+        throw new Error(
+          "ANSWER_SERVICE_VALIDATION_ERROR: Content must be between 10 and 10000 characters"
+        );
       }
 
-      // Check if topic exists and is not locked
-      const topic = await this.queries.getTopicById(topicId);
-      if (!topic) {
-        throw new Error("Topic not found");
+      // Validate images
+      if (!Array.isArray(images)) {
+        throw new Error(
+          "ANSWER_SERVICE_VALIDATION_ERROR: Images must be an array"
+        );
       }
 
-      if (topic.isLocked) {
-        throw new Error("Topic is locked");
+      if (images.length > 5) {
+        throw new Error(
+          "ANSWER_SERVICE_VALIDATION_ERROR: Maximum 5 images allowed"
+        );
       }
 
-      const author = await UserService.getUserProfile(authorId);
-      if (!author) {
-        throw new Error("Author not found");
-      }
-
-      let imageRecords = [];
-      if (images && images.length > 0) {
-        imageRecords = await imageService.uploadImages(images, "forum/answers");
+      // Validate parentAnswerId if provided
+      if (parentAnswerId && typeof parentAnswerId !== "string") {
+        throw new Error(
+          "ANSWER_SERVICE_VALIDATION_ERROR: Parent answer ID must be a string"
+        );
       }
 
       const answer = {
         ...Answer,
         topicId,
-        content,
+        content: content.trim(),
         authorId,
-        authorDisplayName: author.displayName,
-        authorAvatar: author.avatar,
-        images: imageRecords,
+        images,
         parentAnswerId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
       const docRef = await this.queries.createAnswer(answer);
-
-      // Update topic stats
-      await this.queries.updateTopicAnswerCount(topicId, 1);
-
-      // Update user stats
-      await UserService.incrementUserStats(authorId, "answers_posted");
-
       return { id: docRef.id, ...answer };
     } catch (error) {
-      throw new Error(`Failed to create answer: ${error.message}`);
+      if (error.message.startsWith("ANSWER_SERVICE_")) {
+        throw error;
+      }
+      throw new Error(
+        `ANSWER_SERVICE_ERROR: Failed to create answer - ${error.message}`
+      );
     }
   }
 
@@ -76,18 +86,40 @@ class AnswerService {
     try {
       const { limit = 20 } = options;
 
+      if (!topicId) {
+        throw new Error(
+          "ANSWER_SERVICE_VALIDATION_ERROR: Topic ID is required"
+        );
+      }
+
+      if (typeof limit !== "number" || limit < 1 || limit > 100) {
+        throw new Error(
+          "ANSWER_SERVICE_VALIDATION_ERROR: Limit must be between 1 and 100"
+        );
+      }
+
       const answers = await this.queries.getAnswersByTopic(topicId, { limit });
 
-      // Filter out deleted answers client-side
-      const filteredAnswers = answers.filter((answer) => !answer.isDeleted);
-
       return {
-        answers: filteredAnswers,
-        lastDoc: null, // Simplified pagination
+        answers: Array.isArray(answers) ? answers : [answers],
+        lastDoc: null,
         hasMore: false,
       };
     } catch (error) {
-      throw new Error(`Failed to get answers: ${error.message}`);
+      if (error.message.startsWith("ANSWER_SERVICE_")) {
+        throw error;
+      }
+      throw new Error(
+        `ANSWER_SERVICE_ERROR: Failed to get answers - ${error.message}`
+      );
+    }
+  }
+
+  async getAnswerStats() {
+    try {
+      return await this.queries.getAnswerStats();
+    } catch (error) {
+      throw new Error(`Failed to get answer stats: ${error.message}`);
     }
   }
 }

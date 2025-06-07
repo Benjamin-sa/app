@@ -17,6 +17,18 @@ class FirebaseQueries {
     this.FieldValue = admin.firestore.FieldValue;
   }
 
+  /**
+   * Centralized error handling wrapper
+   * Catches Firebase errors and throws them up to the calling service
+   */
+  async executeQuery(queryFunction, errorContext = "Firebase operation") {
+    try {
+      return await queryFunction();
+    } catch (error) {
+      throw new Error(`${errorContext}: ${error.message}`);
+    }
+  }
+
   // =====================
   // USER OPERATIONS
   // =====================
@@ -25,82 +37,87 @@ class FirebaseQueries {
    * Create a new user profile
    */
   async createUser(uid, userData) {
-    return await this.db
-      .collection(COLLECTIONS.USERS)
-      .doc(uid)
-      .set(userData, { merge: true });
+    return await this.executeQuery(
+      () =>
+        this.db
+          .collection(COLLECTIONS.USERS)
+          .doc(uid)
+          .set(userData, { merge: true }),
+      "Failed to create user"
+    );
   }
 
   /**
    * Get user profile by UID
    */
   async getUserById(uid) {
-    const doc = await this.db.collection(COLLECTIONS.USERS).doc(uid).get();
-    return doc.exists ? { id: doc.id, ...doc.data() } : null;
+    return await this.executeQuery(async () => {
+      const doc = await this.db.collection(COLLECTIONS.USERS).doc(uid).get();
+      return doc.exists ? { id: doc.id, ...doc.data() } : null;
+    }, "Failed to get user by ID");
   }
 
   /**
    * Get user by username
    */
   async getUserByUsername(username) {
-    const snapshot = await this.db
-      .collection(COLLECTIONS.USERS)
-      .where("username", "==", username)
-      .limit(1)
-      .get();
+    return await this.executeQuery(async () => {
+      const snapshot = await this.db
+        .collection(COLLECTIONS.USERS)
+        .where("username", "==", username)
+        .limit(1)
+        .get();
 
-    return snapshot.empty
-      ? null
-      : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+      return snapshot.empty
+        ? null
+        : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+    }, "Failed to get user by username");
   }
 
   /**
    * Update user profile
    */
   async updateUser(uid, updateData) {
-    return await this.db
-      .collection(COLLECTIONS.USERS)
-      .doc(uid)
-      .update({
-        ...updateData,
-        updatedAt: this.FieldValue.serverTimestamp(),
-      });
+    return await this.executeQuery(
+      () =>
+        this.db
+          .collection(COLLECTIONS.USERS)
+          .doc(uid)
+          .update({
+            ...updateData,
+            updatedAt: this.FieldValue.serverTimestamp(),
+          }),
+      "Failed to update user"
+    );
   }
 
   /**
    * Update user activity timestamp
    */
   async updateUserActivity(uid) {
-    return await this.db.collection(COLLECTIONS.USERS).doc(uid).update({
-      lastActive: this.FieldValue.serverTimestamp(),
-    });
+    return await this.executeQuery(
+      () =>
+        this.db.collection(COLLECTIONS.USERS).doc(uid).update({
+          lastActive: this.FieldValue.serverTimestamp(),
+        }),
+      "Failed to update user activity"
+    );
   }
 
   /**
    * Increment user statistics
    */
   async incrementUserStats(uid, field) {
-    return await this.db
-      .collection(COLLECTIONS.USERS)
-      .doc(uid)
-      .update({
-        [field]: this.FieldValue.increment(1),
-      });
-  }
-
-  /**
-   * Get all users (for admin purposes)
-   */
-  async getAllUsers(limit = 50) {
-    const snapshot = await this.db
-      .collection(COLLECTIONS.USERS)
-      .limit(limit)
-      .get();
-
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    return await this.executeQuery(
+      () =>
+        this.db
+          .collection(COLLECTIONS.USERS)
+          .doc(uid)
+          .update({
+            [field]: this.FieldValue.increment(1),
+          }),
+      "Failed to increment user stats"
+    );
   }
 
   // =====================
@@ -111,37 +128,45 @@ class FirebaseQueries {
    * Create a new topic
    */
   async createTopic(topicData) {
-    return await this.db.collection(COLLECTIONS.TOPICS).add({
-      ...topicData,
-      createdAt: this.FieldValue.serverTimestamp(),
-      updatedAt: this.FieldValue.serverTimestamp(),
-      lastActivity: this.FieldValue.serverTimestamp(),
-    });
+    return await this.executeQuery(async () => {
+      // Get a document reference with auto-generated ID
+      const docRef = this.db.collection(COLLECTIONS.TOPICS).doc();
+
+      // Ensure no server timestamps in nested objects/arrays
+      const cleanTopicData = {
+        ...topicData,
+        id: docRef.id, // Include the auto-generated ID in the document data
+        // Server timestamps should only be at the root level
+        createdAt: this.FieldValue.serverTimestamp(),
+        updatedAt: this.FieldValue.serverTimestamp(),
+        lastActivity: this.FieldValue.serverTimestamp(),
+      };
+
+      await docRef.set(cleanTopicData);
+      return docRef; // Return the document reference, not the WriteResult
+    }, "FIREBASE_QUERIES_ERROR: Failed to create topic in Firestore");
   }
 
   /**
    * Get topic by ID
    */
   async getTopicById(topicId) {
-    // Validate topicId to prevent Firebase "invalid resource path" errors
-    if (!topicId || typeof topicId !== "string" || topicId.trim() === "") {
-      throw new Error("Invalid topic ID: must be a non-empty string");
-    }
+    return await this.executeQuery(async () => {
+      const doc = await this.db
+        .collection(COLLECTIONS.TOPICS)
+        .doc(topicId.trim())
+        .get();
+      if (!doc.exists) return null;
 
-    const doc = await this.db
-      .collection(COLLECTIONS.TOPICS)
-      .doc(topicId.trim())
-      .get();
-    if (!doc.exists) return null;
-
-    const data = doc.data();
-    return {
-      id: doc.id,
-      ...data,
-      createdAt: data.createdAt?.toDate(),
-      updatedAt: data.updatedAt?.toDate(),
-      lastActivity: data.lastActivity?.toDate(),
-    };
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate(),
+        updatedAt: data.updatedAt?.toDate(),
+        lastActivity: data.lastActivity?.toDate(),
+      };
+    }, "Failed to get topic by ID");
   }
 
   /**
@@ -183,39 +208,34 @@ class FirebaseQueries {
    * Update topic
    */
   async updateTopic(topicId, updateData) {
-    return await this.db
-      .collection(COLLECTIONS.TOPICS)
-      .doc(topicId)
-      .update({
-        ...updateData,
-        updatedAt: this.FieldValue.serverTimestamp(),
-      });
+    return await this.executeQuery(
+      () =>
+        this.db
+          .collection(COLLECTIONS.TOPICS)
+          .doc(topicId)
+          .update({
+            ...updateData,
+            updatedAt: this.FieldValue.serverTimestamp(),
+          }),
+      "Failed to update topic"
+    );
   }
 
   /**
    * Increment topic view count
    */
   async incrementTopicViews(topicId) {
-    return await this.db
-      .collection(COLLECTIONS.TOPICS)
-      .doc(topicId)
-      .update({
-        viewCount: this.FieldValue.increment(1),
-        lastActivity: this.FieldValue.serverTimestamp(),
-      });
-  }
-
-  /**
-   * Update topic answer count
-   */
-  async updateTopicAnswerCount(topicId, increment = 1) {
-    return await this.db
-      .collection(COLLECTIONS.TOPICS)
-      .doc(topicId)
-      .update({
-        answerCount: this.FieldValue.increment(increment),
-        lastActivity: this.FieldValue.serverTimestamp(),
-      });
+    return await this.executeQuery(
+      () =>
+        this.db
+          .collection(COLLECTIONS.TOPICS)
+          .doc(topicId)
+          .update({
+            viewCount: this.FieldValue.increment(1),
+            lastActivity: this.FieldValue.serverTimestamp(),
+          }),
+      "Failed to increment topic views"
+    );
   }
 
   /**
@@ -260,35 +280,6 @@ class FirebaseQueries {
       .slice(0, parseInt(limit));
   }
 
-  /**
-   * Get forum statistics
-   */
-  async getForumStats() {
-    const [topicsSnapshot, usersSnapshot] = await Promise.all([
-      this.db
-        .collection(COLLECTIONS.TOPICS)
-        .where("isDeleted", "==", false)
-        .get(),
-      this.db.collection(COLLECTIONS.USERS).get(),
-    ]);
-
-    const totalViews = topicsSnapshot.docs.reduce((sum, doc) => {
-      return sum + (doc.data().viewCount || 0);
-    }, 0);
-
-    const totalAnswers = topicsSnapshot.docs.reduce((sum, doc) => {
-      return sum + (doc.data().answerCount || 0);
-    }, 0);
-
-    return {
-      totalUsers: usersSnapshot.size,
-      totalTopics: topicsSnapshot.size,
-      totalAnswers,
-      totalViews,
-      lastUpdated: new Date(),
-    };
-  }
-
   // =====================
   // ANSWER OPERATIONS
   // =====================
@@ -297,11 +288,20 @@ class FirebaseQueries {
    * Create a new answer
    */
   async createAnswer(answerData) {
-    return await this.db.collection(COLLECTIONS.ANSWERS).add({
-      ...answerData,
-      createdAt: this.FieldValue.serverTimestamp(),
-      updatedAt: this.FieldValue.serverTimestamp(),
-    });
+    return await this.executeQuery(async () => {
+      // Get a document reference with auto-generated ID
+      const docRef = this.db.collection(COLLECTIONS.ANSWERS).doc();
+
+      const cleanAnswerData = {
+        ...answerData,
+        id: docRef.id, // Include the auto-generated ID in the document data
+        createdAt: this.FieldValue.serverTimestamp(),
+        updatedAt: this.FieldValue.serverTimestamp(),
+      };
+
+      await docRef.set(cleanAnswerData);
+      return docRef; // Return the document reference, not the WriteResult
+    }, "Failed to create answer");
   }
 
   /**
@@ -339,16 +339,13 @@ class FirebaseQueries {
    * Get answer by ID
    */
   async getAnswerById(answerId) {
-    // Validate answerId to prevent Firebase "invalid resource path" errors
-    if (!answerId || typeof answerId !== "string" || answerId.trim() === "") {
-      throw new Error("Invalid answer ID: must be a non-empty string");
-    }
-
-    const doc = await this.db
-      .collection(COLLECTIONS.ANSWERS)
-      .doc(answerId.trim())
-      .get();
-    return doc.exists ? { id: doc.id, ...doc.data() } : null;
+    return await this.executeQuery(async () => {
+      const doc = await this.db
+        .collection(COLLECTIONS.ANSWERS)
+        .doc(answerId.trim())
+        .get();
+      return doc.exists ? { id: doc.id, ...doc.data() } : null;
+    }, "Failed to get answer by ID");
   }
 
   // =====================
@@ -359,83 +356,49 @@ class FirebaseQueries {
    * Create or update a vote
    */
   async upsertVote(voteData) {
-    // Validate critical fields to prevent Firebase "invalid resource path" errors
-    if (
-      !voteData.userId ||
-      typeof voteData.userId !== "string" ||
-      voteData.userId.trim() === ""
-    ) {
-      throw new Error("Invalid user ID: must be a non-empty string");
-    }
-    if (
-      !voteData.targetId ||
-      typeof voteData.targetId !== "string" ||
-      voteData.targetId.trim() === ""
-    ) {
-      throw new Error("Invalid target ID: must be a non-empty string");
-    }
-
-    const voteId = `${voteData.userId.trim()}_${voteData.targetId.trim()}`;
-    return await this.db
-      .collection(COLLECTIONS.VOTES)
-      .doc(voteId)
-      .set(
-        {
-          ...voteData,
-          userId: voteData.userId.trim(),
-          targetId: voteData.targetId.trim(),
-          createdAt: this.FieldValue.serverTimestamp(),
-          updatedAt: this.FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
+    return await this.executeQuery(async () => {
+      const voteId = `${voteData.userId.trim()}_${voteData.targetId.trim()}`;
+      return await this.db
+        .collection(COLLECTIONS.VOTES)
+        .doc(voteId)
+        .set(
+          {
+            ...voteData,
+            userId: voteData.userId.trim(),
+            targetId: voteData.targetId.trim(),
+            createdAt: this.FieldValue.serverTimestamp(),
+            updatedAt: this.FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+    }, "Failed to upsert vote");
   }
 
   /**
    * Get user vote for a target
    */
   async getUserVote(userId, targetId) {
-    // Validate parameters to prevent Firebase "invalid resource path" errors
-    if (!userId || typeof userId !== "string" || userId.trim() === "") {
-      throw new Error("Invalid user ID: must be a non-empty string");
-    }
-    if (!targetId || typeof targetId !== "string" || targetId.trim() === "") {
-      throw new Error("Invalid target ID: must be a non-empty string");
-    }
-
-    const voteId = `${userId.trim()}_${targetId.trim()}`;
-    const doc = await this.db.collection(COLLECTIONS.VOTES).doc(voteId).get();
-    return doc.exists ? { id: doc.id, ...doc.data() } : null;
+    return await this.executeQuery(async () => {
+      const voteId = `${userId.trim()}_${targetId.trim()}`;
+      const doc = await this.db.collection(COLLECTIONS.VOTES).doc(voteId).get();
+      return doc.exists ? { id: doc.id, ...doc.data() } : null;
+    }, "Failed to get user vote");
   }
 
   /**
    * Delete a vote
    */
   async deleteVote(userId, targetId) {
-    // Validate parameters to prevent Firebase "invalid resource path" errors
-    if (!userId || typeof userId !== "string" || userId.trim() === "") {
-      throw new Error("Invalid user ID: must be a non-empty string");
-    }
-    if (!targetId || typeof targetId !== "string" || targetId.trim() === "") {
-      throw new Error("Invalid target ID: must be a non-empty string");
-    }
-
-    const voteId = `${userId.trim()}_${targetId.trim()}`;
-    return await this.db.collection(COLLECTIONS.VOTES).doc(voteId).delete();
+    return await this.executeQuery(async () => {
+      const voteId = `${userId.trim()}_${targetId.trim()}`;
+      return await this.db.collection(COLLECTIONS.VOTES).doc(voteId).delete();
+    }, "Failed to delete vote");
   }
 
   /**
    * Update target vote counts
    */
   async updateVoteCounts(targetId, targetType, voteChanges) {
-    // Validate parameters to prevent Firebase "invalid resource path" errors
-    if (!targetId || typeof targetId !== "string" || targetId.trim() === "") {
-      throw new Error("Invalid target ID: must be a non-empty string");
-    }
-    if (!["topic", "answer"].includes(targetType)) {
-      throw new Error('Invalid target type: must be "topic" or "answer"');
-    }
-
     const collection =
       targetType === "topic" ? COLLECTIONS.TOPICS : COLLECTIONS.ANSWERS;
 
@@ -449,6 +412,23 @@ class FirebaseQueries {
         ),
         "votes.score": this.FieldValue.increment(voteChanges.score || 0),
       });
+  }
+
+  /**
+   * Get all votes for a specific target
+   */
+  async getVotesByTarget(targetId, targetType) {
+    return await this.executeQuery(async () => {
+      const snapshot = await this.db
+        .collection(COLLECTIONS.VOTES)
+        .where("targetId", "==", targetId.trim())
+        .get();
+
+      return snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+    }, "Failed to get votes by target");
   }
 
   // =====================
@@ -558,36 +538,6 @@ class FirebaseQueries {
     return await file.delete();
   }
 
-  /**
-   * Get file download URL
-   */
-  async getFileUrl(storagePath) {
-    const file = this.bucket.file(storagePath);
-    const [url] = await file.getSignedUrl({
-      action: "read",
-      expires: "03-01-2500",
-    });
-    return url;
-  }
-
-  // =====================
-  // BATCH OPERATIONS
-  // =====================
-
-  /**
-   * Create a batch for multiple operations
-   */
-  createBatch() {
-    return this.db.batch();
-  }
-
-  /**
-   * Execute a batch
-   */
-  async executeBatch(batch) {
-    return await batch.commit();
-  }
-
   // =====================
   // TRANSACTION OPERATIONS
   // =====================
@@ -600,99 +550,6 @@ class FirebaseQueries {
   }
 
   // =====================
-  // ADMIN/AUTH OPERATIONS
-  // =====================
-
-  /**
-   * Verify Firebase ID token
-   */
-  async verifyIdToken(token) {
-    return await this.auth.verifyIdToken(token);
-  }
-
-  /**
-   * Create Firebase user
-   */
-  async createAuthUser(userData) {
-    return await this.auth.createUser(userData);
-  }
-
-  /**
-   * Update Firebase user
-   */
-  async updateAuthUser(uid, userData) {
-    return await this.auth.updateUser(uid, userData);
-  }
-
-  /**
-   * Delete Firebase user
-   */
-  async deleteAuthUser(uid) {
-    return await this.auth.deleteUser(uid);
-  }
-
-  // =====================
-  // INITIALIZATION METHODS
-  // =====================
-
-  /**
-   * Initialize forum categories using batch operation
-   */
-  async initializeCategories(categories) {
-    const batch = this.db.batch();
-
-    for (const category of categories) {
-      const categoryRef = this.db
-        .collection(COLLECTIONS.CATEGORIES)
-        .doc(category.id);
-      batch.set(categoryRef, category, { merge: true });
-    }
-
-    await batch.commit();
-    return true;
-  }
-
-  /**
-   * Initialize forum statistics
-   */
-  async initializeStats(statsData = {}) {
-    const defaultStats = {
-      totalUsers: 0,
-      totalTopics: 0,
-      totalAnswers: 0,
-      totalViews: 0,
-      lastUpdated: this.FieldValue.serverTimestamp(),
-      ...statsData,
-    };
-
-    await this.db
-      .collection(COLLECTIONS.STATS)
-      .doc("global")
-      .set(defaultStats, { merge: true });
-
-    return true;
-  }
-
-  /**
-   * Create admin user for initialization
-   */
-  async createAdminUser(adminData) {
-    await this.db
-      .collection(COLLECTIONS.USERS)
-      .doc(adminData.uid)
-      .set(
-        {
-          ...adminData,
-          joinedDate: this.FieldValue.serverTimestamp(),
-          lastActive: this.FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
-
-    return true;
-  }
-
-  // =====================
   // UTILITY METHODS
   // =====================
 
@@ -701,27 +558,6 @@ class FirebaseQueries {
    */
   getServerTimestamp() {
     return this.FieldValue.serverTimestamp();
-  }
-
-  /**
-   * Get increment value
-   */
-  getIncrement(value = 1) {
-    return this.FieldValue.increment(value);
-  }
-
-  /**
-   * Get array union
-   */
-  getArrayUnion(...elements) {
-    return this.FieldValue.arrayUnion(...elements);
-  }
-
-  /**
-   * Get array remove
-   */
-  getArrayRemove(...elements) {
-    return this.FieldValue.arrayRemove(...elements);
   }
 }
 

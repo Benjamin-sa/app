@@ -5,44 +5,30 @@ const { authController } = require("../controllers");
 
 const router = express.Router();
 
-// Configure multer for memory storage
+// Configure multer for file uploads
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed"), false);
+    }
+  },
 });
-
-// Register new user
-router.post("/register", authController.register.bind(authController));
-
-// Login (Firebase handles authentication client-side, this is for server-side validation)
-// Login (Firebase handles authentication client-side, this is for server-side validation)
-router.post("/login", authController.login.bind(authController));
 
 // Get current user info (protected route)
 router.get("/me", authenticate, authController.getMe.bind(authController));
 
-// Update user profile
+// Update user profile - NOW WITH FILE UPLOAD SUPPORT
 router.put(
   "/profile",
   authenticate,
+  upload.single("avatar"), // Add multer middleware for avatar upload
   authController.updateProfile.bind(authController)
-);
-
-// Upload avatar endpoint
-router.post(
-  "/avatar",
-  authenticate,
-  upload.single("avatar"),
-  authController.uploadAvatar.bind(authController)
-);
-
-// Verify email
-router.post(
-  "/verify-email",
-  authenticate,
-  authController.verifyEmail.bind(authController)
 );
 
 // Sync user (create or update user profile from any auth method)

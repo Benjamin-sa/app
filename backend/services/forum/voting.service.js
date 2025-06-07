@@ -13,13 +13,26 @@ class VotingService {
 
   async vote(userId, targetId, targetType, voteType) {
     try {
+      // Validate required parameters
+      if (!userId) {
+        throw new Error("VOTING_SERVICE_VALIDATION_ERROR: User ID is required");
+      }
+
+      if (!targetId) {
+        throw new Error(
+          "VOTING_SERVICE_VALIDATION_ERROR: Target ID is required"
+        );
+      }
+
       // Handle null voteType for vote removal
       if (voteType && !["up", "down"].includes(voteType)) {
-        throw new Error("Invalid vote type. Must be 'up', 'down', or null");
+        throw new Error(
+          "VOTING_SERVICE_VALIDATION_ERROR: Invalid vote type. Must be 'up', 'down', or null"
+        );
       }
 
       if (!["topic", "answer"].includes(targetType)) {
-        throw new Error("Invalid target type");
+        throw new Error("VOTING_SERVICE_VALIDATION_ERROR: Invalid target type");
       }
 
       // Use transaction to ensure data consistency
@@ -32,7 +45,9 @@ class VotingService {
             : await this.queries.getAnswerById(targetId);
 
         if (!target) {
-          throw new Error(`${targetType} not found`);
+          throw new Error(
+            `VOTING_SERVICE_NOT_FOUND_ERROR: ${targetType} not found`
+          );
         }
 
         const currentVotes = target.votes || {
@@ -122,16 +137,110 @@ class VotingService {
         };
       });
     } catch (error) {
-      throw new Error(`Failed to vote: ${error.message}`);
+      if (error.message.startsWith("VOTING_SERVICE_")) {
+        throw error;
+      }
+      throw new Error(
+        `VOTING_SERVICE_ERROR: Failed to vote - ${error.message}`
+      );
     }
   }
 
   async getUserVote(userId, targetId) {
     try {
+      if (!userId) {
+        throw new Error("VOTING_SERVICE_VALIDATION_ERROR: User ID is required");
+      }
+
+      if (!targetId) {
+        throw new Error(
+          "VOTING_SERVICE_VALIDATION_ERROR: Target ID is required"
+        );
+      }
+
       const vote = await this.queries.getUserVote(userId, targetId);
       return vote ? vote.voteType : null;
     } catch (error) {
-      throw new Error(`Failed to get user vote: ${error.message}`);
+      if (error.message.startsWith("VOTING_SERVICE_")) {
+        throw error;
+      }
+      throw new Error(
+        `VOTING_SERVICE_ERROR: Failed to get user vote - ${error.message}`
+      );
+    }
+  }
+
+  async getTopicVotes(topicId) {
+    try {
+      if (!topicId) {
+        throw new Error(
+          "VOTING_SERVICE_VALIDATION_ERROR: Topic ID is required"
+        );
+      }
+
+      const votes = await this.queries.getVotesByTarget(topicId, "topic");
+
+      const voteCounts = {
+        upvotes: 0,
+        downvotes: 0,
+        score: 0,
+      };
+
+      votes.forEach((vote) => {
+        if (vote.voteType === "up") {
+          voteCounts.upvotes++;
+        } else if (vote.voteType === "down") {
+          voteCounts.downvotes++;
+        }
+      });
+
+      voteCounts.score = voteCounts.upvotes - voteCounts.downvotes;
+
+      return voteCounts;
+    } catch (error) {
+      if (error.message.startsWith("VOTING_SERVICE_")) {
+        throw error;
+      }
+      throw new Error(
+        `VOTING_SERVICE_ERROR: Failed to get topic votes - ${error.message}`
+      );
+    }
+  }
+
+  async getAnswerVotes(answerId) {
+    try {
+      if (!answerId) {
+        throw new Error(
+          "VOTING_SERVICE_VALIDATION_ERROR: Answer ID is required"
+        );
+      }
+
+      const votes = await this.queries.getVotesByTarget(answerId, "answer");
+
+      const voteCounts = {
+        upvotes: 0,
+        downvotes: 0,
+        score: 0,
+      };
+
+      votes.forEach((vote) => {
+        if (vote.voteType === "up") {
+          voteCounts.upvotes++;
+        } else if (vote.voteType === "down") {
+          voteCounts.downvotes++;
+        }
+      });
+
+      voteCounts.score = voteCounts.upvotes - voteCounts.downvotes;
+
+      return voteCounts;
+    } catch (error) {
+      if (error.message.startsWith("VOTING_SERVICE_")) {
+        throw error;
+      }
+      throw new Error(
+        `VOTING_SERVICE_ERROR: Failed to get answer votes - ${error.message}`
+      );
     }
   }
 }

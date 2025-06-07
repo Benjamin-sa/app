@@ -50,6 +50,17 @@
                             </p>
                         </div>
 
+                        <!-- Display Name -->
+                        <div>
+                            <label for="displayName"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Display Name
+                            </label>
+                            <input id="displayName" v-model="form.displayName" type="text"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:focus:border-primary-400"
+                                placeholder="Your display name" />
+                        </div>
+
                         <!-- Bio -->
                         <div>
                             <label for="bio" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -121,7 +132,7 @@
                             <Button type="button" variant="secondary" @click="$emit('close')" :disabled="loading">
                                 Cancel
                             </Button>
-                            <Button type="submit" :loading="loading" :disabled="!isFormValid">
+                            <Button type="submit" :loading="loading" :disabled="!isFormValid || loading">
                                 Save Changes
                             </Button>
                         </div>
@@ -136,7 +147,7 @@
 import { ref, computed, watch } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notification';
-import { useApi } from '@/composables/useApi'; // Add this
+import { useApi } from '@/composables/useApi';
 import { validateUsername } from '@/utils/helpers';
 import Button from '@/components/common/Button.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
@@ -163,6 +174,7 @@ const { loading, error, execute } = useApi();
 
 const form = ref({
     username: '',
+    displayName: '',
     bio: '',
     location: '',
     website: '',
@@ -171,13 +183,12 @@ const form = ref({
     allow_messages: true
 });
 
-// Remove manual loading/error refs - now handled by useApi
 const errors = ref({});
 const selectedFile = ref(null);
 const previewUrl = ref('');
 
 const isFormValid = computed(() => {
-    return form.value.username.length >= 3 && !errors.value.username;
+    return form.value.username && form.value.username.length >= 3 && !errors.value.username;
 });
 
 // Initialize form with user data
@@ -185,15 +196,18 @@ watch(() => props.user, (user) => {
     if (user) {
         form.value = {
             username: user.username || '',
+            displayName: user.displayName || user.username || '',
             bio: user.bio || '',
             location: user.location || '',
             website: user.website || '',
-            avatar_url: user.avatar || user.avatar_url || '',
+            avatar_url: user.avatar || user.avatarThumbnail || '',
             show_email: user.show_email || false,
             allow_messages: user.allow_messages !== false
         };
+        previewUrl.value = '';
+        selectedFile.value = null;
     }
-}, { immediate: true });
+}, { immediate: true, deep: true });
 
 // Validate username on change
 watch(() => form.value.username, (username) => {
@@ -231,51 +245,44 @@ const handleFileSelect = (event) => {
     reader.readAsDataURL(file);
 };
 
-const uploadAvatar = async () => {
-    if (!selectedFile.value) return form.value.avatar_url;
-
-    // Much cleaner with useApi
-    return await execute(
-        () => authStore.uploadAvatar(selectedFile.value),
-        {
-            throwOnError: true,
-            showNotification: true,
-            notificationStore
-        }
-    );
-};
-
 const handleSubmit = async () => {
-    if (!isFormValid.value) return;
 
-    const result = await execute(async () => {
-        // Upload avatar if selected
-        let avatarUrl = form.value.avatar_url;
-        if (selectedFile.value) {
-            const uploadResult = await uploadAvatar();
-            avatarUrl = uploadResult?.avatar_url || uploadResult;
+    if (!isFormValid.value || loading.value) {
+        console.log('Form validation failed or loading');
+        return;
+    }
+
+    const profileDataPayload = {
+        username: form.value.username,
+        displayName: form.value.displayName || form.value.username,
+        bio: form.value.bio,
+        location: form.value.location,
+        website: form.value.website,
+        // Remove avatar from here since it will be sent as a file
+        show_email: form.value.show_email,
+        allow_messages: form.value.allow_messages
+    };
+
+    try {
+        const result = await execute(
+            () => authStore.updateProfile(profileDataPayload, selectedFile.value),
+            {
+                showNotification: true,
+                notificationStore,
+            }
+        );
+
+        if (result && result.success) {
+            notificationStore.success('Profile updated', 'Your profile has been updated successfully!');
+            emit('updated', result.data);
+            emit('close');
+        } else if (result && !result.success) {
+            if (result.errors) {
+                errors.value = result.errors;
+            }
         }
-
-        // Update profile
-        return await authStore.updateProfile({
-            username: form.value.username,
-            displayName: form.value.username,
-            bio: form.value.bio,
-            location: form.value.location,
-            website: form.value.website,
-            avatar: avatarUrl,
-            show_email: form.value.show_email,
-            allow_messages: form.value.allow_messages
-        });
-    }, {
-        showNotification: true,
-        notificationStore
-    });
-
-    if (result) {
-        notificationStore.success('Profile updated', 'Your profile has been updated successfully!');
-        emit('updated', result);
-        emit('close');
+    } catch (err) {
+        console.error('Submit error:', err);
     }
 };
 </script>

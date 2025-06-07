@@ -35,24 +35,16 @@ const Topic = {
   title: "",
   content: "", // Markdown supported content
   authorId: "", // Reference to user UID
-  authorDisplayName: "", // Cached for performance
-  authorAvatar: "", // Cached for performance
   category: "", // Topic category (general, technical, etc.)
   tags: [], // Array of strings for topic tags
   images: [], // Array of image objects
   createdAt: "", // Firestore timestamp
   updatedAt: "", // Firestore timestamp
-  viewCount: 0,
-  answerCount: 0,
+  viewCount: 0, // Keep this as it's not efficiently calculable from votes
   lastActivity: "", // Firestore timestamp
   isPinned: false,
   isLocked: false,
   isDeleted: false,
-  votes: {
-    upvotes: 0,
-    downvotes: 0,
-    score: 0, // upvotes - downvotes
-  },
 };
 
 // Answer Model
@@ -61,19 +53,12 @@ const Answer = {
   topicId: "", // Reference to parent topic
   content: "", // Markdown supported content
   authorId: "", // Reference to user UID
-  authorDisplayName: "", // Cached for performance
-  authorAvatar: "", // Cached for performance
   images: [], // Array of image objects
   createdAt: "", // Firestore timestamp
   updatedAt: "", // Firestore timestamp
   isAccepted: false, // For marking best answer
   isDeleted: false,
-  votes: {
-    upvotes: 0,
-    downvotes: 0,
-    score: 0, // upvotes - downvotes
-  },
-  parentAnswerId: null, // For nested replies (optional)
+  parentAnswerId: null,
 };
 
 // Image Model (for both topics and answers)
@@ -95,7 +80,7 @@ const Vote = {
   userId: "",
   targetId: "", // Topic ID or Answer ID
   targetType: "", // 'topic' or 'answer'
-  voteType: "", // 'upvote' or 'downvote'
+  voteType: "", // 'up' or 'down'
   createdAt: "",
 };
 
@@ -106,7 +91,6 @@ const Category = {
   description: "",
   color: "", // Hex color for UI
   icon: "", // Icon name/class
-  topicCount: 0,
   isActive: true,
   sortOrder: 0,
 };

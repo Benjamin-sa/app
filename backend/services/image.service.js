@@ -84,7 +84,9 @@ class ImageService {
         },
       };
     } catch (error) {
-      throw new Error(`Image processing failed: ${error.message}`);
+      throw new Error(
+        `IMAGE_SERVICE_PROCESSING_ERROR: Image processing failed - ${error.message}`
+      );
     }
   }
 
@@ -119,7 +121,9 @@ class ImageService {
         storagePath,
       };
     } catch (error) {
-      throw new Error(`Upload failed: ${error.message}`);
+      throw new Error(
+        `IMAGE_SERVICE_UPLOAD_ERROR: Upload failed - ${error.message}`
+      );
     }
   }
 
@@ -131,7 +135,9 @@ class ImageService {
       // Validate image
       const validation = this._validateImage(file);
       if (!validation.isValid) {
-        throw new Error(validation.errors.join(", "));
+        throw new Error(
+          `IMAGE_SERVICE_VALIDATION_ERROR: ${validation.errors.join(", ")}`
+        );
       }
 
       // Process image
@@ -169,12 +175,17 @@ class ImageService {
         width: processed.metadata.width,
         height: processed.metadata.height,
         mimeType: "image/webp", // Changed to WebP MIME type
-        uploadedAt: firebaseQueries.getServerTimestamp(),
+        uploadedAt: new Date().toISOString(), // Convert to ISO string instead of server timestamp
       };
 
       return imageRecord;
     } catch (error) {
-      throw new Error(`Image upload failed: ${error.message}`);
+      if (error.message.startsWith("IMAGE_SERVICE_")) {
+        throw error;
+      }
+      throw new Error(
+        `IMAGE_SERVICE_ERROR: Image upload failed - ${error.message}`
+      );
     }
   }
 
@@ -190,7 +201,9 @@ class ImageService {
       const validFiles = fileArray.filter((file) => file && file.buffer);
 
       if (validFiles.length === 0) {
-        throw new Error("No valid files provided");
+        throw new Error(
+          "IMAGE_SERVICE_VALIDATION_ERROR: No valid files provided"
+        );
       }
 
       // Upload all files
@@ -199,7 +212,12 @@ class ImageService {
 
       return results;
     } catch (error) {
-      throw new Error(`Image upload failed: ${error.message}`);
+      if (error.message.startsWith("IMAGE_SERVICE_")) {
+        throw error;
+      }
+      throw new Error(
+        `IMAGE_SERVICE_ERROR: Image upload failed - ${error.message}`
+      );
     }
   }
 
@@ -208,6 +226,12 @@ class ImageService {
    */
   async deleteImage(imageRecord) {
     try {
+      if (!imageRecord) {
+        throw new Error(
+          "IMAGE_SERVICE_VALIDATION_ERROR: Image record is required"
+        );
+      }
+
       const deletePromises = [];
 
       // Extract file paths from URLs and delete each version
@@ -240,8 +264,13 @@ class ImageService {
 
       return true;
     } catch (error) {
+      if (error.message.startsWith("IMAGE_SERVICE_")) {
+        throw error;
+      }
       console.error("Error deleting image:", error);
-      return false;
+      throw new Error(
+        `IMAGE_SERVICE_ERROR: Failed to delete image - ${error.message}`
+      );
     }
   }
 
@@ -267,15 +296,27 @@ class ImageService {
    * Get optimized image URLs based on size preference
    */
   getImageUrl(imageRecord, size = "medium") {
-    switch (size) {
-      case "thumbnail":
-        return imageRecord.thumbnailUrl;
-      case "medium":
-        return imageRecord.mediumUrl;
-      case "original":
-        return imageRecord.url;
-      default:
-        return imageRecord.mediumUrl;
+    try {
+      if (!imageRecord) {
+        throw new Error(
+          "IMAGE_SERVICE_VALIDATION_ERROR: Image record is required"
+        );
+      }
+
+      switch (size) {
+        case "thumbnail":
+          return imageRecord.thumbnailUrl;
+        case "medium":
+          return imageRecord.mediumUrl;
+        case "original":
+          return imageRecord.url;
+        default:
+          return imageRecord.mediumUrl;
+      }
+    } catch (error) {
+      throw new Error(
+        `IMAGE_SERVICE_ERROR: Failed to get image URL - ${error.message}`
+      );
     }
   }
 
@@ -283,24 +324,36 @@ class ImageService {
    * Generate responsive image data for frontend
    */
   getResponsiveImageData(imageRecord) {
-    return {
-      id: imageRecord.id,
-      alt: imageRecord.originalName,
-      src: imageRecord.url,
-      srcSet: {
-        thumbnail: imageRecord.thumbnailUrl,
-        medium: imageRecord.mediumUrl,
-        original: imageRecord.url,
-      },
-      sizes: {
-        thumbnail: this.thumbnailSize,
-        medium: this.mediumSize,
-        original: {
-          width: imageRecord.width,
-          height: imageRecord.height,
+    try {
+      if (!imageRecord) {
+        throw new Error(
+          "IMAGE_SERVICE_VALIDATION_ERROR: Image record is required"
+        );
+      }
+
+      return {
+        id: imageRecord.id,
+        alt: imageRecord.originalName,
+        src: imageRecord.url,
+        srcSet: {
+          thumbnail: imageRecord.thumbnailUrl,
+          medium: imageRecord.mediumUrl,
+          original: imageRecord.url,
         },
-      },
-    };
+        sizes: {
+          thumbnail: this.thumbnailSize,
+          medium: this.mediumSize,
+          original: {
+            width: imageRecord.width,
+            height: imageRecord.height,
+          },
+        },
+      };
+    } catch (error) {
+      throw new Error(
+        `IMAGE_SERVICE_ERROR: Failed to generate responsive image data - ${error.message}`
+      );
+    }
   }
 }
 

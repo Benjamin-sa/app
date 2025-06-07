@@ -34,15 +34,15 @@
 
                 <div class="p-6">
                     <div class="flex flex-col lg:flex-row lg:items-start space-y-6 lg:space-y-0 lg:space-x-6">
-                        <!-- Vote Section -->
-                        <div class="flex-shrink-0 order-2 lg:order-1">
+                        <!-- Vote Section - Desktop (sidebar) -->
+                        <div class="hidden lg:flex flex-shrink-0">
                             <VoteButton :value="topic.votes?.score || 0" :user-vote="topic.userVote"
                                 :loading="votingLoading" @vote="(voteData) => handleVote(topic.id, 'topic', voteData)"
                                 size="lg" />
                         </div>
 
                         <!-- Main Content -->
-                        <div class="flex-1 min-w-0 order-1 lg:order-2">
+                        <div class="flex-1 min-w-0">
                             <!-- Category Badge -->
                             <div class="mb-3">
                                 <span v-if="topic.category"
@@ -52,11 +52,19 @@
                                 </span>
                             </div>
 
-                            <!-- Title -->
-                            <h1
-                                class="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4 leading-tight">
-                                {{ topic.title }}
-                            </h1>
+                            <!-- Title with Mobile Vote Button -->
+                            <div class="flex items-start justify-between mb-4">
+                                <h1
+                                    class="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 leading-tight flex-1 mr-4">
+                                    {{ topic.title }}
+                                </h1>
+                                <!-- Vote Section - Mobile (inline) -->
+                                <div class="lg:hidden flex-shrink-0">
+                                    <VoteButton :value="topic.votes?.score || 0" :user-vote="topic.userVote"
+                                        :loading="votingLoading"
+                                        @vote="(voteData) => handleVote(topic.id, 'topic', voteData)" size="md" />
+                                </div>
+                            </div>
 
                             <!-- Author Info -->
                             <div
@@ -195,12 +203,10 @@
             </div>
         </div>
 
-        <!-- Image Modal -->
-        <Modal v-if="selectedImage" title="" @close="selectedImage = null" size="xl">
-            <div class="text-center">
-                <img :src="selectedImage" alt="Full size image" class="max-w-full max-h-[80vh] mx-auto rounded-lg">
-            </div>
-        </Modal>
+        <!-- Image Modal - Replace the existing Modal with ImageViewer -->
+        <ImageViewer v-if="topic?.images && topic.images.length > 0" :images="topic.images"
+            :initial-index="selectedImageIndex" :is-open="showImageViewer" @close="closeImageViewer"
+            @change="(index) => selectedImageIndex = index" />
 
         <!-- Debug: Simple test modal -->
         <div v-if="showEditTopic" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
@@ -254,6 +260,7 @@ import VoteButton from '@/components/forum/VoteButton.vue';
 import AnswerList from '@/components/forum/AnswerList.vue';
 import AnswerForm from '@/components/forum/AnswerForm.vue';
 import EditTopicForm from '@/components/forum/EditTopicForm.vue';
+import ImageViewer from '@/components/common/ImageViewer.vue';
 import {
     ChevronRightIcon,
     LockClosedIcon,
@@ -275,14 +282,13 @@ const notificationStore = useNotificationStore();
 const topic = ref(null);
 const answers = ref([]);
 const loading = ref(false);
-const answersLoading = ref(false);
 const deleting = ref(false);
 const votingLoading = ref(false);
 const showAnswerForm = ref(false);
 const showEditTopic = ref(false);
 const showDeleteConfirm = ref(false);
-const selectedImage = ref(null);
-const editLoading = ref(false);
+const showImageViewer = ref(false);
+const selectedImageIndex = ref(0);
 
 const canEditTopic = computed(() => {
     if (!authStore.user || !topic.value) return false;
@@ -362,13 +368,20 @@ const loadTopic = async () => {
         const response = await apiService.get(`/forum/topics/${route.params.id}`);
         topic.value = response.data;
 
-        // If user is authenticated, get their vote status
+        // Extract answers from topic data
+        answers.value = response.data.answers || [];
+
+        // If user is authenticated, get their vote status for topic and answers
         if (authStore.isAuthenticated && topic.value) {
             await loadUserVote();
+            if (answers.value.length > 0) {
+                await loadAnswerVotes();
+            }
         }
     } catch (error) {
         console.error('Error loading topic:', error);
         topic.value = null;
+        answers.value = [];
     } finally {
         loading.value = false;
     }
@@ -383,22 +396,6 @@ const loadUserVote = async () => {
     } catch (error) {
         console.error('Error loading user vote:', error);
         // Don't throw error, just log it
-    }
-};
-
-const loadAnswers = async () => {
-    try {
-        answersLoading.value = true;
-        const response = await apiService.get(`/forum/topics/${route.params.id}/answers`);
-        answers.value = response.data.answers || [];
-        // Load user votes for answers if authenticated
-        if (authStore.isAuthenticated && answers.value.length > 0) {
-            await loadAnswerVotes();
-        }
-    } catch (error) {
-        console.error('Error loading answers:', error);
-    } finally {
-        answersLoading.value = false;
     }
 };
 
@@ -422,6 +419,10 @@ const loadAnswerVotes = async () => {
 
 const handleAnswerSuccess = (newAnswer) => {
     answers.value.push(newAnswer);
+    // Update topic answer count
+    if (topic.value) {
+        topic.value.answerCount = (topic.value.answerCount || 0) + 1;
+    }
     showAnswerForm.value = false;
     notificationStore.success('Answer posted!', 'Your answer has been added successfully.');
 };
@@ -456,6 +457,10 @@ const handleAnswerDelete = async (answerId) => {
     try {
         await apiService.delete(`/forum/answers/${answerId}`);
         answers.value = answers.value.filter(a => a.id !== answerId);
+        // Update topic answer count
+        if (topic.value) {
+            topic.value.answerCount = Math.max((topic.value.answerCount || 1) - 1, 0);
+        }
         notificationStore.success('Answer deleted', 'The answer has been removed.');
     } catch (error) {
         console.error('Error deleting answer:', error);
@@ -474,13 +479,20 @@ const handleEditTopic = () => {
 };
 
 const openImageModal = (imageUrl) => {
-    selectedImage.value = imageUrl;
+    const imageIndex = topic.value.images.findIndex(img =>
+        (img.url || img) === imageUrl || (img.thumbnailUrl || img) === imageUrl
+    );
+    selectedImageIndex.value = imageIndex >= 0 ? imageIndex : 0;
+    showImageViewer.value = true;
+};
+
+const closeImageViewer = () => {
+    showImageViewer.value = false;
 };
 
 watch(() => route.params.id, (newId, oldId) => {
     if (newId !== oldId) {
         loadTopic();
-        loadAnswers();
     }
 });
 
@@ -496,6 +508,5 @@ watch(() => authStore.isAuthenticated, (isAuth) => {
 
 onMounted(() => {
     loadTopic();
-    loadAnswers();
 });
 </script>

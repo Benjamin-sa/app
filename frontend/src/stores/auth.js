@@ -15,7 +15,9 @@ export const useAuthStore = defineStore("auth", () => {
   const userDisplayName = computed(
     () => user.value?.displayName || user.value?.email?.split("@")[0] || "User"
   );
-  const userAvatar = computed(() => user.value?.photoURL || null);
+  const userAvatar = computed(
+    () => user.value?.avatar || user.value?.photoURL || null
+  ); // Use user.value.avatar first
 
   // Get current token from Firebase
   const getCurrentToken = async () => {
@@ -242,20 +244,49 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
-  const updateProfile = async (profileData) => {
+  const updateProfile = async (profileData, avatarFile = null) => {
     loading.value = true;
     error.value = null;
 
     try {
-      const response = await apiService.put("/auth/profile", profileData);
+      let response;
+      const endpoint = "/auth/profile";
+
+      if (avatarFile) {
+        const formData = new FormData();
+        // Append all profileData fields to formData
+        for (const key in profileData) {
+          if (profileData[key] !== undefined && profileData[key] !== null) {
+            formData.append(key, profileData[key]);
+          }
+        }
+        formData.append("avatar", avatarFile);
+
+        response = await apiService.put(endpoint, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+      } else {
+        response = await apiService.put(endpoint, profileData);
+      }
 
       if (response.success) {
-        // Update the user data in the store
+        // The backend now returns the full user object and optionally avatar_url/thumbnail
+        // in response.data.user and response.data.avatar_url etc.
+        const updatedUserData = response.data.user;
+        if (response.data.avatar_url) {
+          updatedUserData.avatar = response.data.avatar_url;
+        }
+        if (response.data.avatar_thumbnail) {
+          updatedUserData.avatarThumbnail = response.data.avatar_thumbnail;
+        }
+
         user.value = {
           ...user.value,
-          ...response.data.user,
+          ...updatedUserData,
         };
-        return { success: true, data: response.data.user };
+        return { success: true, data: user.value }; // Return the updated user from store
       } else {
         error.value = response.error || response.message;
         return { success: false, message: error.value };
@@ -266,44 +297,6 @@ export const useAuthStore = defineStore("auth", () => {
         err.response?.data?.error ||
         err.message ||
         "Profile update failed. Please try again.";
-      return { success: false, message: error.value };
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  const uploadAvatar = async (file) => {
-    loading.value = true;
-    error.value = null;
-
-    try {
-      const formData = new FormData();
-      formData.append("avatar", file);
-
-      const response = await apiService.post("/auth/avatar", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      if (response.success) {
-        // Update the user avatar in the store
-        user.value = {
-          ...user.value,
-          avatar: response.data.avatar_url,
-          avatarThumbnail: response.data.avatar_thumbnail,
-        };
-        return { success: true, data: response.data };
-      } else {
-        error.value = response.error || response.message;
-        return { success: false, message: error.value };
-      }
-    } catch (err) {
-      console.error("Avatar upload error:", err);
-      error.value =
-        err.response?.data?.error ||
-        err.message ||
-        "Avatar upload failed. Please try again.";
       return { success: false, message: error.value };
     } finally {
       loading.value = false;
@@ -347,7 +340,6 @@ export const useAuthStore = defineStore("auth", () => {
     logout,
     resetPassword,
     updateProfile,
-    uploadAvatar,
     refreshToken,
     getCurrentToken,
     clearError,
