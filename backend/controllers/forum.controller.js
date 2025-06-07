@@ -3,6 +3,7 @@ const topicService = require("../services/forum/topic.service");
 const answerService = require("../services/forum/answer.service");
 const votingService = require("../services/forum/voting.service");
 const imageService = require("../services/image.service");
+const cacheService = require("../services/cache.service");
 
 class ForumController {
   // ==================== USER METHODS ====================
@@ -11,8 +12,18 @@ class ForumController {
   async getUserProfile(req, res) {
     try {
       const { uid } = req.params;
+      const cacheKey = `user_profile:${uid}`;
 
-      const profile = await userService.getUserProfile(uid);
+      // Try to get from cache first
+      let profile = await cacheService.get(cacheKey);
+
+      if (!profile) {
+        // Cache miss - fetch from database
+        profile = await userService.getUserProfile(uid);
+
+        // Cache for 5 minutes
+        await cacheService.set(cacheKey, profile, 300);
+      }
 
       res.json({
         success: true,
@@ -40,8 +51,18 @@ class ForumController {
   async getUserByUsername(req, res) {
     try {
       const { username } = req.params;
+      const cacheKey = `user_profile_by_username:${username}`;
 
-      const profile = await userService.getUserByUsername(username);
+      // Try to get from cache first
+      let profile = await cacheService.get(cacheKey);
+
+      if (!profile) {
+        // Cache miss - fetch from database
+        profile = await userService.getUserByUsername(username);
+
+        // Cache for 5 minutes
+        await cacheService.set(cacheKey, profile, 300);
+      }
 
       res.json({
         success: true,
@@ -127,9 +148,16 @@ class ForumController {
       // Create topic through service
       const topic = await topicService.createTopic(topicData);
 
+      // Invalidate topic list caches
+      await cacheService.invalidatePattern("topics:*");
+      await cacheService.invalidatePattern("forum_stats");
+
       // Update user activity
       try {
         await userService.updateUserActivity(req.user.uid);
+
+        // Invalidate user cache
+        await cacheService.del(`user_profile:${req.user.uid}`);
       } catch (activityError) {
         console.warn(
           `FORUM_CONTROLLER_WARNING: Failed to update user activity - ${activityError.message}`
@@ -176,42 +204,61 @@ class ForumController {
         sortOrder,
       };
 
-      const result = await topicService.getTopics(options);
+      // Create cache key based on query parameters
+      const cacheKey = `topics:${JSON.stringify(options)}:${page}`;
 
-      // Enrich each topic with author profile and vote counts
-      const enrichedTopics = await Promise.all(
-        result.topics.map(async (topic) => {
-          try {
-            // Get topic author profile
-            const authorProfile = await userService.getUserProfile(
-              topic.authorId
-            );
-            topic.author = authorProfile;
+      // Try to get from cache first
+      let result = await cacheService.get(cacheKey);
 
-            // Get topic votes
-            const topicVotes = await votingService.getTopicVotes(topic.id);
-            topic.votes = topicVotes;
+      if (!result) {
+        // Cache miss - fetch from database
+        result = await topicService.getTopics(options);
 
-            // Get user's vote on this topic if user is authenticated
-            if (req.user?.uid) {
-              topic.userVote = await votingService.getUserVote(
-                req.user.uid,
-                topic.id
+        // Enrich each topic with author profile and vote counts
+        const enrichedTopics = await Promise.all(
+          result.topics.map(async (topic) => {
+            try {
+              // Get topic author profile with caching
+              const authorCacheKey = `user_profile:${topic.authorId}`;
+              let authorProfile = await cacheService.get(authorCacheKey);
+
+              if (!authorProfile) {
+                authorProfile = await userService.getUserProfile(
+                  topic.authorId
+                );
+                await cacheService.set(authorCacheKey, authorProfile, 300);
+              }
+
+              topic.author = authorProfile;
+
+              // Get topic votes
+              const topicVotes = await votingService.getTopicVotes(topic.id);
+              topic.votes = topicVotes;
+
+              // Get user's vote on this topic if user is authenticated
+              if (req.user?.uid) {
+                topic.userVote = await votingService.getUserVote(
+                  req.user.uid,
+                  topic.id
+                );
+              }
+
+              return topic;
+            } catch (enrichError) {
+              console.warn(
+                `FORUM_CONTROLLER_WARNING: Failed to enrich topic ${topic.id} - ${enrichError.message}`
               );
+              // Return topic without enrichment rather than failing
+              return topic;
             }
+          })
+        );
 
-            return topic;
-          } catch (enrichError) {
-            console.warn(
-              `FORUM_CONTROLLER_WARNING: Failed to enrich topic ${topic.id} - ${enrichError.message}`
-            );
-            // Return topic without enrichment rather than failing
-            return topic;
-          }
-        })
-      );
+        result.topics = enrichedTopics;
 
-      result.topics = enrichedTopics;
+        // Cache for 2 minutes (shorter TTL for dynamic content)
+        await cacheService.set(cacheKey, result, 120);
+      }
 
       res.json({
         success: true,
@@ -238,87 +285,106 @@ class ForumController {
     try {
       const { id } = req.params;
       const userId = req.user?.uid || null;
+      const cacheKey = `topic:${id}:${userId || "anonymous"}`;
 
-      const topic = await topicService.getTopicById(id, userId);
+      // Try to get from cache first
+      let topic = await cacheService.get(cacheKey);
 
-      // Enrich topic with author profile
-      try {
-        const authorProfile = await userService.getUserProfile(topic.authorId);
-        topic.author = authorProfile;
-      } catch (authorError) {
-        console.warn(
-          `FORUM_CONTROLLER_WARNING: Failed to get author profile - ${authorError.message}`
-        );
-      }
+      if (!topic) {
+        // Cache miss - fetch from database
+        topic = await topicService.getTopicById(id, userId);
 
-      // Get topic votes
-      try {
-        const topicVotes = await votingService.getTopicVotes(id);
-        topic.votes = topicVotes;
-      } catch (voteError) {
-        console.warn(
-          `FORUM_CONTROLLER_WARNING: Failed to get topic votes - ${voteError.message}`
-        );
-        topic.votes = { upvotes: 0, downvotes: 0, score: 0 };
-      }
-
-      // Get user's vote on this topic if user is authenticated
-      if (userId) {
+        // Enrich topic with author profile
         try {
-          topic.userVote = await votingService.getUserVote(userId, id);
-        } catch (userVoteError) {
+          const authorCacheKey = `user_profile:${topic.authorId}`;
+          let authorProfile = await cacheService.get(authorCacheKey);
+
+          if (!authorProfile) {
+            authorProfile = await userService.getUserProfile(topic.authorId);
+            await cacheService.set(authorCacheKey, authorProfile, 300);
+          }
+
+          topic.author = authorProfile;
+        } catch (authorError) {
           console.warn(
-            `FORUM_CONTROLLER_WARNING: Failed to get user vote - ${userVoteError.message}`
+            `FORUM_CONTROLLER_WARNING: Failed to get author profile - ${authorError.message}`
           );
         }
-      }
 
-      // Get answers for this topic
-      try {
-        const answersResult = await answerService.getAnswersByTopic(id);
-        const answers = answersResult.answers || [];
+        // Get topic votes
+        try {
+          const topicVotes = await votingService.getTopicVotes(id);
+          topic.votes = topicVotes;
+        } catch (voteError) {
+          console.warn(
+            `FORUM_CONTROLLER_WARNING: Failed to get topic votes - ${voteError.message}`
+          );
+          topic.votes = { upvotes: 0, downvotes: 0, score: 0 };
+        }
 
-        // Enrich each answer with author profile and votes
-        const enrichedAnswers = await Promise.all(
-          answers.map(async (answer) => {
-            try {
-              // Get answer author profile
-              const answerAuthor = await userService.getUserProfile(
-                answer.authorId
-              );
-              answer.author = answerAuthor;
+        // Get user's vote on this topic if user is authenticated
+        if (userId) {
+          try {
+            topic.userVote = await votingService.getUserVote(userId, id);
+          } catch (userVoteError) {
+            console.warn(
+              `FORUM_CONTROLLER_WARNING: Failed to get user vote - ${userVoteError.message}`
+            );
+          }
+        }
 
-              // Get answer votes
-              const answerVotes = await votingService.getAnswerVotes(answer.id);
-              answer.votes = answerVotes;
+        // Get answers for this topic
+        try {
+          const answersResult = await answerService.getAnswersByTopic(id);
+          const answers = answersResult.answers || [];
 
-              // Get user's vote on this answer if user is authenticated
-              if (userId) {
-                answer.userVote = await votingService.getUserVote(
-                  userId,
+          // Enrich each answer with author profile and votes
+          const enrichedAnswers = await Promise.all(
+            answers.map(async (answer) => {
+              try {
+                // Get answer author profile
+                const answerAuthor = await userService.getUserProfile(
+                  answer.authorId
+                );
+                answer.author = answerAuthor;
+
+                // Get answer votes
+                const answerVotes = await votingService.getAnswerVotes(
                   answer.id
                 );
+                answer.votes = answerVotes;
+
+                // Get user's vote on this answer if user is authenticated
+                if (userId) {
+                  answer.userVote = await votingService.getUserVote(
+                    userId,
+                    answer.id
+                  );
+                }
+
+                return answer;
+              } catch (answerEnrichError) {
+                console.warn(
+                  `FORUM_CONTROLLER_WARNING: Failed to enrich answer ${answer.id} - ${answerEnrichError.message}`
+                );
+                return answer;
               }
+            })
+          );
 
-              return answer;
-            } catch (answerEnrichError) {
-              console.warn(
-                `FORUM_CONTROLLER_WARNING: Failed to enrich answer ${answer.id} - ${answerEnrichError.message}`
-              );
-              return answer;
-            }
-          })
-        );
+          // Add enriched answers to topic
+          topic.answers = enrichedAnswers;
+          topic.answerCount = enrichedAnswers.length;
+        } catch (answersError) {
+          console.warn(
+            `FORUM_CONTROLLER_WARNING: Failed to get answers - ${answersError.message}`
+          );
+          topic.answers = [];
+          topic.answerCount = 0;
+        }
 
-        // Add enriched answers to topic
-        topic.answers = enrichedAnswers;
-        topic.answerCount = enrichedAnswers.length;
-      } catch (answersError) {
-        console.warn(
-          `FORUM_CONTROLLER_WARNING: Failed to get answers - ${answersError.message}`
-        );
-        topic.answers = [];
-        topic.answerCount = 0;
+        // Cache for 3 minutes
+        await cacheService.set(cacheKey, topic, 180);
       }
 
       res.json({
@@ -347,13 +413,23 @@ class ForumController {
   async searchTopics(req, res) {
     try {
       const { q: searchTerm, category, limit = 20 } = req.query;
+      const cacheKey = `search:${searchTerm}:${category || "all"}:${limit}`;
 
-      const options = {
-        limit: parseInt(limit),
-        category,
-      };
+      // Try to get from cache first
+      let topics = await cacheService.get(cacheKey);
 
-      const topics = await topicService.searchTopics(searchTerm, options);
+      if (!topics) {
+        // Cache miss - perform search
+        const options = {
+          limit: parseInt(limit),
+          category,
+        };
+
+        topics = await topicService.searchTopics(searchTerm, options);
+
+        // Cache search results for 1 minute
+        await cacheService.set(cacheKey, topics, 60);
+      }
 
       res.json({
         success: true,
@@ -412,9 +488,17 @@ class ForumController {
 
       const answer = await answerService.createAnswer(answerData);
 
+      // Invalidate topic cache since it now has a new answer
+      await cacheService.invalidatePattern(`topic:${topicId}:*`);
+      await cacheService.invalidatePattern("topics:*");
+      await cacheService.invalidatePattern("forum_stats");
+
       // Update user activity
       try {
         await userService.updateUserActivity(req.user.uid);
+
+        // Invalidate user cache
+        await cacheService.del(`user_profile:${req.user.uid}`);
       } catch (activityError) {
         console.warn(
           `FORUM_CONTROLLER_WARNING: Failed to update user activity - ${activityError.message}`
@@ -457,6 +541,12 @@ class ForumController {
         targetType,
         voteType
       );
+
+      // Invalidate caches that include vote counts
+      if (targetType === "topic") {
+        await cacheService.invalidatePattern(`topic:${targetId}:*`);
+        await cacheService.invalidatePattern("topics:*");
+      }
 
       res.json({
         success: true,
@@ -515,34 +605,45 @@ class ForumController {
   // Get forum statistics
   async getForumStats(req, res) {
     try {
-      const topicStats = await topicService.getTopicStats();
+      const cacheKey = "forum_stats";
 
-      // Handle missing methods gracefully
-      let userStats = {};
-      let answerStats = {};
+      // Try to get from cache first
+      let stats = await cacheService.get(cacheKey);
 
-      try {
-        userStats = await userService.getUserStats();
-      } catch (userStatsError) {
-        console.warn(
-          `FORUM_CONTROLLER_WARNING: Failed to get user stats - ${userStatsError.message}`
-        );
+      if (!stats) {
+        // Cache miss - calculate stats
+        const topicStats = await topicService.getTopicStats();
+
+        // Handle missing methods gracefully
+        let userStats = {};
+        let answerStats = {};
+
+        try {
+          userStats = await userService.getUserStats();
+        } catch (userStatsError) {
+          console.warn(
+            `FORUM_CONTROLLER_WARNING: Failed to get user stats - ${userStatsError.message}`
+          );
+        }
+
+        try {
+          answerStats = await answerService.getAnswerStats();
+        } catch (answerStatsError) {
+          console.warn(
+            `FORUM_CONTROLLER_WARNING: Failed to get answer stats - ${answerStatsError.message}`
+          );
+        }
+
+        stats = {
+          topics: topicStats,
+          users: userStats,
+          answers: answerStats,
+          lastUpdated: new Date(),
+        };
+
+        // Cache stats for 10 minutes
+        await cacheService.set(cacheKey, stats, 600);
       }
-
-      try {
-        answerStats = await answerService.getAnswerStats();
-      } catch (answerStatsError) {
-        console.warn(
-          `FORUM_CONTROLLER_WARNING: Failed to get answer stats - ${answerStatsError.message}`
-        );
-      }
-
-      const stats = {
-        topics: topicStats,
-        users: userStats,
-        answers: answerStats,
-        lastUpdated: new Date(),
-      };
 
       res.json({
         success: true,

@@ -31,15 +31,33 @@ class ProductsController {
           const productCacheKey = `product:${product.id}`;
           await cacheService.set(productCacheKey, product, 900); // Cache for 15 minutes
         }
-        res.json(productsFromShopify);
+        res.json({
+          success: true,
+          data: productsFromShopify,
+        });
       } else {
-        res.json([]);
+        res.json({
+          success: true,
+          data: [],
+        });
       }
     } catch (error) {
-      console.error("Get products with images error:", error);
-      res.status(500).json({
+      console.error(
+        "PRODUCTS_CONTROLLER_ERROR: Get Products With Images Error:",
+        error
+      );
+
+      let statusCode = 500;
+      if (error.message.includes("VALIDATION_ERROR")) {
+        statusCode = 400;
+      } else if (error.message.includes("NOT_FOUND_ERROR")) {
+        statusCode = 404;
+      }
+
+      res.status(statusCode).json({
         success: false,
-        error: "Failed to fetch products with images",
+        error: `PRODUCTS_CONTROLLER_ERROR: ${error.message}`,
+        errorSource: "products_controller",
       });
     }
   }
@@ -53,15 +71,32 @@ class ProductsController {
       if (!product) {
         return res.status(404).json({
           success: false,
-          error: "Product not found",
+          error: "PRODUCTS_CONTROLLER_ERROR: Product not found",
+          errorSource: "products_controller",
         });
       }
-      res.json(product);
+
+      res.json({
+        success: true,
+        data: product,
+      });
     } catch (error) {
-      console.error("Get product by ID with images error:", error);
-      res.status(500).json({
+      console.error(
+        "PRODUCTS_CONTROLLER_ERROR: Get Product By ID With Images Error:",
+        error
+      );
+
+      let statusCode = 500;
+      if (error.message.includes("VALIDATION_ERROR")) {
+        statusCode = 400;
+      } else if (error.message.includes("NOT_FOUND_ERROR")) {
+        statusCode = 404;
+      }
+
+      res.status(statusCode).json({
         success: false,
-        error: "Failed to fetch product with images",
+        error: `PRODUCTS_CONTROLLER_ERROR: ${error.message}`,
+        errorSource: "products_controller",
       });
     }
   }
@@ -115,15 +150,27 @@ class ProductsController {
         }
       }
 
-      res.json(productDetailsList);
+      res.json({
+        success: true,
+        data: productDetailsList,
+      });
     } catch (error) {
       console.error(
-        `Get products by collection (ID: ${req.params.id}) error:`,
+        `PRODUCTS_CONTROLLER_ERROR: Get Products By Collection (ID: ${req.params.id}) Error:`,
         error
       );
-      res.status(500).json({
+
+      let statusCode = 500;
+      if (error.message.includes("VALIDATION_ERROR")) {
+        statusCode = 400;
+      } else if (error.message.includes("NOT_FOUND_ERROR")) {
+        statusCode = 404;
+      }
+
+      res.status(statusCode).json({
         success: false,
-        error: "Failed to fetch products by collection",
+        error: `PRODUCTS_CONTROLLER_ERROR: ${error.message}`,
+        errorSource: "products_controller",
       });
     }
   }
@@ -143,7 +190,9 @@ class ProductsController {
         } else {
           return res.status(501).json({
             success: false,
-            error: "Collections endpoint not implemented",
+            error:
+              "PRODUCTS_CONTROLLER_ERROR: Collections endpoint not implemented",
+            errorSource: "products_controller",
           });
         }
       }
@@ -152,10 +201,22 @@ class ProductsController {
         data: collections,
       });
     } catch (error) {
-      console.error("Get all collections error:", error);
-      res.status(500).json({
+      console.error(
+        "PRODUCTS_CONTROLLER_ERROR: Get All Collections Error:",
+        error
+      );
+
+      let statusCode = 500;
+      if (error.message.includes("VALIDATION_ERROR")) {
+        statusCode = 400;
+      } else if (error.message.includes("NOT_FOUND_ERROR")) {
+        statusCode = 404;
+      }
+
+      res.status(statusCode).json({
         success: false,
-        error: "Failed to fetch collections",
+        error: `PRODUCTS_CONTROLLER_ERROR: ${error.message}`,
+        errorSource: "products_controller",
       });
     }
   }
@@ -168,7 +229,9 @@ class ProductsController {
       if (!searchTerm || searchTerm.trim().length < 2) {
         return res.status(400).json({
           success: false,
-          error: "Search term must be at least 2 characters",
+          error:
+            "PRODUCTS_CONTROLLER_VALIDATION_ERROR: Search term must be at least 2 characters",
+          errorSource: "products_controller",
         });
       }
 
@@ -222,10 +285,19 @@ class ProductsController {
         data: searchResults,
       });
     } catch (error) {
-      console.error("Search products error:", error);
-      res.status(500).json({
+      console.error("PRODUCTS_CONTROLLER_ERROR: Search Products Error:", error);
+
+      let statusCode = 500;
+      if (error.message.includes("VALIDATION_ERROR")) {
+        statusCode = 400;
+      } else if (error.message.includes("NOT_FOUND_ERROR")) {
+        statusCode = 404;
+      }
+
+      res.status(statusCode).json({
         success: false,
-        error: "Failed to search products",
+        error: `PRODUCTS_CONTROLLER_ERROR: ${error.message}`,
+        errorSource: "products_controller",
       });
     }
   }
@@ -258,7 +330,8 @@ class ProductsController {
             return res.status(501).json({
               success: false,
               error:
-                "Product variants endpoint not implemented or product has no variants",
+                "PRODUCTS_CONTROLLER_ERROR: Product variants endpoint not implemented or product has no variants",
+              errorSource: "products_controller",
             });
           }
         }
@@ -268,7 +341,9 @@ class ProductsController {
         // If variants are still not found (e.g. product has no variants from _getAndCacheProduct)
         return res.status(404).json({
           success: false,
-          error: "Product variants not found",
+          error:
+            "PRODUCTS_CONTROLLER_NOT_FOUND_ERROR: Product variants not found",
+          errorSource: "products_controller",
         });
       }
 
@@ -277,35 +352,22 @@ class ProductsController {
         data: variants,
       });
     } catch (error) {
-      console.error("Get product variants error:", error);
-      res.status(500).json({
-        success: false,
-        error: "Failed to fetch product variants",
-      });
-    }
-  }
+      console.error(
+        "PRODUCTS_CONTROLLER_ERROR: Get Product Variants Error:",
+        error
+      );
 
-  // Clear cache (admin function)
-  async clearProductCache(req, res) {
-    try {
-      // Clear known aggregate/list caches
-      await cacheService.delete("collections:all");
-      await cacheService.delete("search:allProductsSet");
-      // Add other specific top-level cache keys if any (e.g., collection:ID:productIds)
-      // Deleting individual product caches (product:ID) or collection-specific product ID lists
-      // without pattern support in cacheService would require iterating known IDs, which is complex.
-      // Individual items will expire based on their TTL.
+      let statusCode = 500;
+      if (error.message.includes("VALIDATION_ERROR")) {
+        statusCode = 400;
+      } else if (error.message.includes("NOT_FOUND_ERROR")) {
+        statusCode = 404;
+      }
 
-      res.json({
-        success: true,
-        message:
-          "Cleared aggregate caches (all_collections, search_product_set). Individual item caches rely on TTL.",
-      });
-    } catch (error) {
-      console.error("Clear product cache error:", error);
-      res.status(500).json({
+      res.status(statusCode).json({
         success: false,
-        error: "Failed to clear product cache",
+        error: `PRODUCTS_CONTROLLER_ERROR: ${error.message}`,
+        errorSource: "products_controller",
       });
     }
   }

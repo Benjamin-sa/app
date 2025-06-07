@@ -1,13 +1,23 @@
-const { auth } = require("../config/firebase");
 const userService = require("../services/forum/user.service");
 const imageService = require("../services/image.service");
-const firebaseQueries = require("../queries/firebase.queries");
+const cacheService = require("../services/cache.service");
 
 class AuthController {
   // Get current user info (protected route)
   async getMe(req, res) {
     try {
-      const userRecord = await userService.getUserProfile(req.user.uid);
+      const cacheKey = `user_profile:${req.user.uid}`;
+
+      // Try to get from cache first
+      let userRecord = await cacheService.get(cacheKey);
+
+      if (!userRecord) {
+        // Cache miss - fetch from database
+        userRecord = await userService.getUserProfile(req.user.uid);
+
+        // Cache for 5 minutes
+        await cacheService.set(cacheKey, userRecord, 300);
+      }
 
       res.json({
         success: true,
@@ -108,6 +118,10 @@ class AuthController {
         updateData
       );
 
+      // Invalidate user cache after successful update
+      const cacheKey = `user_profile:${req.user.uid}`;
+      await cacheService.del(cacheKey);
+
       // Delete old avatar after successful profile update
       if (oldAvatarForDeletion && oldAvatarForDeletion.url) {
         try {
@@ -157,6 +171,12 @@ class AuthController {
       const syncData = req.body;
 
       const result = await userService.syncUser(syncData);
+
+      // Invalidate user cache after sync
+      if (syncData.uid) {
+        const cacheKey = `user_profile:${syncData.uid}`;
+        await cacheService.del(cacheKey);
+      }
 
       if (result.createdAt && !result.updatedAt) {
         // New user created
