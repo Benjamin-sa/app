@@ -2,7 +2,13 @@ const express = require("express");
 const router = express.Router();
 const authenticate = require("../middleware/auth");
 const { uploadMultiple, handleUploadError } = require("../middleware/upload");
-const { forumController } = require("../controllers");
+
+// Import individual controllers
+const userController = require("../controllers/forum/user.controller");
+const topicController = require("../controllers/forum/topic.controller");
+const answerController = require("../controllers/forum/answer.controller");
+const votingController = require("../controllers/forum/voting.controller");
+const statsController = require("../controllers/forum/stats.controller");
 
 // ==================== USER ROUTES ====================
 
@@ -10,19 +16,13 @@ const { forumController } = require("../controllers");
  * GET /api/forum/users/profile/:uid
  * Get user profile by UID
  */
-router.get(
-  "/users/profile/:uid",
-  forumController.getUserProfile.bind(forumController)
-);
+router.get("/users/profile/:uid", userController.getUserProfile);
 
 /**
  * GET /api/forum/users/username/:username
  * Get user profile by username
  */
-router.get(
-  "/users/username/:username",
-  forumController.getUserByUsername.bind(forumController)
-);
+router.get("/users/username/:username", userController.getUserByUsername);
 
 // ==================== TOPIC ROUTES ====================
 
@@ -34,26 +34,43 @@ router.post(
   "/topics",
   authenticate,
   uploadMultiple,
-  forumController.createTopic.bind(forumController)
+  topicController.createTopic
 );
 
 /**
  * GET /api/forum/topics
  * Get topics with pagination and filtering
  */
-router.get("/topics", forumController.getTopics.bind(forumController));
+router.get("/topics", topicController.getTopics);
 
 /**
  * GET /api/forum/topics/:id
  * Get single topic by ID
  */
-router.get("/topics/:id", forumController.getTopicById.bind(forumController));
+router.get("/topics/:id", topicController.getTopicById);
 
 /**
  * GET /api/forum/search
  * Search topics
  */
-router.get("/search", forumController.searchTopics.bind(forumController));
+router.get("/search", topicController.searchTopics);
+
+/**
+ * PATCH /api/forum/topics/:id
+ * Update a topic by ID
+ */
+router.patch(
+  "/topics/:id",
+  authenticate,
+  uploadMultiple,
+  topicController.updateTopic
+);
+
+/**
+ * DELETE /api/forum/topics/:id
+ * Delete a topic by ID
+ */
+router.delete("/topics/:id", authenticate, topicController.deleteTopic);
 
 // ==================== ANSWER ROUTES ====================
 
@@ -65,8 +82,25 @@ router.post(
   "/topics/:topicId/answers",
   authenticate,
   uploadMultiple,
-  forumController.createAnswer.bind(forumController)
+  answerController.createAnswer
 );
+
+/**
+ * PATCH /api/forum/answers/:id
+ * Update an answer by ID
+ */
+router.patch(
+  "/answers/:id",
+  authenticate,
+  uploadMultiple,
+  answerController.updateAnswer
+);
+
+/**
+ * DELETE /api/forum/answers/:id
+ * Delete an answer by ID
+ */
+router.delete("/answers/:id", authenticate, answerController.deleteAnswer);
 
 // ==================== VOTING ROUTES ====================
 
@@ -74,17 +108,13 @@ router.post(
  * POST /api/forum/vote
  * Vote on a topic or answer
  */
-router.post("/vote", authenticate, forumController.vote.bind(forumController));
+router.post("/vote", authenticate, votingController.vote);
 
 /**
  * GET /api/forum/vote/:targetId
  * Get user's vote on a specific target
  */
-router.get(
-  "/vote/:targetId",
-  authenticate,
-  forumController.getUserVote.bind(forumController)
-);
+router.get("/vote/:targetId", authenticate, votingController.getUserVote);
 
 // ==================== STATISTICS ROUTES ====================
 
@@ -92,7 +122,7 @@ router.get(
  * GET /api/forum/stats
  * Get forum statistics
  */
-router.get("/stats", forumController.getForumStats.bind(forumController));
+router.get("/stats", statsController.getForumStats);
 
 // ==================== ERROR HANDLING ====================
 
