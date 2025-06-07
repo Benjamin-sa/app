@@ -1,26 +1,26 @@
 <template>
     <div
-        class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer relative">
+        class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md dark:hover:shadow-gray-900/25 transition-shadow cursor-pointer relative">
         <!-- Product Image -->
-        <div class="aspect-w-4 aspect-h-3 bg-gray-200">
+        <div class="aspect-w-4 aspect-h-3 bg-gray-200 dark:bg-gray-700">
             <img v-if="productImage" :src="productImage" :alt="product.title" class="w-full h-48 object-cover">
-            <div v-else class="w-full h-48 flex items-center justify-center bg-gray-100">
-                <PhotoIcon class="w-12 h-12 text-gray-400" />
+            <div v-else class="w-full h-48 flex items-center justify-center bg-gray-100 dark:bg-gray-700">
+                <PhotoIcon class="w-12 h-12 text-gray-400 dark:text-gray-500" />
             </div>
         </div>
 
         <!-- Product Info -->
         <div class="p-4">
             <!-- Brand -->
-            <p v-if="productBrand" class="text-sm text-gray-600 mb-1">{{ productBrand }}</p>
+            <p v-if="productBrand" class="text-sm text-gray-600 dark:text-gray-400 mb-1">{{ productBrand }}</p>
 
             <!-- Name -->
-            <h3 class="text-lg font-medium text-gray-900 mb-2 line-clamp-2">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2 line-clamp-2">
                 {{ product.title }}
             </h3>
 
             <!-- Description -->
-            <p v-if="product.description" class="text-sm text-gray-600 mb-3 line-clamp-2">
+            <p v-if="product.description" class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
                 {{ product.description }}
             </p>
 
@@ -42,18 +42,18 @@
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
                     <!-- Wishlist Button -->
-                    <button @click.stop="toggleWishlist" class="p-2 rounded-md hover:bg-gray-100 transition-colors"
-                        :class="[
+                    <button @click.stop="toggleWishlist"
+                        class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" :class="[
                             product.isInWishlist
-                                ? 'text-red-600 hover:text-red-700'
-                                : 'text-gray-400 hover:text-red-600'
+                                ? 'text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400'
+                                : 'text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-500'
                         ]" :title="product.isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'">
                         <HeartIcon class="w-5 h-5" :class="{ 'fill-current': product.isInWishlist }" />
                     </button>
 
                     <!-- Share Button -->
                     <button @click.stop="shareProduct"
-                        class="p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                        class="p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-700 transition-colors"
                         title="Share product">
                         <ShareIcon class="w-5 h-5" />
                     </button>
@@ -118,14 +118,14 @@ const primaryCollection = computed(() => {
 
 const getCategoryClass = (category) => {
     const classes = {
-        helmets: 'bg-blue-100 text-blue-800',
-        jackets: 'bg-green-100 text-green-800',
-        gloves: 'bg-purple-100 text-purple-800',
-        boots: 'bg-orange-100 text-orange-800',
-        parts: 'bg-gray-100 text-gray-800',
-        accessories: 'bg-yellow-100 text-yellow-800'
+        helmets: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+        jackets: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+        gloves: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+        boots: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+        parts: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+        accessories: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
     };
-    return classes[category] || 'bg-indigo-100 text-indigo-800';
+    return classes[category] || 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400';
 };
 
 const toggleWishlist = async () => {
@@ -181,6 +181,7 @@ const fallbackShare = (url) => {
 .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }

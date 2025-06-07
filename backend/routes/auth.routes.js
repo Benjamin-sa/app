@@ -1,7 +1,6 @@
 const express = require("express");
 const multer = require("multer");
 const { auth } = require("../config/firebase");
-const forum = require("../services/forum.service");
 const userService = require("../services/forum/user.service");
 const imageService = require("../services/image.service");
 const authenticate = require("../middleware/auth");

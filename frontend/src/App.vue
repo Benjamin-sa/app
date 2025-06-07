@@ -1,5 +1,5 @@
 <template>
-  <div id="app" class="min-h-screen bg-gray-50">
+  <div id="app" class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
     <!-- Navigation -->
     <NavBar />
 
@@ -17,12 +17,17 @@
 import { onMounted } from 'vue';
 import { RouterView } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { useThemeStore } from '@/stores/theme';
 import NavBar from '@/components/common/NavBar.vue';
 import NotificationContainer from '@/components/common/NotificationContainer.vue';
 
 const authStore = useAuthStore();
+const themeStore = useThemeStore();
 
 onMounted(async () => {
+  // Initialize theme first
+  themeStore.initialize();
+
   // Initialize authentication
   await authStore.initialize();
 

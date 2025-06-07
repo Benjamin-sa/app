@@ -25,7 +25,7 @@ class TopicService {
         throw new Error("Valid category is required");
       }
 
-      // Process uploaded files
+      // Process uploaded files (if any)
       let imageRecords = [];
       if (uploadedFiles.length > 0) {
         imageRecords = await imageService.uploadMultipleImages(
@@ -34,15 +34,25 @@ class TopicService {
         );
       }
 
-      // Combine uploaded images with existing image URLs
-      const allImages = [
-        ...imageRecords,
-        ...(topicData.images || []).map((url) => ({
-          url,
-          thumbnailUrl: url,
-          mediumUrl: url,
-        })),
-      ];
+      // Process pre-uploaded image URLs
+      let preUploadedImages = [];
+      if (topicData.images && topicData.images.length > 0) {
+        preUploadedImages = topicData.images.map((imageUrl) => {
+          // If it's already a proper image object, return it
+          if (typeof imageUrl === "object" && imageUrl.url) {
+            return imageUrl;
+          }
+          // If it's just a URL string, create image object
+          return {
+            url: imageUrl,
+            thumbnailUrl: imageUrl,
+            mediumUrl: imageUrl,
+          };
+        });
+      }
+
+      // Combine all images
+      const allImages = [...imageRecords, ...preUploadedImages];
 
       // Get author info
       const authorDoc = await db

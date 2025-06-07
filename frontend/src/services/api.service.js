@@ -1,4 +1,5 @@
 import axios from "axios";
+import authService from "@/services/auth.service";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
@@ -12,12 +13,17 @@ class ApiService {
       },
     });
 
-    // Request interceptor to add auth token
+    // Request interceptor to add auth token from Firebase
     this.client.interceptors.request.use(
-      (config) => {
-        const token = localStorage.getItem("authToken");
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+      async (config) => {
+        try {
+          const firebaseUser = await authService.getCurrentUser();
+          if (firebaseUser) {
+            const token = await firebaseUser.getIdToken();
+            config.headers.Authorization = `Bearer ${token}`;
+          }
+        } catch (error) {
+          console.error("Error getting Firebase token:", error);
         }
         return config;
       },
@@ -29,8 +35,8 @@ class ApiService {
       (response) => response.data,
       (error) => {
         if (error.response?.status === 401) {
-          // Token expired or invalid
-          localStorage.removeItem("authToken");
+          // Token expired or invalid - let Firebase handle this
+          console.log("401 error - redirecting to login");
           window.location.href = "/login";
         }
         return Promise.reject(error);
@@ -123,17 +129,6 @@ class ApiService {
       limit: limit.toString(),
     });
     return this.client.get(`/users/${userId}/answers?${params}`);
-  }
-
-  // File upload - Keep this as it requires special handling
-  async uploadImage(file) {
-    const formData = new FormData();
-    formData.append("image", file);
-    return this.client.post("/upload/image", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
   }
 
   // Voting endpoints

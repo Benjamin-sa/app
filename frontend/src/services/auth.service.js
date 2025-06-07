@@ -56,14 +56,9 @@ class AuthService {
         await updateProfile(userCredential.user, { displayName });
       }
 
-      // Get Firebase token for backend authentication
-      const token = await userCredential.user.getIdToken();
-      localStorage.setItem("authToken", token);
-
       return {
         success: true,
         user: userCredential.user,
-        token,
       };
     } catch (error) {
       return {
@@ -82,14 +77,9 @@ class AuthService {
         password
       );
 
-      // Get Firebase token for backend authentication
-      const token = await userCredential.user.getIdToken();
-      localStorage.setItem("authToken", token);
-
       return {
         success: true,
         user: userCredential.user,
-        token,
       };
     } catch (error) {
       return {
@@ -107,14 +97,9 @@ class AuthService {
         this.googleProvider
       );
 
-      // Get Firebase token for backend authentication
-      const token = await userCredential.user.getIdToken();
-      localStorage.setItem("authToken", token);
-
       return {
         success: true,
         user: userCredential.user,
-        token,
       };
     } catch (error) {
       return {
@@ -128,7 +113,6 @@ class AuthService {
   async logout() {
     try {
       await signOut(this.auth);
-      localStorage.removeItem("authToken");
       return { success: true };
     } catch (error) {
       return {
@@ -156,16 +140,7 @@ class AuthService {
 
   // Listen to auth state changes
   onAuthStateChanged(callback) {
-    return onAuthStateChanged(this.auth, async (user) => {
-      if (user) {
-        // Refresh token when user is authenticated
-        const token = await user.getIdToken();
-        localStorage.setItem("authToken", token);
-      } else {
-        localStorage.removeItem("authToken");
-      }
-      callback(user);
-    });
+    return onAuthStateChanged(this.auth, callback);
   }
 
   // Get user token

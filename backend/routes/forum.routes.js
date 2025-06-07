@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const forumService = require("../services/forum.service");
+const userService = require("../services/forum/user.service");
+const topicService = require("../services/forum/topic.service");
+const answerService = require("../services/forum/answer.service");
+const votingService = require("../services/forum/voting.service");
 const authenticate = require("../middleware/auth");
 const { uploadMultiple, handleUploadError } = require("../middleware/upload");
 const imageService = require("../services/image.service");
@@ -21,7 +24,7 @@ const setCacheHeaders =
  */
 router.get("/users/profile/:uid", setCacheHeaders(300), async (req, res) => {
   try {
-    const profile = await forumService.getUserProfile(req.params.uid);
+    const profile = await userService.getUserProfile(req.params.uid);
     if (!profile) {
       return res.status(404).json({
         success: false,
@@ -50,7 +53,7 @@ router.get(
   setCacheHeaders(300),
   async (req, res) => {
     try {
-      const profile = await forumService.getUserByUsername(req.params.username);
+      const profile = await userService.getUserByUsername(req.params.username);
       if (!profile) {
         return res.status(404).json({
           success: false,
@@ -74,41 +77,8 @@ router.get(
 // ==================== IMAGE UPLOAD ROUTES ====================
 
 /**
- * POST /api/forum/upload/image
- * Upload single image for forum posts
- */
-router.post("/upload/image", authenticate, uploadMultiple, async (req, res) => {
-  try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: "No image file provided",
-      });
-    }
-
-    const file = req.files[0]; // Take first file
-    const imageRecord = await imageService.uploadImage(file, "forum/images");
-
-    res.json({
-      success: true,
-      data: {
-        id: imageRecord.id,
-        url: imageRecord.url,
-        thumbnailUrl: imageRecord.thumbnailUrl,
-        mediumUrl: imageRecord.mediumUrl,
-      },
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      error: error.message,
-    });
-  }
-});
-
-/**
  * POST /api/forum/upload/images
- * Upload multiple images for forum posts
+ * Upload single or multiple images for forum posts
  */
 router.post(
   "/upload/images",
@@ -130,7 +100,9 @@ router.post(
         });
       }
 
-      const imageRecords = await imageService.uploadMultipleImages(
+      console.log("Received files:", req.files.length, "files");
+
+      const imageRecords = await imageService.uploadImages(
         req.files,
         "forum/images"
       );
@@ -142,11 +114,13 @@ router.post(
         mediumUrl: record.mediumUrl,
       }));
 
+      // Always return single object for single file, array for multiple
       res.json({
         success: true,
-        data: responseData,
+        data: req.files.length === 1 ? responseData[0] : responseData,
       });
     } catch (error) {
+      console.error("Image upload error:", error);
       res.status(400).json({
         success: false,
         error: error.message,
@@ -159,9 +133,9 @@ router.post(
 
 /**
  * POST /api/forum/topics
- * Create a new topic with images
+ * Create a new topic with pre-uploaded images
  */
-router.post("/topics", authenticate, uploadMultiple, async (req, res) => {
+router.post("/topics", authenticate, async (req, res) => {
   try {
     const { title, content, category, tags, images } = req.body;
 
@@ -184,12 +158,11 @@ router.post("/topics", authenticate, uploadMultiple, async (req, res) => {
       images: imageUrls,
     };
 
-    // Handle uploaded files if any
-    const uploadedFiles = req.files || [];
-    const topic = await forumService.createTopic(topicData, uploadedFiles);
+    // No uploaded files - images are pre-uploaded URLs
+    const topic = await topicService.createTopic(topicData, []);
 
     // Update user activity
-    await forumService.updateUserActivity(req.user.uid);
+    await userService.updateUserActivity(req.user.uid);
 
     res.status(201).json({
       success: true,
@@ -225,7 +198,7 @@ router.get("/topics", setCacheHeaders(120), async (req, res) => {
       sortOrder,
     };
 
-    const result = await forumService.getTopics(options);
+    const result = await topicService.getTopics(options);
     res.json({
       success: true,
       data: result,
@@ -245,7 +218,7 @@ router.get("/topics", setCacheHeaders(120), async (req, res) => {
 router.get("/topics/:id", setCacheHeaders(180), async (req, res) => {
   try {
     const userId = req.user?.uid || null; // Get user ID if authenticated
-    const topic = await forumService.getTopicById(req.params.id, userId);
+    const topic = await topicService.getTopicById(req.params.id, userId);
     if (!topic) {
       return res.status(404).json({
         success: false,
@@ -285,7 +258,7 @@ router.get("/search", setCacheHeaders(300), async (req, res) => {
       category,
     };
 
-    const topics = await forumService.searchTopics(searchTerm.trim(), options);
+    const topics = await topicService.searchTopics(searchTerm.trim(), options);
     res.json({
       success: true,
       data: topics,
@@ -319,10 +292,10 @@ router.post(
       };
 
       const images = req.files || [];
-      const answer = await forumService.createAnswer(answerData, images);
+      const answer = await answerService.createAnswer(answerData, images);
 
       // Update user activity
-      await forumService.updateUserActivity(req.user.uid);
+      await userService.updateUserActivity(req.user.uid);
 
       res.status(201).json({
         success: true,
@@ -346,7 +319,7 @@ router.get(
   setCacheHeaders(180),
   async (req, res) => {
     try {
-      const result = await forumService.getAnswersByTopic(req.params.topicId);
+      const result = await answerService.getAnswersByTopic(req.params.topicId);
       res.json({
         success: true,
         data: result,
@@ -378,7 +351,7 @@ router.post("/vote", authenticate, async (req, res) => {
     }
 
     // If voteType is null, remove the vote
-    const result = await forumService.vote(
+    const result = await votingService.vote(
       req.user.uid,
       targetId,
       targetType,
@@ -386,7 +359,7 @@ router.post("/vote", authenticate, async (req, res) => {
     );
 
     // Update user activity
-    await forumService.updateUserActivity(req.user.uid);
+    await userService.updateUserActivity(req.user.uid);
 
     res.json({
       success: true,
@@ -410,7 +383,7 @@ router.get(
   setCacheHeaders(600),
   async (req, res) => {
     try {
-      const vote = await forumService.getUserVote(
+      const vote = await votingService.getUserVote(
         req.user.uid,
         req.params.targetId
       );
@@ -435,7 +408,7 @@ router.get(
  */
 router.get("/stats", setCacheHeaders(1800), async (req, res) => {
   try {
-    const stats = await forumService.getForumStats();
+    const stats = await topicService.getForumStats();
     res.json({
       success: true,
       data: stats,

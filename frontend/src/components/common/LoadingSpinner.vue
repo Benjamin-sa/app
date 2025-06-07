@@ -1,6 +1,6 @@
 <template>
     <div :class="[
-        'animate-spin rounded-full border-2 border-gray-300',
+        'animate-spin rounded-full border-2 border-gray-300 dark:border-gray-600',
         sizeClasses,
         colorClasses,
     ]" role="status" :aria-label="label">
@@ -41,9 +41,9 @@ const sizeClasses = computed(() => {
 
 const colorClasses = computed(() => {
     const colors = {
-        primary: 'border-t-primary-600',
+        primary: 'border-t-primary-600 dark:border-t-primary-500',
         white: 'border-t-white',
-        gray: 'border-t-gray-600',
+        gray: 'border-t-gray-600 dark:border-t-gray-400',
     };
     return colors[props.color];
 });

@@ -3,12 +3,12 @@ import { useAuthStore } from "@/stores/auth";
 
 // Lazy load components for better performance
 const HomeView = () => import("@/views/HomeView.vue");
-const ForumView = () => import("@/views/ForumView.vue");
-const TopicView = () => import("@/views/TopicView.vue");
-const ProductsView = () => import("@/views/ProductsView.vue");
-const ProductView = () => import("@/views/ProductView.vue");
-const MyProfileView = () => import("@/views/MyProfileView.vue");
-const UserProfileView = () => import("@/views/UserProfileView.vue");
+const ForumView = () => import("@/views/forum/ForumView.vue");
+const TopicView = () => import("@/views/forum/TopicView.vue");
+const ProductsView = () => import("@/views/products/ProductsView.vue");
+const ProductView = () => import("@/views/products/SingleProductView.vue");
+const MyProfileView = () => import("@/views/user/MyProfileView.vue");
+const UserProfileView = () => import("@/views/user/UserProfileView.vue");
 const LoginView = () => import("@/views/auth/LoginView.vue");
 const RegisterView = () => import("@/views/auth/RegisterView.vue");
 const NotFoundView = () => import("@/views/NotFoundView.vue");

@@ -3,26 +3,27 @@
     <div v-if="open" class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <!-- Background overlay -->
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="$emit('close')"></div>
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 transition-opacity"
+                @click="$emit('close')"></div>
 
             <!-- Modal panel -->
             <div
-                class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Edit Profile</h3>
+                class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Edit Profile</h3>
 
                     <form @submit.prevent="handleSubmit" class="space-y-6">
                         <!-- Avatar Upload -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Profile Picture
                             </label>
                             <div class="flex items-center space-x-4">
                                 <div
-                                    class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                                    class="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center overflow-hidden">
                                     <img v-if="previewUrl || form.avatar_url" :src="previewUrl || form.avatar_url"
                                         alt="Profile preview" class="w-16 h-16 object-cover" />
-                                    <UserIcon v-else class="w-8 h-8 text-gray-400" />
+                                    <UserIcon v-else class="w-8 h-8 text-gray-400 dark:text-gray-500" />
                                 </div>
                                 <div>
                                     <input ref="fileInput" type="file" accept="image/*" @change="handleFileSelect"
@@ -37,75 +38,78 @@
 
                         <!-- Username -->
                         <div>
-                            <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+                            <label for="username"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Username
                             </label>
                             <input id="username" v-model="form.username" type="text" required
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                                :class="{ 'border-red-300': errors.username }" />
-                            <p v-if="errors.username" class="mt-1 text-sm text-red-600">
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:focus:border-primary-400"
+                                :class="{ 'border-red-300 dark:border-red-500': errors.username }" />
+                            <p v-if="errors.username" class="mt-1 text-sm text-red-600 dark:text-red-400">
                                 {{ errors.username }}
                             </p>
                         </div>
 
                         <!-- Bio -->
                         <div>
-                            <label for="bio" class="block text-sm font-medium text-gray-700 mb-2">
+                            <label for="bio" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Bio
                             </label>
                             <textarea id="bio" v-model="form.bio" rows="3"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:focus:border-primary-400"
                                 placeholder="Tell us about yourself..." />
                         </div>
 
                         <!-- Location -->
                         <div>
-                            <label for="location" class="block text-sm font-medium text-gray-700 mb-2">
+                            <label for="location"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Location
                             </label>
                             <input id="location" v-model="form.location" type="text"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:focus:border-primary-400"
                                 placeholder="City, Country" />
                         </div>
 
                         <!-- Website -->
                         <div>
-                            <label for="website" class="block text-sm font-medium text-gray-700 mb-2">
+                            <label for="website"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Website
                             </label>
                             <input id="website" v-model="form.website" type="url"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:focus:border-primary-400"
                                 placeholder="https://example.com" />
                         </div>
 
                         <!-- Privacy Settings -->
                         <div class="space-y-4">
-                            <h3 class="text-lg font-medium text-gray-900">Privacy Settings</h3>
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Privacy Settings</h3>
 
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <label class="text-sm font-medium text-gray-700">
+                                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
                                         Show email publicly
                                     </label>
-                                    <p class="text-sm text-gray-500">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
                                         Allow other users to see your email address
                                     </p>
                                 </div>
                                 <input v-model="form.show_email" type="checkbox"
-                                    class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded" />
+                                    class="h-4 w-4 text-primary-600 focus:ring-primary-500 dark:focus:ring-primary-400 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded" />
                             </div>
 
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <label class="text-sm font-medium text-gray-700">
+                                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
                                         Allow messages
                                     </label>
-                                    <p class="text-sm text-gray-500">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
                                         Allow other users to send you private messages
                                     </p>
                                 </div>
                                 <input v-model="form.allow_messages" type="checkbox"
-                                    class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded" />
+                                    class="h-4 w-4 text-primary-600 focus:ring-primary-500 dark:focus:ring-primary-400 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded" />
                             </div>
                         </div>
 
@@ -132,6 +136,7 @@
 import { ref, computed, watch } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notification';
+import { useApi } from '@/composables/useApi'; // Add this
 import { validateUsername } from '@/utils/helpers';
 import Button from '@/components/common/Button.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
@@ -153,6 +158,9 @@ const emit = defineEmits(['close', 'updated']);
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
 
+// Replace manual loading/error with useApi
+const { loading, error, execute } = useApi();
+
 const form = ref({
     username: '',
     bio: '',
@@ -163,8 +171,7 @@ const form = ref({
     allow_messages: true
 });
 
-const loading = ref(false);
-const error = ref('');
+// Remove manual loading/error refs - now handled by useApi
 const errors = ref({});
 const selectedFile = ref(null);
 const previewUrl = ref('');
@@ -227,36 +234,32 @@ const handleFileSelect = (event) => {
 const uploadAvatar = async () => {
     if (!selectedFile.value) return form.value.avatar_url;
 
-    try {
-        const result = await authStore.uploadAvatar(selectedFile.value);
-        if (result.success) {
-            return result.data.avatar_url;
-        } else {
-            throw new Error(result.message);
+    // Much cleaner with useApi
+    return await execute(
+        () => authStore.uploadAvatar(selectedFile.value),
+        {
+            throwOnError: true,
+            showNotification: true,
+            notificationStore
         }
-    } catch (err) {
-        console.error('Avatar upload error:', err);
-        throw new Error('Failed to upload avatar');
-    }
+    );
 };
 
 const handleSubmit = async () => {
     if (!isFormValid.value) return;
 
-    try {
-        loading.value = true;
-        error.value = '';
-
+    const result = await execute(async () => {
         // Upload avatar if selected
         let avatarUrl = form.value.avatar_url;
         if (selectedFile.value) {
-            avatarUrl = await uploadAvatar();
+            const uploadResult = await uploadAvatar();
+            avatarUrl = uploadResult?.avatar_url || uploadResult;
         }
 
-        // Update profile using the auth store
-        const result = await authStore.updateProfile({
+        // Update profile
+        return await authStore.updateProfile({
             username: form.value.username,
-            displayName: form.value.username, // Use username as displayName for now
+            displayName: form.value.username,
             bio: form.value.bio,
             location: form.value.location,
             website: form.value.website,
@@ -264,19 +267,15 @@ const handleSubmit = async () => {
             show_email: form.value.show_email,
             allow_messages: form.value.allow_messages
         });
+    }, {
+        showNotification: true,
+        notificationStore
+    });
 
-        if (result.success) {
-            notificationStore.success('Profile updated', 'Your profile has been updated successfully!');
-            emit('updated', result.data);
-            emit('close');
-        } else {
-            throw new Error(result.message || 'Failed to update profile');
-        }
-    } catch (err) {
-        console.error('Profile update error:', err);
-        error.value = err.message || 'Failed to update profile';
-    } finally {
-        loading.value = false;
+    if (result) {
+        notificationStore.success('Profile updated', 'Your profile has been updated successfully!');
+        emit('updated', result);
+        emit('close');
     }
 };
 </script>

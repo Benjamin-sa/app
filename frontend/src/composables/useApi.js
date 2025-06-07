@@ -3,23 +3,39 @@ import { ref, readonly } from "vue";
 export function useApi() {
   const loading = ref(false);
   const error = ref(null);
-  const data = ref(null);
 
   const execute = async (apiCall, options = {}) => {
     loading.value = true;
     error.value = null;
-    data.value = null;
 
     try {
       const result = await apiCall();
 
+      // Handle your current service response pattern
       if (result && result.success) {
-        data.value = result.data;
-        return result.data;
+        // Show success notification if requested
+        if (options.successMessage && options.notificationStore) {
+          options.notificationStore.success(
+            options.successTitle || "Success",
+            options.successMessage
+          );
+        }
+        return result.data || result;
       } else {
-        error.value = result?.message || "An error occurred";
+        const errorMessage =
+          result?.message || result?.error || "An error occurred";
+        error.value = errorMessage;
+
+        // Show error notification if requested
+        if (options.showErrorNotification && options.notificationStore) {
+          options.notificationStore.error(
+            options.errorTitle || "Error",
+            errorMessage
+          );
+        }
+
         if (options.throwOnError) {
-          throw new Error(error.value);
+          throw new Error(errorMessage);
         }
         return null;
       }
@@ -27,6 +43,14 @@ export function useApi() {
       const errorMessage =
         err.response?.data?.message || err.message || "An error occurred";
       error.value = errorMessage;
+
+      // Show error notification if requested
+      if (options.showErrorNotification && options.notificationStore) {
+        options.notificationStore.error(
+          options.errorTitle || "Error",
+          errorMessage
+        );
+      }
 
       if (options.throwOnError) {
         throw err;
@@ -40,13 +64,11 @@ export function useApi() {
   const reset = () => {
     loading.value = false;
     error.value = null;
-    data.value = null;
   };
 
   return {
     loading: readonly(loading),
     error: readonly(error),
-    data: readonly(data),
     execute,
     reset,
   };

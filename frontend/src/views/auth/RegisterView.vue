@@ -1,13 +1,14 @@
 <template>
-    <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
         <div class="max-w-md w-full space-y-8">
             <div>
-                <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
                     Create your account
                 </h2>
-                <p class="mt-2 text-center text-sm text-gray-600">
+                <p class="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
                     Or
-                    <router-link to="/login" class="font-medium text-primary-600 hover:text-primary-500">
+                    <router-link to="/login"
+                        class="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
                         sign in to your existing account
                     </router-link>
                 </p>
@@ -16,52 +17,53 @@
             <form class="mt-8 space-y-6" @submit.prevent="handleRegister">
                 <div class="space-y-4">
                     <div>
-                        <label for="username" class="block text-sm font-medium text-gray-700">
+                        <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                             Username
                         </label>
                         <input id="username" v-model="form.username" name="username" type="text" autocomplete="username"
                             required
-                            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                             placeholder="Enter your username" :disabled="loading">
-                        <p v-if="form.username && !isUsernameValid" class="mt-1 text-sm text-red-600">
+                        <p v-if="form.username && !isUsernameValid" class="mt-1 text-sm text-red-600 dark:text-red-400">
                             Username must be 3-20 characters and contain only letters, numbers, and underscores
                         </p>
                     </div>
 
                     <div>
-                        <label for="email" class="block text-sm font-medium text-gray-700">
+                        <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                             Email address
                         </label>
                         <input id="email" v-model="form.email" name="email" type="email" autocomplete="email" required
-                            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                             placeholder="Enter your email" :disabled="loading">
-                        <p v-if="form.email && !isEmailValid" class="mt-1 text-sm text-red-600">
+                        <p v-if="form.email && !isEmailValid" class="mt-1 text-sm text-red-600 dark:text-red-400">
                             Please enter a valid email address
                         </p>
                     </div>
 
                     <div>
-                        <label for="password" class="block text-sm font-medium text-gray-700">
+                        <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                             Password
                         </label>
                         <input id="password" v-model="form.password" name="password" type="password"
                             autocomplete="new-password" required
-                            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                             placeholder="Enter your password" :disabled="loading">
-                        <p v-if="form.password && !isPasswordValid" class="mt-1 text-sm text-red-600">
+                        <p v-if="form.password && !isPasswordValid" class="mt-1 text-sm text-red-600 dark:text-red-400">
                             Password must be at least 6 characters long
                         </p>
                     </div>
 
                     <div>
-                        <label for="confirmPassword" class="block text-sm font-medium text-gray-700">
+                        <label for="confirmPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                             Confirm Password
                         </label>
                         <input id="confirmPassword" v-model="form.confirmPassword" name="confirmPassword"
                             type="password" autocomplete="new-password" required
-                            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                             placeholder="Confirm your password" :disabled="loading">
-                        <p v-if="form.confirmPassword && !isPasswordMatch" class="mt-1 text-sm text-red-600">
+                        <p v-if="form.confirmPassword && !isPasswordMatch"
+                            class="mt-1 text-sm text-red-600 dark:text-red-400">
                             Passwords do not match
                         </p>
                     </div>
@@ -69,14 +71,16 @@
 
                 <div class="flex items-center">
                     <input id="terms" v-model="form.acceptTerms" name="terms" type="checkbox" required
-                        class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
-                    <label for="terms" class="ml-2 block text-sm text-gray-900">
+                        class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700">
+                    <label for="terms" class="ml-2 block text-sm text-gray-900 dark:text-gray-300">
                         I agree to the
-                        <router-link to="/terms" class="text-primary-600 hover:text-primary-500">
+                        <router-link to="/terms"
+                            class="text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
                             Terms of Service
                         </router-link>
                         and
-                        <router-link to="/privacy" class="text-primary-600 hover:text-primary-500">
+                        <router-link to="/privacy"
+                            class="text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
                             Privacy Policy
                         </router-link>
                     </label>

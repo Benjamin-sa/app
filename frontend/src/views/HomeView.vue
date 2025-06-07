@@ -26,13 +26,13 @@
         </section>
 
         <!-- Features Section -->
-        <section class="py-16 bg-white">
+        <section class="py-16 bg-white dark:bg-gray-900">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-12">
-                    <h2 class="text-3xl font-bold text-gray-900 mb-4">
+                    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
                         Everything You Need in One Place
                     </h2>
-                    <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                    <p class="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
                         Join thousands of motorcycle enthusiasts sharing their passion, knowledge, and experiences.
                     </p>
                 </div>
@@ -40,33 +40,33 @@
                 <div class="grid md:grid-cols-3 gap-8">
                     <div class="text-center">
                         <div
-                            class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <ChatBubbleLeftRightIcon class="w-8 h-8 text-primary-600" />
+                            class="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <ChatBubbleLeftRightIcon class="w-8 h-8 text-primary-600 dark:text-primary-500" />
                         </div>
-                        <h3 class="text-xl font-semibold text-gray-900 mb-2">Active Forum</h3>
-                        <p class="text-gray-600">
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Active Forum</h3>
+                        <p class="text-gray-600 dark:text-gray-400">
                             Engage with fellow riders, ask questions, share experiences, and learn from the community.
                         </p>
                     </div>
 
                     <div class="text-center">
                         <div
-                            class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <ShoppingBagIcon class="w-8 h-8 text-primary-600" />
+                            class="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <ShoppingBagIcon class="w-8 h-8 text-primary-600 dark:text-primary-500" />
                         </div>
-                        <h3 class="text-xl font-semibold text-gray-900 mb-2">Product Catalog</h3>
-                        <p class="text-gray-600">
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Product Catalog</h3>
+                        <p class="text-gray-600 dark:text-gray-400">
                             Discover and review the latest motorcycle gear, parts, and accessories from trusted brands.
                         </p>
                     </div>
 
                     <div class="text-center">
                         <div
-                            class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <UserGroupIcon class="w-8 h-8 text-primary-600" />
+                            class="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <UserGroupIcon class="w-8 h-8 text-primary-600 dark:text-primary-500" />
                         </div>
-                        <h3 class="text-xl font-semibold text-gray-900 mb-2">Community</h3>
-                        <p class="text-gray-600">
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Community</h3>
+                        <p class="text-gray-600 dark:text-gray-400">
                             Connect with like-minded riders, build your reputation, and become part of the family.
                         </p>
                     </div>
@@ -75,13 +75,13 @@
         </section>
 
         <!-- Recent Activity Section -->
-        <section class="py-16 bg-gray-50">
+        <section class="py-16 bg-gray-50 dark:bg-gray-800">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class=" gap-12">
                     <!-- Recent Forum Topics -->
                     <div>
                         <div class="flex items-center justify-between mb-6">
-                            <h2 class="text-2xl font-bold text-gray-900">Recent Forum Activity</h2>
+                            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Recent Forum Activity</h2>
                             <Button variant="outline" size="sm" @click="$router.push('/forum')">
                                 View All
                             </Button>
@@ -90,11 +90,12 @@
                         <LoadingSpinner v-if="loadingTopics" />
                         <div v-else-if="recentTopics.length > 0" class="space-y-4">
                             <div v-for="topic in recentTopics" :key="topic.id"
-                                class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+                                class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md dark:hover:shadow-gray-900/25 transition-shadow cursor-pointer"
                                 @click="$router.push(`/forum/topic/${topic.id}`)">
-                                <h3 class="font-medium text-gray-900 mb-1">{{ topic.title }}</h3>
-                                <p class="text-sm text-gray-600 mb-2">{{ topic.content.substring(0, 100) }}...</p>
-                                <div class="flex items-center text-xs text-gray-500">
+                                <h3 class="font-medium text-gray-900 dark:text-white mb-1">{{ topic.title }}</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ topic.content.substring(0,
+                                    100) }}...</p>
+                                <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
                                     <span>by {{ topic.authorDisplayName }}</span>
                                     <span class="mx-2">•</span>
                                     <span>{{ formatDate(topic.createdAt) }}</span>
@@ -103,7 +104,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div v-else class="text-center py-8 text-gray-500">
+                        <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400">
                             No recent topics found
                         </div>
                     </div>

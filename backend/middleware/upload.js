@@ -40,13 +40,10 @@ const upload = multer({
   },
 });
 
-// Middleware for single image upload
-const uploadSingle = upload.single("image");
-
-// Middleware for multiple image uploads
+// Only keep what you actually use: multiple file uploads
 const uploadMultiple = upload.array("images", 5);
 
-// Error handler for multer errors
+// Error handler for multer errors - THIS IS USED in your routes!
 const handleUploadError = (error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     if (error.code === "LIMIT_FILE_SIZE") {
@@ -80,9 +77,8 @@ const handleUploadError = (error, req, res, next) => {
   next(error);
 };
 
+// Only export what you actually use
 module.exports = {
-  upload,
-  uploadSingle,
   uploadMultiple,
   handleUploadError,
 };

@@ -13,8 +13,8 @@
             <!-- Profile Header -->
             <ProfileHeader :user="userProfile">
                 <template #actions>
-                    <Button variant="secondary" size="sm" @click="editProfile">
-                        Edit Profile
+                    <Button variant="secondary" size="sm" @click="sendMessage">
+                        Send Message
                     </Button>
                 </template>
             </ProfileHeader>
@@ -24,21 +24,24 @@
                 :userProducts="userProducts" ref="profileTabs">
                 <template #default="{ activeTab }">
                     <ProfileTabContent :activeTab="activeTab" :userProfile="userProfile" :userTopics="userTopics"
-                        :userAnswers="userAnswers" :userProducts="userProducts" :showUserDetails="true"
+                        :userAnswers="userAnswers" :userProducts="userProducts" :showUserDetails="false"
                         @vote="handleVote" />
                 </template>
             </ProfileTabs>
         </div>
 
-        <!-- Original Edit Profile Modal - uncommented for testing -->
-        <EditProfileForm :open="showEditModal" :user="userProfile" @close="showEditModal = false"
-            @updated="handleProfileSaved" />
+        <!-- User Not Found -->
+        <div v-else class="text-center py-12">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">User Not Found</h1>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">The user profile you're looking for doesn't exist.</p>
+            <router-link to="/" class="btn-primary">Go Home</router-link>
+        </div>
     </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotification } from '@/composables/useNotification'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
@@ -47,9 +50,9 @@ import Button from '@/components/common/Button.vue'
 import ProfileHeader from '@/components/profile/ProfileHeader.vue'
 import ProfileTabs from '@/components/profile/ProfileTabs.vue'
 import ProfileTabContent from '@/components/profile/ProfileTabContent.vue'
-import EditProfileForm from '@/components/profile/EditProfileForm.vue'
 import { apiService } from '@/services/api.service'
 
+const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const { showNotification } = useNotification()
@@ -60,7 +63,6 @@ const userAnswers = ref([])
 const userProducts = ref([])
 const loading = ref(true)
 const error = ref(null)
-const showEditModal = ref(false)
 const profileTabs = ref(null)
 
 const fetchUserProfile = async () => {
@@ -68,21 +70,16 @@ const fetchUserProfile = async () => {
         loading.value = true
         error.value = null
 
-        if (!authStore.user?.uid) {
-            router.push('/login')
+        const identifier = route.params.id
+
+        if (!identifier) {
+            error.value = 'User not found'
             return
         }
 
-        const response = await apiService.get(`/forum/users/profile/${authStore.user.uid}`)
+        const response = await apiService.get(`/forum/users/profile/${identifier}`)
 
-        // Handle the nested data structure from API
-        if (response.success && response.data) {
-            userProfile.value = response.data
-        } else {
-            // Fallback: if response structure is different, try to extract data
-            const { success, ...userData } = response
-            userProfile.value = userData
-        }
+        userProfile.value = response.data
 
         // Fetch user content
         await fetchUserContent()
@@ -96,7 +93,7 @@ const fetchUserProfile = async () => {
 
 const fetchUserContent = async () => {
     try {
-        const targetUserId = userProfile.value?.id || userProfile.value?.uid
+        const targetUserId = userProfile.value?.id || userProfile.value?.uid || route.params.id
 
         // TODO: Uncomment when APIs are ready
         // const topicsResponse = await apiService.getUserTopics(targetUserId)
@@ -117,14 +114,8 @@ const fetchUserContent = async () => {
     }
 }
 
-const editProfile = () => {
-    showEditModal.value = true;
-}
-
-const handleProfileSaved = (updatedProfile) => {
-    userProfile.value = { ...userProfile.value, ...updatedProfile }
-    showEditModal.value = false
-    showNotification('Profile updated successfully!', 'success')
+const sendMessage = () => {
+    showNotification('Messaging feature coming soon!', 'info')
 }
 
 const handleVote = async ({ topicId, voteType }) => {
@@ -160,5 +151,17 @@ const handleVote = async ({ topicId, voteType }) => {
 
 onMounted(() => {
     fetchUserProfile()
+})
+
+// Watch for route changes to handle navigation between profiles
+watch(() => route.params.id, (newId, oldId) => {
+    if (newId !== oldId) {
+        userProfile.value = null
+        userTopics.value = []
+        userAnswers.value = []
+        userProducts.value = []
+
+        fetchUserProfile()
+    }
 })
 </script>

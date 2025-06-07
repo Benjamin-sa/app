@@ -3,8 +3,8 @@
         <!-- Header -->
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900">Forum</h1>
-                <p class="mt-2 text-gray-600">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Forum</h1>
+                <p class="mt-2 text-gray-600 dark:text-gray-400">
                     Join the conversation with fellow motorcycle enthusiasts
                 </p>
             </div>
@@ -20,15 +20,16 @@
         </div>
 
         <!-- Filters and Search -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div
+            class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <!-- Search -->
                 <div class="flex-1 max-w-lg">
                     <div class="relative">
                         <MagnifyingGlassIcon
-                            class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
                         <input v-model="searchQuery" type="text" placeholder="Search topics..."
-                            class="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                            class="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                             @input="debouncedSearch">
                     </div>
                 </div>
@@ -36,7 +37,7 @@
                 <!-- Filters -->
                 <div class="flex flex-wrap gap-3">
                     <select v-model="selectedCategory"
-                        class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500">
+                        class="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         <option value="">All Categories</option>
                         <option value="general">General Discussion</option>
                         <option value="technical">Technical Help</option>
@@ -46,7 +47,7 @@
                     </select>
 
                     <select v-model="sortBy"
-                        class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500">
+                        class="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         <option value="createdAt">Latest</option>
                         <option value="updatedAt">Recently Active</option>
                         <option value="voteCount">Most Popular</option>
@@ -60,9 +61,9 @@
             <LoadingSpinner v-if="loading" />
 
             <div v-else-if="topics.length === 0" class="text-center py-12">
-                <ChatBubbleLeftRightIcon class="mx-auto h-12 w-12 text-gray-400" />
-                <h3 class="mt-2 text-sm font-medium text-gray-900">No topics found</h3>
-                <p class="mt-1 text-sm text-gray-500">
+                <ChatBubbleLeftRightIcon class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No topics found</h3>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     {{ searchQuery ? 'Try adjusting your search terms.' : 'Be the first to start a discussion!' }}
                 </p>
                 <div class="mt-6">
@@ -84,7 +85,7 @@
                     Previous
                 </Button>
 
-                <span class="px-3 py-2 text-sm text-gray-700">
+                <span class="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
                     Page {{ currentPage }}
                 </span>
 
@@ -98,15 +99,16 @@
         <div v-if="showCreateTopic" class="fixed inset-0 z-50 overflow-y-auto">
             <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
                 <!-- Backdrop -->
-                <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+                <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75"
                     @click="showCreateTopic = false"></div>
 
                 <!-- Modal Content -->
                 <div
-                    class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg relative z-60">
+                    class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg relative z-60">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-medium text-gray-900">Create New Topic</h3>
-                        <button @click="showCreateTopic = false" class="text-gray-400 hover:text-gray-600">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Create New Topic</h3>
+                        <button @click="showCreateTopic = false"
+                            class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
                             <XMarkIcon class="w-6 h-6" />
                         </button>
                     </div>
@@ -120,7 +122,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import { useForumStore } from '@/stores/forum';
+import topicService from '@/services/topic.service';
 import { debounce } from '@/utils/helpers';
 import Button from '@/components/common/Button.vue';
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
@@ -134,7 +136,6 @@ import {
 } from '@heroicons/vue/24/outline';
 
 const authStore = useAuthStore();
-const forumStore = useForumStore();
 
 // Local state for this view
 const topics = ref([]);
@@ -145,6 +146,7 @@ const currentPage = ref(1);
 const hasMore = ref(false);
 const showCreateTopic = ref(false);
 const loading = ref(false);
+const error = ref(null);
 
 const debouncedSearch = debounce(() => {
     currentPage.value = 1;
@@ -154,8 +156,9 @@ const debouncedSearch = debounce(() => {
 const loadTopics = async () => {
     try {
         loading.value = true;
+        error.value = null;
 
-        const result = await forumStore.fetchTopics(
+        const result = await topicService.getTopics(
             currentPage.value,
             20,
             searchQuery.value,
@@ -166,11 +169,13 @@ const loadTopics = async () => {
             topics.value = result.data.topics || [];
             hasMore.value = result.data.hasMore || false;
         } else {
+            error.value = result.message;
             console.error('Error loading topics:', result.message);
             topics.value = [];
             hasMore.value = false;
         }
     } catch (error) {
+        error.value = 'Failed to load topics';
         console.error('Error loading topics:', error);
         topics.value = [];
         hasMore.value = false;
@@ -195,11 +200,6 @@ const handleTopicCreated = (topic) => {
 watch([selectedCategory, sortBy], () => {
     currentPage.value = 1;
     loadTopics();
-});
-
-// Add debugging
-watch(showCreateTopic, (newValue) => {
-    console.log('showCreateTopic changed to:', newValue);
 });
 
 onMounted(() => {

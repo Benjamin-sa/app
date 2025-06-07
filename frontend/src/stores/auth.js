@@ -9,11 +9,6 @@ export const useAuthStore = defineStore("auth", () => {
   const loading = ref(false);
   const error = ref(null);
   const initialized = ref(false);
-  const tokenRefreshInterval = ref(null);
-  const lastTokenRefresh = ref(null);
-
-  // Token refresh interval in milliseconds (45 minutes)
-  const TOKEN_REFRESH_INTERVAL = 45 * 60 * 1000;
 
   // Getters
   const isAuthenticated = computed(() => !!user.value);
@@ -22,54 +17,42 @@ export const useAuthStore = defineStore("auth", () => {
   );
   const userAvatar = computed(() => user.value?.photoURL || null);
 
-  // Token refresh functionality
+  // Get current token from Firebase (no localStorage)
+  const getCurrentToken = async () => {
+    try {
+      const firebaseUser = await authService.getCurrentUser();
+      if (firebaseUser) {
+        return await firebaseUser.getIdToken(false);
+      }
+      return null;
+    } catch (error) {
+      console.error("Error getting current token:", error);
+      return null;
+    }
+  };
+
+  // Simplified token refresh - only for manual refresh if needed
   const refreshToken = async () => {
     try {
       const firebaseUser = await authService.getCurrentUser();
       if (firebaseUser) {
         // Force token refresh
         await firebaseUser.getIdToken(true);
-        lastTokenRefresh.value = new Date();
-        console.log("Token refreshed successfully at:", lastTokenRefresh.value);
+        console.log("Token refreshed successfully");
         return true;
+      } else {
+        return false;
       }
-      return false;
     } catch (error) {
       console.error("Failed to refresh token:", error);
       return false;
     }
   };
 
-  const startTokenRefreshInterval = () => {
-    // Clear any existing interval
-    if (tokenRefreshInterval.value) {
-      clearInterval(tokenRefreshInterval.value);
-    }
-
-    // Start new interval
-    tokenRefreshInterval.value = setInterval(async () => {
-      if (isAuthenticated.value) {
-        await refreshToken();
-      } else {
-        // Stop interval if user is not authenticated
-        stopTokenRefreshInterval();
-      }
-    }, TOKEN_REFRESH_INTERVAL);
-
-    console.log("Token refresh interval started");
-  };
-
-  const stopTokenRefreshInterval = () => {
-    if (tokenRefreshInterval.value) {
-      clearInterval(tokenRefreshInterval.value);
-      tokenRefreshInterval.value = null;
-      console.log("Token refresh interval stopped");
-    }
-  };
-
   // Helper function to merge Firebase user with backend data
   const mergeUserData = async (firebaseUser) => {
     try {
+      // Firebase automatically handles token - no need to store it
       const response = await apiService.getCurrentUser();
       if (response.success && response.data) {
         // User exists in backend, merge data
@@ -135,9 +118,6 @@ export const useAuthStore = defineStore("auth", () => {
       const firebaseUser = await authService.getCurrentUser();
       if (firebaseUser) {
         user.value = await mergeUserData(firebaseUser);
-        // Start token refresh interval when user is authenticated
-        startTokenRefreshInterval();
-        lastTokenRefresh.value = new Date();
       }
     } catch (err) {
       console.error("Auth initialization error:", err);
@@ -160,9 +140,6 @@ export const useAuthStore = defineStore("auth", () => {
 
       if (result.success) {
         user.value = await mergeUserData(result.user);
-        // Start token refresh interval after successful login
-        startTokenRefreshInterval();
-        lastTokenRefresh.value = new Date();
         return { success: true };
       } else {
         error.value = result.message;
@@ -186,9 +163,6 @@ export const useAuthStore = defineStore("auth", () => {
 
       if (result.success) {
         user.value = await mergeUserData(result.user);
-        // Start token refresh interval after successful login
-        startTokenRefreshInterval();
-        lastTokenRefresh.value = new Date();
         return { success: true };
       } else {
         error.value = result.message;
@@ -218,9 +192,6 @@ export const useAuthStore = defineStore("auth", () => {
         // For registration, always sync to create the user profile
         await syncUserWithBackend(result.user);
         user.value = await mergeUserData(result.user);
-        // Start token refresh interval after successful registration
-        startTokenRefreshInterval();
-        lastTokenRefresh.value = new Date();
         return { success: true };
       } else {
         error.value = result.message;
@@ -243,9 +214,6 @@ export const useAuthStore = defineStore("auth", () => {
       const result = await authService.logout();
       if (result.success) {
         user.value = null;
-        // Stop token refresh interval on logout
-        stopTokenRefreshInterval();
-        lastTokenRefresh.value = null;
         return { success: true };
       } else {
         error.value = result.message;
@@ -354,20 +322,11 @@ export const useAuthStore = defineStore("auth", () => {
       if (firebaseUser && !user.value) {
         // User logged in from another tab/window
         user.value = await mergeUserData(firebaseUser);
-        startTokenRefreshInterval();
-        lastTokenRefresh.value = new Date();
       } else if (!firebaseUser && user.value) {
         // User logged out from another tab/window
         user.value = null;
-        stopTokenRefreshInterval();
-        lastTokenRefresh.value = null;
       }
     });
-  };
-
-  // Cleanup function for when the store is destroyed
-  const cleanup = () => {
-    stopTokenRefreshInterval();
   };
 
   return {
@@ -376,7 +335,6 @@ export const useAuthStore = defineStore("auth", () => {
     loading,
     error,
     initialized,
-    lastTokenRefresh,
 
     // Getters
     isAuthenticated,
@@ -393,8 +351,8 @@ export const useAuthStore = defineStore("auth", () => {
     updateProfile,
     uploadAvatar,
     refreshToken,
+    getCurrentToken,
     clearError,
     setupAuthListener,
-    cleanup,
   };
 });

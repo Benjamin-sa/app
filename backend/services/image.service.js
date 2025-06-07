@@ -52,17 +52,15 @@ class ImageService {
       const image = sharp(buffer);
       const metadata = await image.metadata();
 
-      // Generate optimized versions
-      const optimized = await image
-        .jpeg({ quality: 85, progressive: true })
-        .toBuffer();
+      // Generate optimized versions in WebP format
+      const optimized = await image.webp({ quality: 85, effort: 4 }).toBuffer();
 
       const thumbnail = await image
         .resize(this.thumbnailSize.width, this.thumbnailSize.height, {
           fit: "cover",
           position: "center",
         })
-        .jpeg({ quality: 80 })
+        .webp({ quality: 80, effort: 4 })
         .toBuffer();
 
       const medium = await image
@@ -70,7 +68,7 @@ class ImageService {
           fit: "inside",
           withoutEnlargement: true,
         })
-        .jpeg({ quality: 85 })
+        .webp({ quality: 85, effort: 4 })
         .toBuffer();
 
       return {
@@ -95,14 +93,14 @@ class ImageService {
   async uploadToStorage(buffer, filename, folder = "forum/images") {
     try {
       const fileId = uuidv4();
-      const extension = ".jpg"; // Always save as JPG after processing
+      const extension = ".webp"; // Changed to WebP
       const storagePath = `${folder}/${fileId}${extension}`;
 
       const file = this.bucket.file(storagePath);
 
       await file.save(buffer, {
         metadata: {
-          contentType: "image/jpeg",
+          contentType: "image/webp", // Changed to WebP MIME type
           cacheControl: "public, max-age=31536000", // 1 year cache
         },
         public: true,
@@ -158,7 +156,7 @@ class ImageService {
       // Create image record
       const imageRecord = {
         id: originalUpload.fileId,
-        filename: originalUpload.fileId + ".jpg",
+        filename: originalUpload.fileId + ".webp", // Changed to WebP extension
         originalName: file.originalname,
         url: originalUpload.url,
         thumbnailUrl: thumbnailUpload.url,
@@ -166,7 +164,7 @@ class ImageService {
         size: processed.metadata.size,
         width: processed.metadata.width,
         height: processed.metadata.height,
-        mimeType: "image/jpeg",
+        mimeType: "image/webp", // Changed to WebP MIME type
         uploadedAt: admin.firestore.FieldValue.serverTimestamp(),
       };
 
@@ -177,15 +175,36 @@ class ImageService {
   }
 
   /**
+   * Upload single or multiple images with all optimizations
+   */
+  async uploadImages(files, folder = "forum/images") {
+    try {
+      // Ensure files is always an array
+      const fileArray = Array.isArray(files) ? files : [files];
+
+      // Filter out any undefined/null files
+      const validFiles = fileArray.filter((file) => file && file.buffer);
+
+      if (validFiles.length === 0) {
+        throw new Error("No valid files provided");
+      }
+
+      // Upload all files
+      const uploads = validFiles.map((file) => this.uploadImage(file, folder));
+      const results = await Promise.all(uploads);
+
+      return results;
+    } catch (error) {
+      throw new Error(`Image upload failed: ${error.message}`);
+    }
+  }
+
+  /**
    * Upload multiple images
+   * @deprecated Use uploadImages instead
    */
   async uploadMultipleImages(files, folder = "forum/images") {
-    try {
-      const uploads = files.map((file) => this.uploadImage(file, folder));
-      return await Promise.all(uploads);
-    } catch (error) {
-      throw new Error(`Multiple image upload failed: ${error.message}`);
-    }
+    return this.uploadImages(files, folder);
   }
 
   /**

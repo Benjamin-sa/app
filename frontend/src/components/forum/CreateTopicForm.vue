@@ -2,24 +2,24 @@
     <form @submit.prevent="handleSubmit" class="space-y-6">
         <!-- Title -->
         <div>
-            <label for="title" class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Topic Title
             </label>
             <input id="title" v-model="form.title" type="text" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 placeholder="Enter a descriptive title for your topic" :disabled="loading">
-            <p v-if="form.title && form.title.length < 10" class="mt-1 text-sm text-orange-600">
+            <p v-if="form.title && form.title.length < 10" class="mt-1 text-sm text-orange-600 dark:text-orange-400">
                 Title should be at least 10 characters long
             </p>
         </div>
 
         <!-- Category -->
         <div>
-            <label for="category" class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Category
             </label>
             <select id="category" v-model="form.category" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 :disabled="loading">
                 <option value="">Select a category</option>
                 <option value="general">General Discussion</option>
@@ -32,17 +32,18 @@
 
         <!-- Content -->
         <div>
-            <label for="content" class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="content" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Content
             </label>
             <textarea id="content" v-model="form.content" rows="8" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 placeholder="Describe your topic in detail. Be specific and provide context to help others understand and respond."
                 :disabled="loading"></textarea>
-            <p class="mt-1 text-sm text-gray-500">
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 {{ form.content.length }}/5000 characters
             </p>
-            <p v-if="form.content && form.content.length < 20" class="mt-1 text-sm text-orange-600">
+            <p v-if="form.content && form.content.length < 20"
+                class="mt-1 text-sm text-orange-600 dark:text-orange-400">
                 Content should be at least 20 characters long
             </p>
         </div>
@@ -112,14 +113,14 @@
 
                     <!-- Remove Button -->
                     <button v-if="!image.uploading" type="button" @click="removeImage(index)"
-                        class="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        class="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20"
                         :disabled="loading">
                         <XMarkIcon class="w-4 h-4" />
                     </button>
 
                     <!-- Error State -->
                     <div v-if="image.error"
-                        class="absolute inset-0 bg-red-500 bg-opacity-75 flex items-center justify-center">
+                        class="absolute inset-0 bg-red-500 bg-opacity-75 flex items-center justify-center z-10">
                         <div class="text-white text-center p-2">
                             <ExclamationTriangleIcon class="w-6 h-6 mx-auto mb-1" />
                             <p class="text-xs">Upload failed</p>
@@ -151,16 +152,18 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { useForumStore } from '@/stores/forum';
 import { useNotificationStore } from '@/stores/notification';
+import { useApi } from '@/composables/useApi';
+import forumService from '@/services/forum.service';
+import topicService from '@/services/topic.service';
 import Button from '@/components/common/Button.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
 import { XMarkIcon, PhotoIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
 
 const emit = defineEmits(['success', 'cancel']);
 
-const forumStore = useForumStore();
 const notificationStore = useNotificationStore();
+const { loading, error, execute } = useApi();
 
 const form = ref({
     title: '',
@@ -171,8 +174,6 @@ const form = ref({
 });
 
 const tagInput = ref('');
-const loading = ref(false);
-const error = ref('');
 const uploadError = ref('');
 const fileInput = ref(null);
 
@@ -251,9 +252,10 @@ const uploadImages = async () => {
             image.progress = 0;
 
             const formData = new FormData();
-            formData.append('image', image.file);
+            formData.append('images', image.file);
 
-            const result = await forumStore.uploadImages(formData, (progress) => {
+            // Use execute from useApi, but handle progress manually for individual images
+            const result = await forumService.uploadImages(formData, (progress) => {
                 image.progress = progress;
             });
 
@@ -289,57 +291,44 @@ const resetForm = () => {
         images: []
     };
     tagInput.value = '';
-    error.value = '';
     uploadError.value = '';
 };
 
 const handleSubmit = async () => {
-    console.log('Form submission started', { isFormValid: isFormValid.value, form: form.value });
+    if (!isFormValid.value) return;
 
-    if (!isFormValid.value) {
-        console.log('Form validation failed');
-        return;
-    }
-
-    try {
-        loading.value = true;
-        error.value = '';
-
+    const result = await execute(async () => {
         // Upload images first
         await uploadImages();
 
         // Check if any image uploads failed
         const failedUploads = form.value.images.filter(img => img.error);
         if (failedUploads.length > 0) {
-            error.value = 'Some images failed to upload. Please try again or remove them.';
-            loading.value = false;
-            return;
+            throw new Error('Some images failed to upload. Please try again or remove them.');
         }
 
-        console.log('Calling forumStore.createTopic...');
+        // Get only the URLs from successfully uploaded images
+        const imageUrls = form.value.images
+            .filter(img => img.url && !img.error)
+            .map(img => img.url);
 
-        const result = await forumStore.createTopic({
+        return await topicService.createTopic({
             title: form.value.title.trim(),
             category: form.value.category,
             content: form.value.content.trim(),
             tags: form.value.tags,
-            images: form.value.images.filter(img => img.url).map(img => img.url)
+            images: imageUrls
         });
+    }, {
+        successMessage: 'Your topic has been posted successfully.',
+        successTitle: 'Topic created!',
+        showErrorNotification: true,
+        notificationStore
+    });
 
-        console.log('createTopic result:', result);
-
-        if (result.success) {
-            notificationStore.success('Topic created!', 'Your topic has been posted successfully.');
-            resetForm();
-            emit('success', result.data);
-        } else {
-            error.value = result.message || 'Failed to create topic. Please try again.';
-        }
-    } catch (err) {
-        console.error('Error creating topic:', err);
-        error.value = err.response?.data?.message || err.message || 'Failed to create topic. Please try again.';
-    } finally {
-        loading.value = false;
+    if (result) {
+        resetForm();
+        emit('success', result);
     }
 };
 </script>

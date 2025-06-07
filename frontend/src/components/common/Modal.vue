@@ -5,7 +5,7 @@
             leave-from-class="opacity-100" leave-to-class="opacity-0">
             <div v-if="modelValue" class="fixed inset-0 z-50 overflow-y-auto" @click="handleBackdropClick">
                 <!-- Backdrop -->
-                <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
+                <div class="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 transition-opacity" />
 
                 <!-- Modal container -->
                 <div class="flex min-h-full items-center justify-center p-4">
@@ -15,21 +15,21 @@
                         leave-from-class="transform opacity-100 scale-100"
                         leave-to-class="transform opacity-0 scale-95">
                         <div v-if="modelValue" :class="[
-                            'relative bg-white rounded-lg shadow-xl max-h-full overflow-hidden',
+                            'relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-h-full overflow-hidden',
                             sizeClasses,
                         ]" @click.stop>
                             <!-- Header -->
                             <div v-if="$slots.header || title || closable"
-                                class="flex items-center justify-between p-6 border-b border-gray-200">
+                                class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
                                 <div class="flex-1">
                                     <slot name="header">
-                                        <h3 class="text-lg font-semibold text-gray-900">
+                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                                             {{ title }}
                                         </h3>
                                     </slot>
                                 </div>
                                 <button v-if="closable" @click="close"
-                                    class="ml-4 text-gray-400 hover:text-gray-500 focus:outline-none focus:text-gray-500 transition ease-in-out duration-150"
+                                    class="ml-4 text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 focus:outline-none focus:text-gray-500 dark:focus:text-gray-400 transition ease-in-out duration-150"
                                     type="button">
                                     <span class="sr-only">Close</span>
                                     <XMarkIcon class="w-6 h-6" />
@@ -43,7 +43,7 @@
 
                             <!-- Footer -->
                             <div v-if="$slots.footer"
-                                class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
+                                class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/20">
                                 <slot name="footer" />
                             </div>
                         </div>
