@@ -1,5 +1,5 @@
-const BaseController = require("../base.controller");
-const userService = require("../../services/forum/user.service");
+const BaseController = require("../../core/controller/base.controller");
+const userService = require("./user.service");
 
 class UserController extends BaseController {
   constructor() {
@@ -10,8 +10,10 @@ class UserController extends BaseController {
   async getUserProfile(req, res) {
     try {
       const { uid } = req.params;
-      const profile = await this.getCachedData(`user_profile:${uid}`, () =>
-        userService.getUserProfile(uid)
+      // Don't pass viewerUid for public profile viewing - will return sanitized data
+      const profile = await this.getCachedData(
+        `user_profile_public:${uid}`,
+        () => userService.getUserProfile(uid)
       );
 
       return this.sendSuccess(res, profile);
@@ -24,9 +26,13 @@ class UserController extends BaseController {
   async getUserByUsername(req, res) {
     try {
       const { username } = req.params;
+      // First get the user to get their UID, then get sanitized profile
       const profile = await this.getCachedData(
-        `user_profile_by_username:${username}`,
-        () => userService.getUserByUsername(username)
+        `user_profile_public_by_username:${username}`,
+        async () => {
+          const user = await userService.getUserByUsername(username);
+          return userService.getUserProfile(user.uid); // This will return sanitized data
+        }
       );
 
       return this.sendSuccess(res, profile);

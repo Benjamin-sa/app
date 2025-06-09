@@ -1,7 +1,7 @@
 const axios = require("axios");
-const config = require("../config/shopify");
-const queries = require("../queries/shopifyQueries");
-const ValidationUtils = require("../utils/validation.utils");
+const config = require("../../config/shopify");
+const queries = require("../../queries/shopifyQueries");
+const ValidationUtils = require("../../utils/validation.utils");
 
 // Helper function to execute Shopify GraphQL queries
 async function _executeShopifyQuery(query) {

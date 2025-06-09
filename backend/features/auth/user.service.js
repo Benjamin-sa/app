@@ -74,7 +74,7 @@ class UserService {
     }
   }
 
-  async getUserProfile(uid) {
+  async getUserProfile(uid, viewerUid = null) {
     try {
       ValidationUtils.required({ uid }, "USER", "get user profile");
 
@@ -84,7 +84,14 @@ class UserService {
         throw new Error("USER_SERVICE_NOT_FOUND_ERROR: User profile not found");
       }
 
-      return user;
+      // If viewing own profile, return full data, otherwise sanitize
+      const isOwnProfile = viewerUid === uid;
+
+      if (isOwnProfile) {
+        return user; // Return complete profile for own profile
+      } else {
+        return this._sanitizeUserProfile(user); // Return sanitized profile for others
+      }
     } catch (error) {
       if (error.message.startsWith("USER_SERVICE_")) {
         throw error;
@@ -409,6 +416,37 @@ class UserService {
       default:
         return "password";
     }
+  }
+
+  // Helper method to sanitize user profile for public viewing
+  _sanitizeUserProfile(user) {
+    // Private fields that should never be shown publicly
+    const privateFields = [
+      "email", // Only shown if show_email is true
+      "emailVerified",
+      "authProvider",
+      "updatedAt",
+      "isDeleted",
+      "isBanned",
+      "banReason",
+      "banExpiresAt",
+      "lastLogin",
+    ];
+
+    // Create sanitized profile by filtering out private fields
+    const publicProfile = {};
+    Object.keys(user).forEach((key) => {
+      if (!privateFields.includes(key)) {
+        publicProfile[key] = user[key];
+      }
+    });
+
+    // Only include email if user allows it to be shown publicly
+    if (user.show_email) {
+      publicProfile.email = user.email;
+    }
+
+    return publicProfile;
   }
 }
 

@@ -1,12 +1,12 @@
 const express = require("express");
-const { authenticate } = require("../middleware/auth.middleware");
+const { authenticate } = require("../../core/middleware/auth.middleware");
 const {
   uploadMultiple,
   handleUploadError,
   processImages,
   FOLDERS,
-} = require("../middleware/upload.middleware");
-const authController = require("../controllers/auth.controller");
+} = require("../../core/middleware/upload.middleware");
+const authController = require("./auth.controller");
 
 const router = express.Router();
 

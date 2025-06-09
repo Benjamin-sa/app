@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const productsController = require("../controllers/products.controller");
+const productsController = require("./products.controller");
 
 // Get all products with images
 router.get(

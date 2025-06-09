@@ -1,6 +1,6 @@
-const BaseController = require("../base.controller");
-const userService = require("../../services/forum/user.service");
-const topicService = require("../../services/forum/topic.service");
+const BaseController = require("../../../core/controller/base.controller");
+const userService = require("../../auth/user.service");
+const topicService = require("./topic.service");
 
 class TopicController extends BaseController {
   constructor() {
@@ -90,7 +90,7 @@ class TopicController extends BaseController {
 
         // Delete removed images in background
         if (imagesToDelete.length > 0) {
-          const imageService = require("../../services/image.service");
+          const imageService = require("../../../core/services/image.service");
           Promise.all(
             imagesToDelete.map((img) =>
               imageService

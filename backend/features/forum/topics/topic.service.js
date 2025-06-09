@@ -3,10 +3,10 @@
  * Handles all topic-related operations with validation
  */
 
-const firebaseQueries = require("../../queries/firebase.queries");
-const { validators, Topic } = require("../../models/forum.models");
-const ValidationUtils = require("../../utils/validation.utils");
-const htmlSanitizerService = require("../htmlSanitizer.service");
+const firebaseQueries = require("../../../queries/firebase.queries");
+const { validators, Topic } = require("../../../models/forum.models");
+const ValidationUtils = require("../../../utils/validation.utils");
+const htmlSanitizerService = require("../../../core/services/htmlSanitizer.service");
 
 class TopicService {
   constructor() {

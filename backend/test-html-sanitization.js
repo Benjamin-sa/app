@@ -2,7 +2,7 @@
  * Test script to validate HTML sanitization integration
  */
 
-const htmlSanitizerService = require("./services/htmlSanitizer.service");
+const htmlSanitizerService = require("./core/services/htmlSanitizer.service");
 const ValidationUtils = require("./utils/validation.utils");
 
 // Test cases

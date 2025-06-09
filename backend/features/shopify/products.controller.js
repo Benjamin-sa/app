@@ -1,5 +1,5 @@
-const BaseController = require("./base.controller");
-const shopify = require("../services/shopify.service");
+const BaseController = require("../../core/controller/base.controller");
+const shopify = require("./shopify.service");
 
 class ProductsController extends BaseController {
   constructor() {

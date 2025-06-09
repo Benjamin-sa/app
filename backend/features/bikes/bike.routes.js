@@ -6,27 +6,23 @@
 const express = require("express");
 const router = express.Router();
 
-// Import middleware
-const { authenticate } = require("../middleware/auth.middleware");
+const { authenticate } = require("../../core/middleware/auth.middleware");
 const {
   uploadMultiple,
   handleUploadError,
   processImages,
   FOLDERS,
-} = require("../middleware/upload.middleware");
+} = require("../../core/middleware/upload.middleware");
 
-// Import controller
-const bikeController = require("../controllers/bike.controller");
+const bikeController = require("./bike.controller");
 
-// Public routes (no auth required)
+// Public routes
 router.get("/", bikeController.getAllBikes);
 router.get("/featured", bikeController.getFeaturedBikes);
 router.get("/:bikeId", bikeController.getBikeById);
-
-// User-specific bike routes (public viewing)
 router.get("/user/:userId", bikeController.getUserBikes);
 
-// Create bike with images
+// Authenticated routes with image upload
 router.post(
   "/",
   authenticate,
@@ -36,7 +32,6 @@ router.post(
   bikeController.createBike
 );
 
-// Update bike with images
 router.put(
   "/:bikeId",
   authenticate,
@@ -46,10 +41,8 @@ router.put(
   bikeController.updateBike
 );
 
-// Delete bike
+// Authenticated routes
 router.delete("/:bikeId", authenticate, bikeController.deleteBike);
-
-// Toggle featured status
 router.patch(
   "/:bikeId/featured",
   authenticate,

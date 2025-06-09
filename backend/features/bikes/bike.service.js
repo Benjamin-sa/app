@@ -3,9 +3,9 @@
  * Handles business logic for user bike galleries
  */
 
-const firebaseQueries = require("../queries/firebase.queries");
-const { deleteImage } = require("./image.service");
-const ValidationUtils = require("../utils/validation.utils");
+const firebaseQueries = require("../../queries/firebase.queries");
+const { deleteImage } = require("../../core/services/image.service");
+const ValidationUtils = require("../../utils/validation.utils");
 
 class BikeService {
   /**
@@ -229,13 +229,6 @@ class BikeService {
       if (bike.isDeleted) {
         throw new Error("Bike already deleted");
       }
-
-      // Delete all associated images
-      if (bike.photos && bike.photos.length > 0) {
-        const deletePromises = bike.photos.map((photo) => deleteImage(photo));
-        await Promise.all(deletePromises);
-      }
-
       // Soft delete the bike using firebase queries
       await firebaseQueries.deleteBike(bikeId);
 

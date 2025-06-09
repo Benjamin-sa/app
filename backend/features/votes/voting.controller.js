@@ -1,5 +1,5 @@
-const BaseController = require("../base.controller");
-const votingService = require("../../services/forum/voting.service");
+const BaseController = require("../../core/controller/base.controller");
+const votingService = require("./voting.service");
 
 class VotingController extends BaseController {
   constructor() {

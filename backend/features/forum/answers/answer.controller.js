@@ -1,6 +1,6 @@
-const BaseController = require("../base.controller");
-const userService = require("../../services/forum/user.service");
-const answerService = require("../../services/forum/answer.service");
+const BaseController = require("../../../core/controller/base.controller");
+const userService = require("../../auth/user.service");
+const answerService = require("./answer.service");
 
 class AnswerController extends BaseController {
   constructor() {
@@ -111,7 +111,7 @@ class AnswerController extends BaseController {
   // Delete an answer
   async deleteAnswer(req, res) {
     try {
-      const { answerId } = req.params;
+      const { id: answerId } = req.params;
       const { topicId } = req.body;
 
       // Delete the answer

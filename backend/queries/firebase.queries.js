@@ -336,6 +336,20 @@ class FirebaseQueries {
   }
 
   /**
+   * Soft delete answer
+   */
+  async deleteAnswer(answerId) {
+    return await this.executeQuery(
+      () =>
+        this.db.collection(COLLECTIONS.ANSWERS).doc(answerId).update({
+          isDeleted: true,
+          updatedAt: this.FieldValue.serverTimestamp(),
+        }),
+      "Failed to delete answer"
+    );
+  }
+
+  /**
    * Get answer by ID
    */
   async getAnswerById(answerId) {

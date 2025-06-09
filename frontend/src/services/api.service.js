@@ -1,8 +1,23 @@
 import axios from "axios";
 import authService from "@/services/auth.service";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+// Automatisch detecteren van de juiste API URL
+const getApiBaseUrl = () => {
+  const hostname = window.location.hostname;
+
+  console.log("Current hostname:", hostname); // Debug log
+
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return "http://localhost:3000/api";
+  } else {
+    // Voor netwerk toegang gebruik het IP van de host
+    return `http://${hostname}:3000/api`;
+  }
+};
+
+// Gebruik altijd de dynamische detectie, negeer de .env waarde
+const API_BASE_URL = getApiBaseUrl();
+console.log("Final API_BASE_URL:", API_BASE_URL); // Debug log
 
 class ApiService {
   constructor() {

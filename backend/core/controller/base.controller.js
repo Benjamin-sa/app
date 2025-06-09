@@ -5,7 +5,7 @@ class BaseController {
     this.controllerName = controllerName.toUpperCase();
     this.cache = cacheService;
 
-    // Bind all methods to preserve 'this' context when used as callbacks
+    // Bind methods to preserve 'this' context
     Object.getOwnPropertyNames(Object.getPrototypeOf(this))
       .filter(
         (method) =>
@@ -14,7 +14,7 @@ class BaseController {
       .forEach((method) => (this[method] = this[method].bind(this)));
   }
 
-  // Common error handler
+  // Handle errors with consistent status codes and formatting
   handleError(res, error, operation) {
     console.error(
       `${this.controllerName}_CONTROLLER_ERROR: ${operation} failed:`,
@@ -36,6 +36,7 @@ class BaseController {
     });
   }
 
+  // Get cached data or fetch fresh data with TTL
   async getCachedData(key, fetchFunction, ttlSeconds = 300) {
     try {
       const cachedData = await this.cache.get(key);
@@ -59,17 +60,15 @@ class BaseController {
     }
   }
 
-  // Invalidate cache by pattern
   async invalidateCache(pattern) {
     return cacheService.invalidatePattern(pattern);
   }
 
-  // Delete specific cache
   async deleteCache(key) {
     return cacheService.del(key);
   }
 
-  // Standard success response
+  // Send standardized success response
   sendSuccess(res, data, status = 200, message = null) {
     const response = { success: true, data };
     if (message) response.message = message;

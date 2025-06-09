@@ -16,6 +16,8 @@ const corsOptions = {
     "http://localhost:5173",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
+    "http://192.168.0.225:5173",
+    "http://192.168.0.225:3000",
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -45,10 +47,10 @@ app.get("/api/health", (req, res) => {
 });
 
 // Routes
-app.use("/api/auth", require("./routes/auth.routes"));
-app.use("/api/products", require("./routes/products.routes"));
-app.use("/api/forum", require("./routes/forum.routes"));
-app.use("/api/bikes", require("./routes/bike.routes"));
+app.use("/api/auth", require("./features/auth/auth.routes"));
+app.use("/api/products", require("./features/shopify/products.routes"));
+app.use("/api/forum", require("./features/forum/index"));
+app.use("/api/bikes", require("./features/bikes/bike.routes"));
 
 // Default route
 app.get("/", (req, res) => {
@@ -74,6 +76,7 @@ app.use("*", (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
+  console.log(`🌐 Network access: http://192.168.0.225:${PORT}`);
 });

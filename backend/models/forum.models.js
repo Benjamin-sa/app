@@ -22,6 +22,10 @@ const UserProfile = {
   products_count: 0, // Number of products listed by user
   bikes_count: 0, // Number of bikes in user's gallery
   isVerified: false,
+  isDeleted: false, // Soft delete flag
+  isBanned: false, // Whether the user is banned from the forum
+  banReason: "", // Reason for banning, if applicable
+  banExpiresAt: null, // Timestamp when ban expires, if applicable
   isAdmin: false,
   isModerator: false,
   show_email: false, // Privacy setting - whether to show email publicly

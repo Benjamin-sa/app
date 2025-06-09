@@ -80,7 +80,7 @@
 
                     <!-- Action Buttons -->
                     <div class="space-y-3">
-                        <a :href="`https://motordash.myshopify.com/products/${product.handle}`" target="_blank"
+                        <a :href="`https://motordashbnl.myshopify.com/products/${product.handle}`" target="_blank"
                             rel="noopener noreferrer" class="w-full btn-primary block text-center">
                             View on Shopify
                             <svg class="w-4 h-4 ml-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">

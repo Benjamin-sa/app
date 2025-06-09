@@ -3,14 +3,14 @@
  * Handles basic answer CRUD operations with Firebase
  */
 
-const firebaseQueries = require("../../queries/firebase.queries");
+const firebaseQueries = require("../../../queries/firebase.queries");
 const {
   COLLECTIONS,
   validators,
   Answer,
-} = require("../../models/forum.models");
-const ValidationUtils = require("../../utils/validation.utils");
-const htmlSanitizerService = require("../htmlSanitizer.service");
+} = require("../../../models/forum.models");
+const ValidationUtils = require("../../../utils/validation.utils");
+const htmlSanitizerService = require("../../../core/services/htmlSanitizer.service");
 
 class AnswerService {
   constructor() {
@@ -53,7 +53,7 @@ class AnswerService {
       const answer = {
         ...Answer,
         topicId,
-        content: htmlSanitizerService.sanitizeHtml(content),
+        content: htmlSanitizerService.sanitizeForumContent(content),
         userId,
         images,
         parentAnswerId,

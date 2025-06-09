@@ -1,5 +1,5 @@
-const BaseController = require("./base.controller");
-const userService = require("../services/forum/user.service");
+const BaseController = require("../../core/controller/base.controller");
+const userService = require("./user.service");
 
 class AuthController extends BaseController {
   constructor() {
@@ -21,7 +21,7 @@ class AuthController extends BaseController {
     try {
       const userRecord = await this.getCachedData(
         `user_profile:${req.user.uid}`,
-        () => userService.getUserProfile(req.user.uid)
+        () => userService.getUserProfile(req.user.uid, req.user.uid) // Pass viewerUid as same as uid for own profile
       );
       return this.sendSuccess(res, userRecord);
     } catch (error) {
@@ -97,7 +97,7 @@ class AuthController extends BaseController {
       // Delete old avatar after successful update
       if (req.oldAvatar?.url) {
         try {
-          const imageService = require("../services/image.service");
+          const imageService = require("../../core/services/image.service");
           await imageService.deleteImage(req.oldAvatar);
           console.log("Old avatar deleted successfully");
         } catch (deleteError) {
