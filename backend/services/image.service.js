@@ -7,7 +7,6 @@ const admin = require("firebase-admin");
 const sharp = require("sharp");
 const { v4: uuidv4 } = require("uuid");
 const path = require("path");
-const firebaseQueries = require("../queries/firebase.queries");
 
 class ImageService {
   constructor() {

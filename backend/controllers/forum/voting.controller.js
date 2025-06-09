@@ -1,7 +1,10 @@
+const BaseController = require("../base.controller");
 const votingService = require("../../services/forum/voting.service");
-const cacheService = require("../../services/cache.service");
 
-class VotingController {
+class VotingController extends BaseController {
+  constructor() {
+    super("VOTING");
+  }
   // Vote on a topic or answer
   async vote(req, res) {
     try {
@@ -17,59 +20,34 @@ class VotingController {
 
       // Invalidate caches that include vote counts
       if (targetType === "topic") {
-        await cacheService.invalidatePattern(`topic:${targetId}:*`);
-        await cacheService.invalidatePattern("topics:*");
+        await this.invalidateCache(`topic:${targetId}:*`);
+        await this.invalidateCache("topics:*");
       }
 
-      res.json({
-        success: true,
-        data: result,
-      });
+      return this.sendSuccess(res, result);
     } catch (error) {
-      console.error("VOTING_CONTROLLER_ERROR: Vote Error:", error);
-
-      let statusCode = 500;
-      if (error.message.includes("VALIDATION_ERROR")) {
-        statusCode = 400;
-      } else if (error.message.includes("NOT_FOUND_ERROR")) {
-        statusCode = 404;
-      }
-
-      res.status(statusCode).json({
-        success: false,
-        error: `VOTING_CONTROLLER_ERROR: ${error.message}`,
-        errorSource: "voting_controller",
-      });
+      this.handleError(res, error, "Vote");
     }
   }
 
-  // Get user's vote on a specific target
-  async getUserVote(req, res) {
+  async getVote(req, res) {
     try {
-      const { targetId } = req.params;
-      const userId = req.user.uid;
+      const { targetId, targetType } = req.params;
+      const userId = req.user?.uid || null;
 
-      const vote = await votingService.getUserVote(userId, targetId);
+      const votes = await votingService.getVotes(targetId, targetType);
+      let userVote = null;
 
-      res.json({
-        success: true,
-        data: vote,
-      });
-    } catch (error) {
-      console.error("VOTING_CONTROLLER_ERROR: Get User Vote Error:", error);
-
-      let statusCode = 500;
-      if (error.message.includes("VALIDATION_ERROR")) {
-        statusCode = 400;
-      } else if (error.message.includes("NOT_FOUND_ERROR")) {
-        statusCode = 404;
+      if (userId) {
+        userVote = await votingService.getUserVote(userId, targetId);
       }
 
-      res.status(statusCode).json({
-        success: false,
-        error: `VOTING_CONTROLLER_ERROR: ${error.message}`,
-        errorSource: "voting_controller",
+      return this.sendSuccess(res, {
+        ...votes,
+        userVote: userVote,
       });
+    } catch (error) {
+      this.handleError(res, error, "Get Vote Information");
     }
   }
 }

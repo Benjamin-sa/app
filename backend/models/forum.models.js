@@ -20,6 +20,7 @@ const UserProfile = {
   topics_created: 0,
   answers_posted: 0,
   products_count: 0, // Number of products listed by user
+  bikes_count: 0, // Number of bikes in user's gallery
   isVerified: false,
   isAdmin: false,
   isModerator: false,
@@ -34,7 +35,7 @@ const Topic = {
   id: "", // Auto-generated document ID
   title: "",
   content: "", // Markdown supported content
-  authorId: "", // Reference to user UID
+  userId: "", // Reference to user UID
   category: "", // Topic category (general, technical, etc.)
   tags: [], // Array of strings for topic tags
   images: [], // Array of image objects
@@ -52,7 +53,7 @@ const Answer = {
   id: "", // Auto-generated document ID
   topicId: "", // Reference to parent topic
   content: "", // Markdown supported content
-  authorId: "", // Reference to user UID
+  userId: "", // Reference to user UID
   images: [], // Array of image objects
   createdAt: "", // Firestore timestamp
   updatedAt: "", // Firestore timestamp
@@ -104,25 +105,24 @@ const ForumStats = {
   lastUpdated: "",
 };
 
-// Validation helper functions
-const validators = {
-  isValidEmail: (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
-  isValidUsername: (username) => /^[a-zA-Z0-9_]{3,20}$/.test(username),
-  isValidTopicTitle: (title) =>
-    title && title.length >= 5 && title.length <= 200,
-  isValidContent: (content) =>
-    content && content.length >= 10 && content.length <= 10000,
-  isValidCategory: (category) =>
-    category && category.length >= 2 && category.length <= 50,
-  isValidDisplayName: (name) => name && name.length >= 2 && name.length <= 50,
-  isValidBio: (bio) => !bio || bio.length <= 500,
-  isValidUrl: (url) => !url || /^https?:\/\/.+\..+/.test(url),
-  isValidLocation: (location) => !location || location.length <= 100,
-  isValidWebsite: (website) => !website || /^https?:\/\/.+\..+/.test(website),
-  isValidInterests: (interests) =>
-    !interests || (Array.isArray(interests) && interests.length <= 10),
-  isValidSocialLinks: (links) =>
-    !links || (typeof links === "object" && Object.keys(links).length <= 5),
+// Bike Model (for user bike galleries)
+const Bike = {
+  id: "", // Auto-generated document ID
+  userId: "", // Reference to user UID who owns the bike
+  name: "", // User-defined bike name
+  brand: "", // Bike brand (Honda, Yamaha, etc.)
+  model: "", // Bike model (CB125, YBR125, etc.)
+  year: null, // Manufacturing year
+  engine_size: null, // Engine size in cc
+  description: "", // User description of the bike
+  main_image: "", // URL to the main/featured image
+  photos: [], // Array of image objects using ImageModel structure
+  is_featured: false, // Whether this bike is featured on user's profile
+  createdAt: "", // Firestore timestamp
+  updatedAt: "", // Firestore timestamp
+  isDeleted: false,
+  view_count: 0, // Number of times this bike has been viewed
+  like_count: 0, // Number of likes (for future feature)
 };
 
 // Firestore collection names
@@ -133,6 +133,8 @@ const COLLECTIONS = {
   VOTES: "forum_votes",
   CATEGORIES: "forum_categories",
   STATS: "forum_stats",
+  BIKES: "user_bikes",
+  BIKE_LIKES: "bike_likes",
 };
 
 module.exports = {
@@ -143,6 +145,6 @@ module.exports = {
   Vote,
   Category,
   ForumStats,
-  validators,
+  Bike,
   COLLECTIONS,
 };

@@ -135,6 +135,7 @@ import { validateEmail, validateUsername } from '@/utils/helpers';
 import Button from '@/components/common/Button.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
 
+
 const router = useRouter();
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();

@@ -160,3 +160,102 @@ export function debounce(func, wait) {
     timeout = setTimeout(later, wait);
   };
 }
+
+// =============================================================================
+// IMAGE UTILITIES
+// =============================================================================
+
+/**
+ * Validate image file type and size
+ * @param {File} file - File to validate
+ * @param {number} maxSize - Maximum file size in bytes (default: 5MB)
+ * @returns {Object} Validation result with isValid and error message
+ */
+export function validateImageFile(file, maxSize = 5 * 1024 * 1024) {
+  if (!file.type.startsWith("image/")) {
+    return {
+      isValid: false,
+      error: "Please select only image files.",
+    };
+  }
+
+  if (file.size > maxSize) {
+    const maxSizeMB = maxSize / (1024 * 1024);
+    return {
+      isValid: false,
+      error: `Images must be smaller than ${maxSizeMB}MB.`,
+    };
+  }
+
+  return { isValid: true, error: null };
+}
+
+/**
+ * Create image preview object with file and preview URL
+ * @param {File} file - Image file
+ * @returns {Object} Image object with file and preview URL
+ */
+export function createImagePreview(file) {
+  return {
+    file,
+    preview: URL.createObjectURL(file),
+    error: false,
+    name: file.name,
+  };
+}
+
+/**
+ * Clean up image preview URLs to prevent memory leaks
+ * @param {Array} images - Array of image objects with preview URLs
+ */
+export function cleanupImagePreviews(images) {
+  images.forEach((image) => {
+    if (image.preview) {
+      URL.revokeObjectURL(image.preview);
+    }
+  });
+}
+
+/**
+ * Process selected files for image upload
+ * @param {FileList} files - Selected files from input
+ * @param {number} currentCount - Current number of images
+ * @param {number} maxCount - Maximum allowed images (default: 5)
+ * @param {number} maxSize - Maximum file size in bytes
+ * @returns {Object} Result with processed images and any error
+ */
+export function processImageFiles(
+  files,
+  currentCount = 0,
+  maxCount = 5,
+  maxSize = 5 * 1024 * 1024
+) {
+  const fileArray = Array.from(files);
+  const processedImages = [];
+  let error = "";
+
+  // Check total count
+  if (currentCount + fileArray.length > maxCount) {
+    return {
+      images: [],
+      error: `Maximum ${maxCount} images allowed.`,
+    };
+  }
+
+  // Process each file
+  for (const file of fileArray) {
+    const validation = validateImageFile(file, maxSize);
+
+    if (!validation.isValid) {
+      error = validation.error;
+      break;
+    }
+
+    processedImages.push(createImagePreview(file));
+  }
+
+  return {
+    images: error ? [] : processedImages,
+    error: error,
+  };
+}

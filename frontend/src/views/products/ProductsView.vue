@@ -49,7 +49,9 @@
 
         <!-- Products Grid -->
         <div class="space-y-6">
-            <LoadingSpinner v-if="loading" />
+            <div v-if="loading" class="flex justify-center items-center min-h-64">
+                <LoadingSpinner size="lg" />
+            </div>
 
             <div v-else-if="products.length === 0" class="text-center py-12">
                 <ShoppingBagIcon class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
@@ -96,11 +98,11 @@ const loadProducts = async () => {
         if (selectedCategory.value) {
             // Load products by collection
             response = await apiService.client.get(`/products/collection/${selectedCategory.value}`);
-            products.value = Array.isArray(response) ? response : [];
+            products.value = response.success && Array.isArray(response.data) ? response.data : [];
         } else {
             // Load all products with images
             response = await apiService.client.get('/products/with-images');
-            products.value = Array.isArray(response) ? response : [];
+            products.value = response.success && Array.isArray(response.data) ? response.data : [];
         }
 
         // Apply search filter client-side since backend doesn't support it
@@ -120,7 +122,7 @@ const loadProducts = async () => {
 
 const loadCollections = async () => {
     try {
-        const response = await apiService.getCollections();
+        const response = await apiService.get("/products/collections");
         collections.value = response.success && Array.isArray(response.data) ? response.data : [];
     } catch (error) {
         console.error('Error loading collections:', error);

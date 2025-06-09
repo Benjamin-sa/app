@@ -353,28 +353,6 @@ class FirebaseQueries {
   // =====================
 
   /**
-   * Create or update a vote
-   */
-  async upsertVote(voteData) {
-    return await this.executeQuery(async () => {
-      const voteId = `${voteData.userId.trim()}_${voteData.targetId.trim()}`;
-      return await this.db
-        .collection(COLLECTIONS.VOTES)
-        .doc(voteId)
-        .set(
-          {
-            ...voteData,
-            userId: voteData.userId.trim(),
-            targetId: voteData.targetId.trim(),
-            createdAt: this.FieldValue.serverTimestamp(),
-            updatedAt: this.FieldValue.serverTimestamp(),
-          },
-          { merge: true }
-        );
-    }, "Failed to upsert vote");
-  }
-
-  /**
    * Get user vote for a target
    */
   async getUserVote(userId, targetId) {
@@ -396,25 +374,6 @@ class FirebaseQueries {
   }
 
   /**
-   * Update target vote counts
-   */
-  async updateVoteCounts(targetId, targetType, voteChanges) {
-    const collection =
-      targetType === "topic" ? COLLECTIONS.TOPICS : COLLECTIONS.ANSWERS;
-
-    return await this.db
-      .collection(collection)
-      .doc(targetId.trim())
-      .update({
-        "votes.upvotes": this.FieldValue.increment(voteChanges.upvotes || 0),
-        "votes.downvotes": this.FieldValue.increment(
-          voteChanges.downvotes || 0
-        ),
-        "votes.score": this.FieldValue.increment(voteChanges.score || 0),
-      });
-  }
-
-  /**
    * Get all votes for a specific target
    */
   async getVotesByTarget(targetId, targetType) {
@@ -429,6 +388,35 @@ class FirebaseQueries {
         ...doc.data(),
       }));
     }, "Failed to get votes by target");
+  }
+
+  /**
+   * Create or update a vote (handles all vote logic)
+   */
+  async createOrUpdateVote(userId, targetId, targetType, voteType) {
+    return await this.executeQuery(async () => {
+      const voteId = `${userId.trim()}_${targetId.trim()}`;
+
+      if (voteType === null) {
+        // Remove vote if voteType is null
+        await this.db.collection(COLLECTIONS.VOTES).doc(voteId).delete();
+      } else {
+        // Create or update vote
+        const voteData = {
+          userId: userId.trim(),
+          targetId: targetId.trim(),
+          targetType,
+          voteType,
+          createdAt: this.FieldValue.serverTimestamp(),
+          updatedAt: this.FieldValue.serverTimestamp(),
+        };
+
+        await this.db
+          .collection(COLLECTIONS.VOTES)
+          .doc(voteId)
+          .set(voteData, { merge: true });
+      }
+    }, "Failed to create or update vote");
   }
 
   // =====================
@@ -558,6 +546,296 @@ class FirebaseQueries {
    */
   getServerTimestamp() {
     return this.FieldValue.serverTimestamp();
+  }
+
+  // =====================
+  // BIKE OPERATIONS
+  // =====================
+
+  /**
+   * Create a new bike
+   */
+  async createBike(bikeData) {
+    return await this.executeQuery(async () => {
+      // Get a document reference with auto-generated ID
+      const docRef = this.db.collection(COLLECTIONS.BIKES).doc();
+
+      const cleanBikeData = {
+        ...bikeData,
+        id: docRef.id, // Include the auto-generated ID in the document data
+        createdAt: this.FieldValue.serverTimestamp(),
+        updatedAt: this.FieldValue.serverTimestamp(),
+      };
+
+      await docRef.set(cleanBikeData);
+      return docRef; // Return the document reference
+    }, "Failed to create bike");
+  }
+
+  /**
+   * Get bike by ID
+   */
+  async getBikeById(bikeId) {
+    return await this.executeQuery(async () => {
+      const doc = await this.db
+        .collection(COLLECTIONS.BIKES)
+        .doc(bikeId.trim())
+        .get();
+
+      if (!doc.exists) return null;
+
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate(),
+        updatedAt: data.updatedAt?.toDate(),
+      };
+    }, "Failed to get bike by ID");
+  }
+
+  /**
+   * Get all bikes for a specific user
+   */
+  async getBikesByUserId(userId, options = {}) {
+    const {
+      limit = 50,
+      orderBy = "createdAt",
+      orderDirection = "desc",
+    } = options;
+
+    return await this.executeQuery(async () => {
+      const snapshot = await this.db
+        .collection(COLLECTIONS.BIKES)
+        .where("userId", "==", userId)
+        .where("isDeleted", "==", false)
+        .orderBy(orderBy, orderDirection)
+        .limit(parseInt(limit))
+        .get();
+
+      return snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate(),
+          updatedAt: data.updatedAt?.toDate(),
+        };
+      });
+    }, "Failed to get bikes by user ID");
+  }
+
+  /**
+   * Update bike
+   */
+  async updateBike(bikeId, updateData) {
+    return await this.executeQuery(
+      () =>
+        this.db
+          .collection(COLLECTIONS.BIKES)
+          .doc(bikeId)
+          .update({
+            ...updateData,
+            updatedAt: this.FieldValue.serverTimestamp(),
+          }),
+      "Failed to update bike"
+    );
+  }
+
+  /**
+   * Soft delete bike
+   */
+  async deleteBike(bikeId) {
+    return await this.executeQuery(
+      () =>
+        this.db.collection(COLLECTIONS.BIKES).doc(bikeId).update({
+          isDeleted: true,
+          updatedAt: this.FieldValue.serverTimestamp(),
+        }),
+      "Failed to delete bike"
+    );
+  }
+
+  /**
+   * Count bikes by user ID
+   */
+  async countBikesByUserId(userId) {
+    return await this.executeQuery(async () => {
+      const snapshot = await this.db
+        .collection(COLLECTIONS.BIKES)
+        .where("userId", "==", userId)
+        .where("isDeleted", "==", false)
+        .get();
+
+      return snapshot.size;
+    }, "Failed to count user bikes");
+  }
+
+  /**
+   * Get featured bikes
+   */
+  async getFeaturedBikes(options = {}) {
+    const {
+      limit = 10,
+      orderBy = "createdAt",
+      orderDirection = "desc",
+    } = options;
+
+    return await this.executeQuery(async () => {
+      const snapshot = await this.db
+        .collection(COLLECTIONS.BIKES)
+        .where("isDeleted", "==", false)
+        .where("is_featured", "==", true)
+        .orderBy(orderBy, orderDirection)
+        .limit(parseInt(limit))
+        .get();
+
+      return snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate(),
+          updatedAt: data.updatedAt?.toDate(),
+        };
+      });
+    }, "Failed to get featured bikes");
+  }
+
+  /**
+   * Increment bike view count
+   */
+  async incrementBikeViews(bikeId) {
+    return await this.executeQuery(
+      () =>
+        this.db
+          .collection(COLLECTIONS.BIKES)
+          .doc(bikeId)
+          .update({
+            view_count: this.FieldValue.increment(1),
+          }),
+      "Failed to increment bike views"
+    );
+  }
+
+  /**
+   * Toggle bike featured status
+   */
+  async toggleBikeFeaturedStatus(bikeId, isFeatured) {
+    return await this.executeQuery(
+      () =>
+        this.db.collection(COLLECTIONS.BIKES).doc(bikeId).update({
+          is_featured: isFeatured,
+          updatedAt: this.FieldValue.serverTimestamp(),
+        }),
+      "Failed to toggle bike featured status"
+    );
+  }
+
+  /**
+   * Update user bike count
+   */
+  async updateUserBikeCount(userId, count) {
+    return await this.executeQuery(
+      () =>
+        this.db.collection(COLLECTIONS.USERS).doc(userId).update({
+          bikes_count: count,
+          updatedAt: this.FieldValue.serverTimestamp(),
+        }),
+      "Failed to update user bike count"
+    );
+  }
+
+  /**
+   * Get all bikes with pagination and filtering
+   */
+  async getAllBikes(options = {}) {
+    const {
+      page = 1,
+      limit = 12,
+      sort = "recent",
+      search = "",
+      engineSize = "",
+    } = options;
+
+    try {
+      let query = this.db
+        .collection(COLLECTIONS.BIKES)
+        .where("isDeleted", "==", false);
+
+      // Add engine size filter first (before search to optimize query)
+      if (engineSize && engineSize !== "" && engineSize !== "other") {
+        const engineSizeNum = parseInt(engineSize);
+        if (!isNaN(engineSizeNum)) {
+          query = query.where("engine_size", "==", engineSizeNum);
+        }
+      }
+
+      // Add sorting - use correct field names
+      switch (sort) {
+        case "popular":
+          query = query.orderBy("view_count", "desc");
+          break;
+        case "featured":
+          query = query
+            .where("is_featured", "==", true)
+            .orderBy("createdAt", "desc");
+          break;
+        case "recent":
+        default:
+          query = query.orderBy("createdAt", "desc");
+          break;
+      }
+
+      // For pagination, we'll get more documents and handle it in memory
+      const snapshot = await query.limit(1000).get();
+
+      let allBikes = [];
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        allBikes.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate(),
+          updatedAt: data.updatedAt?.toDate(),
+        });
+      });
+
+      // Apply search filter in memory
+      if (search && search.trim()) {
+        const searchLower = search.toLowerCase().trim();
+        allBikes = allBikes.filter((bike) => {
+          const nameMatch = bike.name?.toLowerCase().includes(searchLower);
+          const brandMatch = bike.brand?.toLowerCase().includes(searchLower);
+          const modelMatch = bike.model?.toLowerCase().includes(searchLower);
+          return nameMatch || brandMatch || modelMatch;
+        });
+      }
+
+      // Apply "other" engine size filter in memory
+      if (engineSize === "other") {
+        allBikes = allBikes.filter((bike) => {
+          const engineSize = bike.engine_size;
+          return engineSize && ![50, 125, 250].includes(engineSize);
+        });
+      }
+
+      // Apply pagination
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedBikes = allBikes.slice(startIndex, endIndex);
+      const hasMore = endIndex < allBikes.length;
+
+      return {
+        bikes: paginatedBikes,
+        hasMore,
+        total: allBikes.length,
+      };
+    } catch (error) {
+      console.error("Error in getAllBikes query:", error);
+      throw error;
+    }
   }
 }
 

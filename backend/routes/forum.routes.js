@@ -1,7 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const authenticate = require("../middleware/auth");
-const { uploadMultiple, handleUploadError } = require("../middleware/upload");
+const { authenticate, identify } = require("../middleware/auth.middleware");
+const {
+  uploadMultiple,
+  handleUploadError,
+  processImages,
+  FOLDERS,
+} = require("../middleware/upload.middleware");
 
 // Import individual controllers
 const userController = require("../controllers/forum/user.controller");
@@ -34,14 +39,16 @@ router.post(
   "/topics",
   authenticate,
   uploadMultiple,
-  topicController.createTopic
+  processImages(FOLDERS.TOPICS),
+  handleUploadError,
+  (req, res) => topicController.topicOperation(req, res, "create")
 );
 
 /**
  * GET /api/forum/topics
  * Get topics with pagination and filtering
  */
-router.get("/topics", topicController.getTopics);
+router.get("/topics", authenticate, topicController.getTopics);
 
 /**
  * GET /api/forum/topics/:id
@@ -63,7 +70,9 @@ router.patch(
   "/topics/:id",
   authenticate,
   uploadMultiple,
-  topicController.updateTopic
+  processImages(FOLDERS.TOPICS),
+  handleUploadError,
+  (req, res) => topicController.topicOperation(req, res, "update")
 );
 
 /**
@@ -82,6 +91,8 @@ router.post(
   "/topics/:topicId/answers",
   authenticate,
   uploadMultiple,
+  processImages(FOLDERS.ANSWERS),
+  handleUploadError,
   answerController.createAnswer
 );
 
@@ -90,9 +101,11 @@ router.post(
  * Update an answer by ID
  */
 router.patch(
-  "/answers/:id",
+  "/answers/:answerId",
   authenticate,
   uploadMultiple,
+  processImages(FOLDERS.ANSWERS),
+  handleUploadError,
   answerController.updateAnswer
 );
 
@@ -101,6 +114,12 @@ router.patch(
  * Delete an answer by ID
  */
 router.delete("/answers/:id", authenticate, answerController.deleteAnswer);
+
+/**
+ * GET /api/forum/topics/:topicId/answers
+ * Get answers for a specific topic
+ */
+router.get("/topics/:topicId/answers", answerController.getAnswersByTopic);
 
 // ==================== VOTING ROUTES ====================
 
@@ -111,10 +130,10 @@ router.delete("/answers/:id", authenticate, answerController.deleteAnswer);
 router.post("/vote", authenticate, votingController.vote);
 
 /**
- * GET /api/forum/vote/:targetId
- * Get user's vote on a specific target
+ * GET /api/forum/votes/:targetId/:targetType
+ * Get vote information (counts + user vote) for a target
  */
-router.get("/vote/:targetId", authenticate, votingController.getUserVote);
+router.get("/votes/:targetId/:targetType", identify, votingController.getVote);
 
 // ==================== STATISTICS ROUTES ====================
 
@@ -125,9 +144,6 @@ router.get("/vote/:targetId", authenticate, votingController.getUserVote);
 router.get("/stats", statsController.getForumStats);
 
 // ==================== ERROR HANDLING ====================
-
-// Handle multer upload errors
-router.use(handleUploadError);
 
 // Handle general errors
 router.use((error, req, res, next) => {

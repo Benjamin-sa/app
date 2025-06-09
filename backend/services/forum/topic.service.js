@@ -5,10 +5,52 @@
 
 const firebaseQueries = require("../../queries/firebase.queries");
 const { validators, Topic } = require("../../models/forum.models");
+const ValidationUtils = require("../../utils/validation.utils");
 
 class TopicService {
   constructor() {
     this.queries = firebaseQueries;
+  }
+
+  // Enhanced helper method for topic validation
+  validateTopicData(topicData, isUpdate = false) {
+    const { title, content, category, userId, images = [] } = topicData;
+
+    // For creates, all required fields must be present
+    if (!isUpdate) {
+      ValidationUtils.required(
+        { title, content, category, userId },
+        "TOPIC",
+        "create topic"
+      );
+    }
+
+    // Validate individual fields if provided
+    if (ValidationUtils.exists(title)) {
+      ValidationUtils.topicTitle(title, "TOPIC");
+    }
+
+    if (ValidationUtils.exists(content)) {
+      ValidationUtils.content(content, "TOPIC");
+    }
+
+    if (ValidationUtils.exists(category)) {
+      ValidationUtils.category(category, "TOPIC");
+    }
+
+    // Validate images array
+    ValidationUtils.array(images, "images", "TOPIC", false, 5);
+  }
+
+  // Helper method for common validations
+  validateCommonParams(limit) {
+    if (ValidationUtils.exists(limit)) {
+      if (isNaN(limit) || limit < 1 || limit > 100) {
+        throw new Error(
+          "TOPIC_SERVICE_VALIDATION_ERROR: Limit must be between 1 and 100"
+        );
+      }
+    }
   }
 
   async createTopic(topicData) {
@@ -19,64 +61,35 @@ class TopicService {
         category,
         tags = [],
         images = [],
-        authorId,
+        userId,
       } = topicData;
 
-      // Validate required fields
-      if (!title || !content || !category || !authorId) {
-        throw new Error(
-          "TOPIC_SERVICE_VALIDATION_ERROR: Title, content, category, and author ID are required"
-        );
-      }
+      // All validation in clean, single lines
+      ValidationUtils.required(
+        { title, content, category, userId },
+        "TOPIC",
+        "create topic"
+      );
+      ValidationUtils.topicTitle(title, "TOPIC");
+      ValidationUtils.content(content, "TOPIC");
+      ValidationUtils.category(category, "TOPIC");
+      ValidationUtils.array(images, "images", "TOPIC", false, 5);
 
-      // Validate title
-      if (
-        !validators.isValidTitle ||
-        typeof title !== "string" ||
-        title.trim().length < 5 ||
-        title.trim().length > 200
-      ) {
-        throw new Error(
-          "TOPIC_SERVICE_VALIDATION_ERROR: Title must be between 5 and 200 characters"
-        );
-      }
-
-      // Validate content
-      if (!validators.isValidContent(content)) {
-        throw new Error("TOPIC_SERVICE_VALIDATION_ERROR: Content");
-      }
-
-      if (!validators.isValidCategory(category)) {
-        throw new Error(
-          "TOPIC_SERVICE_VALIDATION_ERROR: Valid category is required"
-        );
-      }
-
-      // Validate required fields
-      if (!authorId) {
-        throw new Error(
-          "TOPIC_SERVICE_VALIDATION_ERROR: Author ID is required"
-        );
-      }
-
-      // Create topic document using the model
       const topicDoc = {
         ...Topic,
         title: title.trim(),
         content: content.trim(),
-        authorId,
+        userId,
         category,
         tags,
-        images, // Images already have ISO string timestamps from image service
+        images,
       };
 
       // Create topic in Firestore (timestamps will be added by firebase.queries)
       const topicRef = await this.queries.createTopic(topicDoc);
 
       // Retrieve the created topic with actual server timestamps and ID
-      const createdTopic = await this.queries.getTopicById(topicRef.id);
-
-      return createdTopic;
+      return await this.queries.getTopicById(topicRef.id);
     } catch (error) {
       // Enhanced error handling with context
       if (error.message.startsWith("TOPIC_SERVICE_")) {
@@ -84,6 +97,96 @@ class TopicService {
       }
       throw new Error(
         `TOPIC_SERVICE_ERROR: Failed to create topic - ${error.message}`
+      );
+    }
+  }
+
+  async updateTopic(topicId, updateData, userId) {
+    try {
+      if (!topicId) {
+        throw new Error("TOPIC_SERVICE_VALIDATION_ERROR: Topic ID is required");
+      }
+
+      if (!userId) {
+        throw new Error("TOPIC_SERVICE_VALIDATION_ERROR: User ID is required");
+      }
+
+      // Validate update data using helper method
+      this.validateTopicData(updateData, true);
+
+      // Get existing topic to verify ownership
+      const existingTopic = await this.queries.getTopicById(topicId);
+      if (!existingTopic || existingTopic.isDeleted) {
+        throw new Error(
+          "TOPIC_SERVICE_NOT_FOUND_ERROR: Topic not found or has been deleted"
+        );
+      }
+
+      // Check if user is the author
+      if (existingTopic.userId !== userId) {
+        throw new Error(
+          "TOPIC_SERVICE_UNAUTHORIZED: Only the author can update this topic"
+        );
+      }
+
+      // Prepare update object with only provided fields
+      const updateObj = {};
+      if (updateData.title) updateObj.title = updateData.title.trim();
+      if (updateData.content) updateObj.content = updateData.content.trim();
+      if (updateData.category) updateObj.category = updateData.category;
+      if (updateData.tags) updateObj.tags = updateData.tags;
+      if (updateData.images) updateObj.images = updateData.images;
+
+      updateObj.updatedAt = new Date().toISOString();
+
+      await this.queries.updateTopic(topicId, updateObj);
+
+      return await this.queries.getTopicById(topicId);
+    } catch (error) {
+      if (error.message.startsWith("TOPIC_SERVICE_")) throw error;
+      throw new Error(
+        `TOPIC_SERVICE_ERROR: Failed to update topic - ${error.message}`
+      );
+    }
+  }
+
+  async deleteTopic(topicId, userId) {
+    try {
+      if (!topicId) {
+        throw new Error("TOPIC_SERVICE_VALIDATION_ERROR: Topic ID is required");
+      }
+
+      if (!userId) {
+        throw new Error("TOPIC_SERVICE_VALIDATION_ERROR: User ID is required");
+      }
+
+      // Get existing topic to verify ownership
+      const existingTopic = await this.queries.getTopicById(topicId);
+      if (!existingTopic || existingTopic.isDeleted) {
+        throw new Error(
+          "TOPIC_SERVICE_NOT_FOUND_ERROR: Topic not found or already deleted"
+        );
+      }
+
+      // Check if user is the author
+      if (existingTopic.userId !== userId) {
+        throw new Error(
+          "TOPIC_SERVICE_UNAUTHORIZED: Only the author can delete this topic"
+        );
+      }
+
+      // Soft delete by setting isDeleted flag
+      await this.queries.updateTopic(topicId, {
+        isDeleted: true,
+        deletedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+
+      return { success: true, message: "Topic deleted successfully" };
+    } catch (error) {
+      if (error.message.startsWith("TOPIC_SERVICE_")) throw error;
+      throw new Error(
+        `TOPIC_SERVICE_ERROR: Failed to delete topic - ${error.message}`
       );
     }
   }
@@ -97,12 +200,8 @@ class TopicService {
         sortOrder = "desc",
       } = options;
 
-      // Validate limit
-      if (limit && (isNaN(limit) || limit < 1 || limit > 100)) {
-        throw new Error(
-          "TOPIC_SERVICE_VALIDATION_ERROR: Limit must be between 1 and 100"
-        );
-      }
+      // Use helper method for validation
+      this.validateCommonParams(limit);
 
       const topics = await this.queries.getTopics({
         limit: parseInt(limit),
@@ -119,9 +218,7 @@ class TopicService {
         hasMore: topics.length === parseInt(limit),
       };
     } catch (error) {
-      if (error.message.startsWith("TOPIC_SERVICE_")) {
-        throw error;
-      }
+      if (error.message.startsWith("TOPIC_SERVICE_")) throw error;
       throw new Error(
         `TOPIC_SERVICE_ERROR: Failed to get topics - ${error.message}`
       );
@@ -150,9 +247,7 @@ class TopicService {
 
       return topic;
     } catch (error) {
-      if (error.message.startsWith("TOPIC_SERVICE_")) {
-        throw error;
-      }
+      if (error.message.startsWith("TOPIC_SERVICE_")) throw error;
       throw new Error(
         `TOPIC_SERVICE_ERROR: Failed to get topic - ${error.message}`
       );
@@ -175,12 +270,8 @@ class TopicService {
         );
       }
 
-      // Validate limit
-      if (limit && (isNaN(limit) || limit < 1 || limit > 100)) {
-        throw new Error(
-          "TOPIC_SERVICE_VALIDATION_ERROR: Limit must be between 1 and 100"
-        );
-      }
+      // Use helper method for validation
+      this.validateCommonParams(limit);
 
       const topics = await this.queries.searchTopics(searchTerm, {
         limit,
@@ -189,9 +280,7 @@ class TopicService {
 
       return topics;
     } catch (error) {
-      if (error.message.startsWith("TOPIC_SERVICE_")) {
-        throw error;
-      }
+      if (error.message.startsWith("TOPIC_SERVICE_")) throw error;
       throw new Error(
         `TOPIC_SERVICE_ERROR: Failed to search topics - ${error.message}`
       );

@@ -1,80 +1,128 @@
+const BaseController = require("../base.controller");
 const userService = require("../../services/forum/user.service");
 const answerService = require("../../services/forum/answer.service");
-const imageService = require("../../services/image.service");
-const cacheService = require("../../services/cache.service");
 
-class AnswerController {
+class AnswerController extends BaseController {
+  constructor() {
+    super("ANSWER");
+  }
+  // Private helper method to handle answer creation and update
+  async _handleAnswerOperation(req, isCreate = true) {
+    const topicId = req.params.topicId || req.body.topicId;
+    const answerId = isCreate ? null : req.params.answerId;
+    const { content, parentAnswerId } = req.body;
+
+    // Get processed image data from middleware
+    const imageData = req.imageData || [];
+
+    // Construct answer data
+    const answerData = {
+      content,
+      userId: req.user.uid,
+      topicId,
+      parentAnswerId: parentAnswerId || null,
+      images: imageData,
+    };
+
+    // Create or update the answer
+    let answer;
+    if (isCreate) {
+      answer = await answerService.createAnswer(answerData);
+    } else {
+      // For update, we only need to pass the fields that can be updated
+      const updateData = {
+        content: answerData.content,
+      };
+
+      // Only include images if new ones were processed by middleware
+      if (imageData.length > 0) {
+        updateData.images = imageData;
+      }
+
+      answer = await answerService.updateAnswer(answerId, updateData);
+    }
+
+    // Invalidate caches
+    await this._invalidateCaches(topicId, req.user.uid);
+
+    return answer;
+  }
+
+  // Private helper method to handle cache invalidation
+  async _invalidateCaches(topicId, userId) {
+    // Invalidate topic cache since it now has a new/updated answer
+    await this.invalidateCache(`topic:${topicId}:*`);
+    await this.invalidateCache("topics:*");
+    await this.invalidateCache("forum_stats");
+
+    // Update user activity
+    try {
+      await userService.updateUserActivity(userId);
+      // Invalidate user cache
+      await this.deleteCache(`user_profile:${userId}`);
+    } catch (activityError) {
+      console.warn(
+        `ANSWER_CONTROLLER_WARNING: Failed to update user activity - ${activityError.message}`
+      );
+    }
+  }
+
   // Create a new answer
   async createAnswer(req, res) {
     try {
-      const { topicId } = req.params;
-      const { content, parentAnswerId } = req.body;
+      const answer = await this._handleAnswerOperation(req, true);
 
-      // Handle image uploads if any
-      let imageData = [];
-      if (req.files && req.files.length > 0) {
-        try {
-          const imageRecords = await imageService.uploadImages(
-            req.files,
-            "forum/answers"
-          );
-          imageData = imageRecords;
-        } catch (uploadError) {
-          return res.status(400).json({
-            success: false,
-            error: `ANSWER_CONTROLLER_ERROR: Image upload failed - ${uploadError.message}`,
-            errorSource: "answer_controller",
-          });
-        }
-      }
-
-      // Construct answer data
-      const answerData = {
-        content,
-        authorId: req.user.uid,
-        topicId,
-        parentAnswerId: parentAnswerId || null,
-        images: imageData,
-      };
-
-      const answer = await answerService.createAnswer(answerData);
-
-      // Invalidate topic cache since it now has a new answer
-      await cacheService.invalidatePattern(`topic:${topicId}:*`);
-      await cacheService.invalidatePattern("topics:*");
-      await cacheService.invalidatePattern("forum_stats");
-
-      // Update user activity
-      try {
-        await userService.updateUserActivity(req.user.uid);
-
-        // Invalidate user cache
-        await cacheService.del(`user_profile:${req.user.uid}`);
-      } catch (activityError) {
-        console.warn(
-          `ANSWER_CONTROLLER_WARNING: Failed to update user activity - ${activityError.message}`
-        );
-      }
-
-      res.status(201).json({
-        success: true,
-        data: answer,
-      });
+      return this.sendSuccess(res, answer, 201);
     } catch (error) {
-      console.error("ANSWER_CONTROLLER_ERROR: Create Answer Error:", error);
+      this.handleError(res, error, "Create Answer");
+    }
+  }
 
-      let statusCode = 500;
-      if (error.message.includes("VALIDATION_ERROR")) {
-        statusCode = 400;
-      } else if (error.message.includes("NOT_FOUND_ERROR")) {
-        statusCode = 404;
+  // Update an existing answer
+  async updateAnswer(req, res) {
+    try {
+      const answer = await this._handleAnswerOperation(req, false);
+
+      return this.sendSuccess(res, answer);
+    } catch (error) {
+      this.handleError(res, error, "Update Answer");
+    }
+  }
+
+  // Get answers by topic ID
+  async getAnswersByTopic(req, res) {
+    try {
+      const { topicId } = req.params;
+      const { limit } = req.query;
+
+      const options = {};
+      if (limit) {
+        options.limit = parseInt(limit);
       }
 
-      res.status(statusCode).json({
-        success: false,
-        error: `ANSWER_CONTROLLER_ERROR: ${error.message}`,
-        errorSource: "answer_controller",
-      });
+      const result = await answerService.getAnswersByTopic(topicId, options);
+
+      return this.sendSuccess(res, result);
+    } catch (error) {
+      this.handleError(res, error, "Get Answers by Topic");
+    }
+  }
+
+  // Delete an answer
+  async deleteAnswer(req, res) {
+    try {
+      const { answerId } = req.params;
+      const { topicId } = req.body;
+
+      // Delete the answer
+      const result = await answerService.deleteAnswer(answerId);
+
+      // Invalidate caches
+      await this._invalidateCaches(topicId, req.user.uid);
+
+      return this.sendSuccess(res, result);
+    } catch (error) {
+      this.handleError(res, error, "Delete Answer");
     }
   }
 }

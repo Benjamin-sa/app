@@ -1,41 +1,29 @@
 const express = require("express");
-const multer = require("multer");
-const authenticate = require("../middleware/auth");
+const { authenticate } = require("../middleware/auth.middleware");
+const {
+  uploadMultiple,
+  handleUploadError,
+  processImages,
+  FOLDERS,
+} = require("../middleware/upload.middleware");
 const authController = require("../controllers/auth.controller");
 
 const router = express.Router();
 
-// Configure multer for file uploads
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only image files are allowed"), false);
-    }
-  },
-});
-
 // Get current user info (protected route)
-router.get("/me", authenticate, authController.getMe.bind(authController));
+router.get("/me", authenticate, authController.getMe);
 
-// Update user profile - NOW WITH FILE UPLOAD SUPPORT
+// Update user profile - using the upload middleware
 router.put(
   "/profile",
   authenticate,
-  upload.single("avatar"), // Add multer middleware for avatar upload
-  authController.updateProfile.bind(authController)
+  uploadMultiple,
+  processImages(FOLDERS.AVATARS), // Process avatar using the image service
+  handleUploadError, // Handle any upload errors
+  authController.updateProfile
 );
 
 // Sync user (create or update user profile from any auth method)
-router.post(
-  "/sync",
-  authenticate,
-  authController.syncUser.bind(authController)
-);
+router.post("/sync", authenticate, authController.syncUser);
 
 module.exports = router;

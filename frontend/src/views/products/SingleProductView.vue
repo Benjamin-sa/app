@@ -160,7 +160,7 @@ const fetchProduct = async () => {
         error.value = null
 
         const response = await apiService.client.get(`/products/${productId.value}/with-images`)
-        product.value = response
+        product.value = response.data
 
         // Fetch related products from the same collection
         if (primaryCollection.value) {
@@ -177,8 +177,8 @@ const fetchProduct = async () => {
 const fetchRelatedProducts = async () => {
     try {
         const response = await apiService.client.get(`/products/collection/${primaryCollection.value.handle}`)
-        // Filter out current product and limit to 4
-        relatedProducts.value = response
+        // Fix: Use response.data if the related products API has the same structure
+        relatedProducts.value = (response.data || response)
             .filter(p => p.id !== productId.value)
             .slice(0, 4)
     } catch (err) {

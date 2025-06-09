@@ -38,6 +38,7 @@ app.get("/api/health", (req, res) => {
     endpoints: {
       products: "/api/products",
       forum: "/api/forum",
+      bikes: "/api/bikes",
       testUI: "/test-ui",
     },
   });
@@ -47,6 +48,7 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", require("./routes/auth.routes"));
 app.use("/api/products", require("./routes/products.routes"));
 app.use("/api/forum", require("./routes/forum.routes"));
+app.use("/api/bikes", require("./routes/bike.routes"));
 
 // Default route
 app.get("/", (req, res) => {
@@ -65,6 +67,7 @@ app.use("*", (req, res) => {
       "/api/health",
       "/api/products",
       "/api/forum",
+      "/api/bikes",
       "/test-ui",
     ],
   });

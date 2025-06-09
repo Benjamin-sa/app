@@ -44,7 +44,7 @@ class ApiService {
     );
   }
 
-  // General HTTP methods - Use these for simple API calls
+  // General HTTP methods
   async get(url, config = {}) {
     return this.client.get(url, config);
   }
@@ -65,24 +65,11 @@ class ApiService {
     return this.client.delete(url, config);
   }
 
-  // Authentication endpoints - Keep these as they handle special auth flows
-  async login(credentials) {
-    return this.client.post("/auth/login", credentials);
-  }
-
-  async syncUser(userData) {
-    return this.client.post("/auth/sync", userData);
-  }
-
-  async logout() {
-    return this.client.post("/auth/logout");
-  }
-
+  // Specific API endpoints
   async getCurrentUserFromApi() {
     return this.client.get("/auth/me");
   }
 
-  // Complex endpoints with query parameter handling - Keep these for convenience
   async getTopics(page = 1, limit = 10, search = "", category = "") {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -91,72 +78,6 @@ class ApiService {
       ...(category && { category }),
     });
     return this.client.get(`/forum/topics?${params}`);
-  }
-
-  async getAnswers(topicId, page = 1, limit = 10) {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
-    return this.client.get(`/forum/topics/${topicId}/answers?${params}`);
-  }
-
-  async getProducts(page = 1, limit = 12, search = "", category = "") {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-      ...(search && { search }),
-      ...(category && { category }),
-    });
-    return this.client.get(`/products?${params}`);
-  }
-
-  async getUserTopics(userId, page = 1, limit = 10) {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
-    return this.client.get(`/users/${userId}/topics?${params}`);
-  }
-
-  async getUserAnswers(userId, page = 1, limit = 10) {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
-    return this.client.get(`/users/${userId}/answers?${params}`);
-  }
-
-  // Voting endpoints
-  async vote(targetId, targetType, voteType) {
-    console.log("API vote request:", {
-      targetId: targetId.trim(),
-      targetType,
-      voteType,
-    });
-
-    return this.post("/forum/vote", {
-      targetId: targetId.trim(),
-      targetType,
-      voteType,
-    });
-  }
-
-  async getUserVote(targetId) {
-    console.log("request getUserVote", targetId);
-
-    // Validate targetId to prevent API errors
-    if (!targetId || typeof targetId !== "string" || targetId.trim() === "") {
-      console.error("getUserVote: Invalid targetId:", targetId);
-      throw new Error("Invalid target ID: must be a non-empty string");
-    }
-
-    return this.get(`/forum/vote/${targetId.trim()}`);
-  }
-
-  // Get collections from Shopify
-  async getCollections() {
-    return this.get("/products/collections");
   }
 }
 

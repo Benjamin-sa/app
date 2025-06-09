@@ -33,6 +33,13 @@
         </div>
     </div>
 
+    <!-- Bikes Tab -->
+    <div v-if="activeTab === 'bikes'">
+        <BikeGallery :userId="userProfile?.id || userProfile?.uid" :isOwnProfile="showUserDetails"
+            @add-bike="$emit('add-bike')" @edit-bike="$emit('edit-bike', $event)"
+            @delete-bike="$emit('delete-bike', $event)" ref="bikeGalleryRef" />
+    </div>
+
     <!-- Products Tab -->
     <div v-if="activeTab === 'products'">
         <div v-if="userProducts.length > 0">
@@ -166,6 +173,7 @@
 <script setup>
 import TopicCard from '@/components/forum/TopicCard.vue'
 import ProductGrid from '@/components/products/ProductGrid.vue'
+import BikeGallery from '@/components/profile/BikeGallery.vue'
 import { formatDate, formatContent } from '@/utils/helpers'
 
 defineProps({
@@ -185,6 +193,10 @@ defineProps({
         type: Array,
         default: () => []
     },
+    userBikes: {
+        type: Array,
+        default: () => []
+    },
     userProducts: {
         type: Array,
         default: () => []
@@ -195,7 +207,7 @@ defineProps({
     }
 })
 
-defineEmits(['vote'])
+defineEmits(['vote', 'add-bike', 'edit-bike', 'delete-bike'])
 
 const formatLastActive = (timestamp) => {
     if (!timestamp) return 'Unknown'

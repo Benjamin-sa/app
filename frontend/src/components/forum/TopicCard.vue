@@ -49,16 +49,7 @@
 
                     <!-- Author Section -->
                     <div class="flex items-center space-x-2 mb-3">
-                        <img v-if="topic.authorAvatar" :src="topic.authorAvatar"
-                            :alt="topic.authorDisplayName || topic.author?.username"
-                            class="w-6 h-6 rounded-full object-cover">
-                        <div v-else
-                            class="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs font-medium">
-                            {{ (topic.authorDisplayName || topic.author?.username)?.charAt(0).toUpperCase() }}
-                        </div>
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {{ topic.authorDisplayName || topic.author?.username }}
-                        </span>
+                        <AuthorDisplay :author-id="topic.userId" size="sm" />
                         <span class="text-xs text-gray-500 dark:text-gray-400">
                             • {{ formatDate(topic.createdAt) }}
                         </span>
@@ -113,6 +104,7 @@ import {
     ClockIcon,
     LockClosedIcon
 } from '@heroicons/vue/24/outline';
+import AuthorDisplay from '@/components/common/AuthorDisplay.vue';
 
 const props = defineProps({
     topic: {

@@ -1,6 +1,7 @@
 const axios = require("axios");
 const config = require("../config/shopify");
 const queries = require("../queries/shopifyQueries");
+const ValidationUtils = require("../utils/validation.utils");
 
 // Helper function to execute Shopify GraphQL queries
 async function _executeShopifyQuery(query) {
@@ -88,7 +89,7 @@ async function getProductsByCollection(collectionHandle) {
   try {
     if (!collectionHandle || typeof collectionHandle !== "string") {
       throw new Error(
-        "SHOPIFY_SERVICE_VALIDATION_ERROR: Collection handle is required and must be a string"
+        "SHOPIFY_SERVICE_VALIDATION_ERROR: Collection handle must be a string"
       );
     }
 
@@ -175,11 +176,11 @@ async function getProductsWithImages(limit = 200) {
 // Get a single product with images by ID
 async function getProductByIdWithImages(productId) {
   try {
-    if (!productId) {
-      throw new Error(
-        "SHOPIFY_SERVICE_VALIDATION_ERROR: Product ID is required"
-      );
-    }
+    ValidationUtils.required(
+      { productId },
+      "SHOPIFY",
+      "get product by ID with images"
+    );
 
     const query = queries.GET_PRODUCT_BY_ID_WITH_IMAGES(productId);
     const data = await _executeShopifyQuery(query);
@@ -211,11 +212,7 @@ async function getProductByIdWithImages(productId) {
 // Get product variants by product ID
 async function getProductVariants(productId) {
   try {
-    if (!productId) {
-      throw new Error(
-        "SHOPIFY_SERVICE_VALIDATION_ERROR: Product ID is required"
-      );
-    }
+    ValidationUtils.required({ productId }, "SHOPIFY", "get product variants");
 
     // Since we don't have a specific query for variants, we'll get the full product
     // and extract the variants. This could be optimized with a dedicated GraphQL query.

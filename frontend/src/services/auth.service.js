@@ -10,6 +10,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
+import { apiService } from "@/services/api.service";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -28,6 +29,20 @@ class AuthService {
     this.googleProvider = new GoogleAuthProvider();
   }
 
+  // Initialize authentication and return user data
+  async initializeAuth() {
+    try {
+      const firebaseUser = await this.getCurrentUser();
+      if (firebaseUser) {
+        return await this.mergeUserData(firebaseUser);
+      }
+      return null;
+    } catch (error) {
+      console.error("Auth initialization error:", error);
+      return null;
+    }
+  }
+
   // Get current user
   getCurrentUser() {
     return new Promise((resolve, reject) => {
@@ -42,50 +57,90 @@ class AuthService {
     });
   }
 
+  // Helper function to merge Firebase user with backend data
+  async mergeUserData(firebaseUser) {
+    try {
+      const response = await apiService.getCurrentUserFromApi();
+      if (response.success && response.data) {
+        return { ...firebaseUser, ...response.data };
+      } else {
+        console.log("User not found in backend, syncing...");
+        await this.syncUserWithBackend();
+
+        const syncResponse = await apiService.getCurrentUserFromApi();
+        if (syncResponse.success && syncResponse.data) {
+          return { ...firebaseUser, ...syncResponse.data };
+        }
+      }
+    } catch (err) {
+      console.error("Failed to get backend user data:", err);
+
+      if (err.response?.status === 404 || err.message?.includes("not found")) {
+        try {
+          console.log("404 error, attempting to sync user...");
+          await this.syncUserWithBackend();
+
+          const retryResponse = await apiService.getCurrentUserFromApi();
+          if (retryResponse.success && retryResponse.data) {
+            return { ...firebaseUser, ...retryResponse.data };
+          }
+        } catch (syncErr) {
+          console.error("Failed to sync user:", syncErr);
+        }
+      }
+    }
+    return firebaseUser;
+  }
+
+  // Helper function to sync user with backend
+  async syncUserWithBackend() {
+    try {
+      await apiService.post("/auth/sync");
+    } catch (err) {
+      console.error("Failed to sync user with backend:", err);
+      throw err;
+    }
+  }
+
   // Register with email and password
-  async register(email, password, displayName) {
+  async register(userData) {
     try {
       const userCredential = await createUserWithEmailAndPassword(
         this.auth,
-        email,
-        password
+        userData.email,
+        userData.password
       );
 
-      // Update profile with display name
-      if (displayName) {
-        await updateProfile(userCredential.user, { displayName });
+      if (userData.displayName) {
+        await updateProfile(userCredential.user, {
+          displayName: userData.displayName,
+        });
       }
 
-      return {
-        success: true,
-        user: userCredential.user,
-      };
+      await this.syncUserWithBackend();
+      const mergedUser = await this.mergeUserData(userCredential.user);
+
+      return { success: true, user: mergedUser };
     } catch (error) {
-      return {
-        success: false,
-        message: this.getErrorMessage(error.code),
-      };
+      console.error("Registration error:", error);
+      return { success: false, message: this.getErrorMessage(error.code) };
     }
   }
 
   // Login with email and password
-  async login(email, password) {
+  async login(credentials) {
     try {
       const userCredential = await signInWithEmailAndPassword(
         this.auth,
-        email,
-        password
+        credentials.email,
+        credentials.password
       );
 
-      return {
-        success: true,
-        user: userCredential.user,
-      };
+      const mergedUser = await this.mergeUserData(userCredential.user);
+      return { success: true, user: mergedUser };
     } catch (error) {
-      return {
-        success: false,
-        message: this.getErrorMessage(error.code),
-      };
+      console.error("Login error:", error);
+      return { success: false, message: this.getErrorMessage(error.code) };
     }
   }
 
@@ -97,15 +152,11 @@ class AuthService {
         this.googleProvider
       );
 
-      return {
-        success: true,
-        user: userCredential.user,
-      };
+      const mergedUser = await this.mergeUserData(userCredential.user);
+      return { success: true, user: mergedUser };
     } catch (error) {
-      return {
-        success: false,
-        message: this.getErrorMessage(error.code),
-      };
+      console.error("Google login error:", error);
+      return { success: false, message: this.getErrorMessage(error.code) };
     }
   }
 
@@ -115,10 +166,8 @@ class AuthService {
       await signOut(this.auth);
       return { success: true };
     } catch (error) {
-      return {
-        success: false,
-        message: this.getErrorMessage(error.code),
-      };
+      console.error("Logout error:", error);
+      return { success: false, message: this.getErrorMessage(error.code) };
     }
   }
 
@@ -131,9 +180,61 @@ class AuthService {
         message: "Password reset email sent successfully",
       };
     } catch (error) {
+      console.error("Password reset error:", error);
+      return { success: false, message: this.getErrorMessage(error.code) };
+    }
+  }
+
+  // Update user profile
+  async updateProfile(profileData, avatarFile = null) {
+    try {
+      let response;
+      const endpoint = "/auth/profile";
+
+      if (avatarFile) {
+        const formData = new FormData();
+        for (const key in profileData) {
+          if (profileData[key] !== undefined && profileData[key] !== null) {
+            formData.append(key, profileData[key]);
+          }
+        }
+        formData.append("avatar", avatarFile);
+
+        response = await apiService.put(endpoint, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      } else {
+        response = await apiService.put(endpoint, profileData);
+      }
+
+      if (response.success) {
+        const updatedUserData = response.data.user;
+        if (response.data.avatar_url) {
+          updatedUserData.avatar = response.data.avatar_url;
+        }
+        if (response.data.avatar_thumbnail) {
+          updatedUserData.avatarThumbnail = response.data.avatar_thumbnail;
+        }
+
+        const firebaseUser = await this.getCurrentUser();
+        const mergedUser = { ...firebaseUser, ...updatedUserData };
+
+        return { success: true, user: mergedUser };
+      } else {
+        return {
+          success: false,
+          message:
+            response.error || response.message || "Profile update failed",
+        };
+      }
+    } catch (err) {
+      console.error("Profile update error:", err);
       return {
         success: false,
-        message: this.getErrorMessage(error.code),
+        message:
+          err.response?.data?.error ||
+          err.message ||
+          "Profile update failed. Please try again.",
       };
     }
   }
@@ -141,15 +242,6 @@ class AuthService {
   // Listen to auth state changes
   onAuthStateChanged(callback) {
     return onAuthStateChanged(this.auth, callback);
-  }
-
-  // Get user token
-  async getUserToken() {
-    const user = this.auth.currentUser;
-    if (user) {
-      return await user.getIdToken();
-    }
-    return null;
   }
 
   // Convert Firebase error codes to user-friendly messages

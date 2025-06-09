@@ -7,11 +7,11 @@ const ForumView = () => import("@/views/forum/ForumView.vue");
 const TopicView = () => import("@/views/forum/TopicView.vue");
 const ProductsView = () => import("@/views/products/ProductsView.vue");
 const ProductView = () => import("@/views/products/SingleProductView.vue");
-const MyProfileView = () => import("@/views/user/MyProfileView.vue");
-const UserProfileView = () => import("@/views/user/UserProfileView.vue");
+const ProfileView = () => import("@/views/user/ProfileView.vue");
 const LoginView = () => import("@/views/auth/LoginView.vue");
 const RegisterView = () => import("@/views/auth/RegisterView.vue");
 const NotFoundView = () => import("@/views/NotFoundView.vue");
+const BikeGalleryView = () => import("@/views/BikeGalleryView.vue");
 
 const routes = [
   {
@@ -57,7 +57,7 @@ const routes = [
   {
     path: "/profile",
     name: "MyProfile",
-    component: MyProfileView,
+    component: ProfileView,
     meta: {
       requiresAuth: true,
       title: "My Profile - Motordash",
@@ -66,7 +66,7 @@ const routes = [
   {
     path: "/user/:id",
     name: "UserProfile",
-    component: UserProfileView,
+    component: ProfileView,
     meta: {
       title: "User Profile - Motordash",
     },
@@ -87,6 +87,14 @@ const routes = [
     meta: {
       guest: true,
       title: "Register - Motordash",
+    },
+  },
+  {
+    path: "/bikes",
+    name: "BikeGallery",
+    component: BikeGalleryView,
+    meta: {
+      title: "Bike Gallery",
     },
   },
   {

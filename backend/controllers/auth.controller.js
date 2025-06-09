@@ -1,48 +1,34 @@
+const BaseController = require("./base.controller");
 const userService = require("../services/forum/user.service");
-const imageService = require("../services/image.service");
-const cacheService = require("../services/cache.service");
 
-class AuthController {
+class AuthController extends BaseController {
+  constructor() {
+    super("AUTH");
+  }
+
+  // Helper method to clean update data
+  _cleanUpdateData(data) {
+    Object.keys(data).forEach((key) => {
+      if (data[key] === undefined || data[key] === "") {
+        delete data[key];
+      }
+    });
+    return data;
+  }
+
   // Get current user info (protected route)
   async getMe(req, res) {
     try {
-      const cacheKey = `user_profile:${req.user.uid}`;
-
-      // Try to get from cache first
-      let userRecord = await cacheService.get(cacheKey);
-
-      if (!userRecord) {
-        // Cache miss - fetch from database
-        userRecord = await userService.getUserProfile(req.user.uid);
-
-        // Cache for 5 minutes
-        await cacheService.set(cacheKey, userRecord, 300);
-      }
-
-      res.json({
-        success: true,
-        data: userRecord,
-      });
+      const userRecord = await this.getCachedData(
+        `user_profile:${req.user.uid}`,
+        () => userService.getUserProfile(req.user.uid)
+      );
+      return this.sendSuccess(res, userRecord);
     } catch (error) {
-      console.error("AUTH_CONTROLLER_ERROR: Get User Error:", error);
-
-      // Determine status code based on error type
-      let statusCode = 500;
-      if (error.message.includes("NOT_FOUND_ERROR")) {
-        statusCode = 404;
-      } else if (error.message.includes("VALIDATION_ERROR")) {
-        statusCode = 400;
-      }
-
-      res.status(statusCode).json({
-        success: false,
-        error: `AUTH_CONTROLLER_ERROR: ${error.message}`,
-        errorSource: "auth_controller",
-      });
+      this.handleError(res, error, "Get User");
     }
   }
 
-  // Update user profile
   async updateProfile(req, res) {
     try {
       const {
@@ -55,7 +41,7 @@ class AuthController {
         allow_messages,
       } = req.body;
 
-      const updateData = {
+      let updateData = this._cleanUpdateData({
         username,
         displayName,
         bio,
@@ -63,152 +49,109 @@ class AuthController {
         website,
         show_email: show_email === "true" || show_email === true,
         allow_messages: allow_messages === "true" || allow_messages === true,
-      };
-
-      // Remove undefined/empty fields
-      Object.keys(updateData).forEach((key) => {
-        if (updateData[key] === undefined || updateData[key] === "") {
-          delete updateData[key];
-        }
       });
 
-      let newImageRecordDetails = null;
-      let oldAvatarForDeletion = null;
-
-      // Handle file upload
-      if (req.file) {
-        console.log("Processing file upload:", req.file.originalname);
-
-        try {
-          // Get current user profile to check for existing avatar
-          const currentUser = await userService.getUserProfile(req.user.uid);
-          if (currentUser && currentUser.avatar) {
-            oldAvatarForDeletion = {
+      if (req.imageData) {
+        // Get current user to handle old avatar cleanup
+        const currentUser = await userService.getUserProfile(req.user.uid);
+        const oldAvatar = currentUser?.avatar
+          ? {
               url: currentUser.avatar,
               thumbnailUrl: currentUser.avatarThumbnail,
-            };
-          }
+            }
+          : null;
 
-          // Upload new avatar image
-          const uploadedImageRecord = await imageService.uploadImage(
-            req.file,
-            `forum/avatars/${req.user.uid}`
-          );
+        // Get the first image from the array (for avatar, we only expect one)
+        const imageData = Array.isArray(req.imageData)
+          ? req.imageData[0]
+          : req.imageData;
 
-          if (uploadedImageRecord && uploadedImageRecord.url) {
-            updateData.avatar = uploadedImageRecord.url;
-            updateData.avatarThumbnail = uploadedImageRecord.thumbnailUrl;
-            newImageRecordDetails = {
-              url: uploadedImageRecord.url,
-              thumbnailUrl: uploadedImageRecord.thumbnailUrl,
-            };
-            console.log("New avatar uploaded:", uploadedImageRecord.url);
-          }
-        } catch (imageError) {
-          return res.status(400).json({
-            success: false,
-            error: `AUTH_CONTROLLER_ERROR: Image upload failed - ${imageError.message}`,
-            errorSource: "auth_controller_image",
-          });
+        // Only add image data to update if imageData exists and URLs are provided
+        if (imageData && imageData.url) {
+          updateData.avatar = imageData.url;
         }
+        if (imageData && imageData.thumbnailUrl) {
+          updateData.avatarThumbnail = imageData.thumbnailUrl;
+        }
+        if (imageData && imageData.mediumUrl) {
+          updateData.avatarMediumUrl = imageData.mediumUrl;
+        }
+
+        // Store old avatar for cleanup after successful update
+        req.oldAvatar = oldAvatar;
+        req.newImageDetails = imageData
+          ? {
+              url: imageData.url,
+              thumbnailUrl: imageData.thumbnailUrl,
+              mediumUrl: imageData.mediumUrl,
+            }
+          : null;
       }
 
       const updatedUser = await userService.updateUserProfile(
         req.user.uid,
         updateData
       );
+      await this.deleteCache(`user_profile:${req.user.uid}`);
 
-      // Invalidate user cache after successful update
-      const cacheKey = `user_profile:${req.user.uid}`;
-      await cacheService.del(cacheKey);
-
-      // Delete old avatar after successful profile update
-      if (oldAvatarForDeletion && oldAvatarForDeletion.url) {
+      // Delete old avatar after successful update
+      if (req.oldAvatar?.url) {
         try {
-          await imageService.deleteImage(oldAvatarForDeletion);
+          const imageService = require("../services/image.service");
+          await imageService.deleteImage(req.oldAvatar);
           console.log("Old avatar deleted successfully");
         } catch (deleteError) {
           console.warn("Failed to delete old avatar:", deleteError.message);
         }
       }
 
-      const responseData = {
-        user: updatedUser,
-      };
-
-      if (newImageRecordDetails) {
-        responseData.avatar_url = newImageRecordDetails.url;
-        responseData.avatar_thumbnail = newImageRecordDetails.thumbnailUrl;
+      const responseData = { user: updatedUser };
+      if (req.newImageDetails) {
+        responseData.avatar_url = req.newImageDetails.url;
+        responseData.avatar_thumbnail = req.newImageDetails.thumbnailUrl;
       }
 
-      res.json({
-        success: true,
-        message: "Profile updated successfully",
-        data: responseData,
-      });
+      return this.sendSuccess(
+        res,
+        responseData,
+        200,
+        "Profile updated successfully"
+      );
     } catch (error) {
-      console.error("AUTH_CONTROLLER_ERROR: Profile Update Error:", error);
-
-      // Determine status code based on error type
-      let statusCode = 500;
-      if (error.message.includes("VALIDATION_ERROR")) {
-        statusCode = 400;
-      } else if (error.message.includes("NOT_FOUND_ERROR")) {
-        statusCode = 404;
-      }
-
-      res.status(statusCode).json({
-        success: false,
-        error: `AUTH_CONTROLLER_ERROR: ${error.message}`,
-        errorSource: "auth_controller",
-      });
+      this.handleError(res, error, "Profile Update");
     }
   }
 
   // Sync user (create or update user profile from any auth method)
   async syncUser(req, res) {
     try {
-      const syncData = req.body;
+      // Haal syncData uit req.user in plaats van req.body
+      const syncData = {
+        firebaseUid: req.user.uid,
+        email: req.user.email,
+        displayName: req.user.displayName,
+        photoURL: req.user.picture,
+        emailVerified: req.user.emailVerified,
+        providerData: req.user.firebase.firebase?.sign_in_provider
+          ? [{ providerId: req.user.firebase.firebase.sign_in_provider }]
+          : null,
+      };
+
+      console.log("Syncing user with data:", JSON.stringify(syncData, null, 2));
 
       const result = await userService.syncUser(syncData);
 
-      // Invalidate user cache after sync
-      if (syncData.uid) {
-        const cacheKey = `user_profile:${syncData.uid}`;
-        await cacheService.del(cacheKey);
-      }
+      await this.deleteCache(`user_profile:${req.user.uid}`);
 
-      if (result.createdAt && !result.updatedAt) {
-        // New user created
-        res.status(201).json({
-          success: true,
-          message: "User created successfully",
-          data: result,
-        });
-      } else {
-        // Existing user updated
-        res.json({
-          success: true,
-          message: "User synced successfully",
-          data: result,
-        });
-      }
+      const isNewUser = result.createdAt && !result.updatedAt;
+      const status = isNewUser ? 201 : 200;
+      const message = isNewUser
+        ? "User created successfully"
+        : "User synced successfully";
+
+      return this.sendSuccess(res, result, status, message);
     } catch (error) {
-      console.error("AUTH_CONTROLLER_ERROR: User Sync Error:", error);
-
-      // Determine status code based on error type
-      let statusCode = 500;
-      if (error.message.includes("VALIDATION_ERROR")) {
-        statusCode = 400;
-      } else if (error.message.includes("NOT_FOUND_ERROR")) {
-        statusCode = 404;
-      }
-
-      res.status(statusCode).json({
-        success: false,
-        error: `AUTH_CONTROLLER_ERROR: ${error.message}`,
-        errorSource: "auth_controller",
-      });
+      this.handleError(res, error, "User Sync");
     }
   }
 }

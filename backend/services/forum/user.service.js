@@ -4,7 +4,8 @@
  */
 
 const firebaseQueries = require("../../queries/firebase.queries");
-const { validators, UserProfile } = require("../../models/forum.models");
+const { UserProfile } = require("../../models/forum.models");
+const ValidationUtils = require("../../utils/validation.utils");
 
 class UserService {
   constructor() {
@@ -23,24 +24,21 @@ class UserService {
         authProvider,
       } = userData;
 
-      if (!uid || !email || !username) {
-        throw new Error(
-          "USER_SERVICE_VALIDATION_ERROR: UID, email, and username are required"
-        );
-      }
+      // All validation in clean, single lines that throw errors automatically
+      ValidationUtils.required(
+        { uid, email, username },
+        "USER",
+        "create user profile"
+      );
+      ValidationUtils.email(email, "USER");
+      ValidationUtils.username(username, "USER");
 
-      if (!validators.isValidEmail(email)) {
-        throw new Error("USER_SERVICE_VALIDATION_ERROR: Invalid email format");
-      }
-
-      if (!validators.isValidUsername(username)) {
-        throw new Error(
-          "USER_SERVICE_VALIDATION_ERROR: Username must be 3-20 characters and contain only letters, numbers, and underscores"
-        );
-      }
-
-      const existingUser = await this.getUserByUsername(username);
-      if (existingUser && existingUser.uid !== uid) {
+      // Check if username is taken (but allow if it's the same user)
+      const existingUserWithUsername = await this._checkUserExists(
+        "username",
+        username
+      );
+      if (existingUserWithUsername && existingUserWithUsername.uid !== uid) {
         throw new Error(
           "USER_SERVICE_VALIDATION_ERROR: Username is already taken"
         );
@@ -60,6 +58,10 @@ class UserService {
         authProvider: authProvider || "email",
       };
 
+      console.log(
+        `Creating user profile for UID: ${uid}, Username: ${username}`
+      );
+
       await this.queries.createUser(uid, userProfile);
       return userProfile;
     } catch (error) {
@@ -74,9 +76,7 @@ class UserService {
 
   async getUserProfile(uid) {
     try {
-      if (!uid) {
-        throw new Error("USER_SERVICE_VALIDATION_ERROR: User ID is required");
-      }
+      ValidationUtils.required({ uid }, "USER", "get user profile");
 
       const user = await this.queries.getUserById(uid);
 
@@ -97,15 +97,8 @@ class UserService {
 
   async getUserByUsername(username) {
     try {
-      if (!username) {
-        throw new Error("USER_SERVICE_VALIDATION_ERROR: Username is required");
-      }
-
-      if (!validators.isValidUsername(username)) {
-        throw new Error(
-          "USER_SERVICE_VALIDATION_ERROR: Invalid username format"
-        );
-      }
+      ValidationUtils.required({ username }, "USER", "get user by username");
+      ValidationUtils.username(username, "USER");
 
       const user = await this.queries.getUserByUsername(username);
 
@@ -126,9 +119,7 @@ class UserService {
 
   async updateUserActivity(uid) {
     try {
-      if (!uid) {
-        throw new Error("USER_SERVICE_VALIDATION_ERROR: User ID is required");
-      }
+      ValidationUtils.required({ uid }, "USER", "update user activity");
 
       await this.queries.updateUserActivity(uid);
     } catch (error) {
@@ -136,21 +127,12 @@ class UserService {
         throw error;
       }
       console.error("Failed to update user activity:", error);
-      throw new Error(
-        `USER_SERVICE_ERROR: Failed to update user activity - ${error.message}`
-      );
     }
   }
 
   async incrementUserStats(uid, field) {
     try {
-      if (!uid) {
-        throw new Error("USER_SERVICE_VALIDATION_ERROR: User ID is required");
-      }
-
-      if (!field) {
-        throw new Error("USER_SERVICE_VALIDATION_ERROR: Field is required");
-      }
+      ValidationUtils.required({ uid, field }, "USER", "increment user stats");
 
       const validFields = [
         "topicsCount",
@@ -178,9 +160,7 @@ class UserService {
 
   async updateUserProfile(uid, updateData) {
     try {
-      if (!uid) {
-        throw new Error("USER_SERVICE_VALIDATION_ERROR: User ID is required");
-      }
+      ValidationUtils.required({ uid }, "USER", "update user profile");
 
       if (!updateData || Object.keys(updateData).length === 0) {
         throw new Error(
@@ -196,6 +176,7 @@ class UserService {
         "website",
         "avatar",
         "avatarThumbnail",
+        "avatarMediumUrl",
         "show_email",
         "allow_messages",
         "interests",
@@ -214,78 +195,38 @@ class UserService {
         }
       });
 
-      if (Object.keys(filteredData).length === 0) {
-        throw new Error(
-          "USER_SERVICE_VALIDATION_ERROR: No valid fields to update"
-        );
-      }
-
       // Validate username if it's being updated
       if (filteredData.username) {
-        if (!validators.isValidUsername(filteredData.username)) {
-          throw new Error(
-            "USER_SERVICE_VALIDATION_ERROR: Username must be 3-20 characters and contain only letters, numbers, and underscores"
-          );
-        }
+        ValidationUtils.username(filteredData.username, "USER");
 
         // Check if username is already taken by another user
-        try {
-          const existingUser = await this.queries.getUserByUsername(
-            filteredData.username
+        const existingUser = await this._checkUserExists(
+          "username",
+          filteredData.username
+        );
+        if (existingUser && existingUser.uid !== uid) {
+          throw new Error(
+            "USER_SERVICE_VALIDATION_ERROR: Username is already taken"
           );
-          if (existingUser && existingUser.uid !== uid) {
-            throw new Error(
-              "USER_SERVICE_VALIDATION_ERROR: Username is already taken"
-            );
-          }
-        } catch (error) {
-          if (!error.message.includes("NOT_FOUND_ERROR")) {
-            throw error;
-          }
         }
       }
 
       // Validate other fields
-      if (filteredData.bio && !validators.isValidBio(filteredData.bio)) {
-        throw new Error(
-          "USER_SERVICE_VALIDATION_ERROR: Bio must be 500 characters or less"
-        );
-      }
+      [
+        "email",
+        "displayName",
+        "bio",
+        "website",
+        "location",
+        "interests",
+      ].forEach((field) => {
+        if (updateData[field] !== undefined) {
+          ValidationUtils[field](updateData[field], "USER");
+        }
+      });
 
-      if (
-        filteredData.website &&
-        !validators.isValidWebsite(filteredData.website)
-      ) {
-        throw new Error(
-          "USER_SERVICE_VALIDATION_ERROR: Invalid website URL format"
-        );
-      }
-
-      if (
-        filteredData.location &&
-        !validators.isValidLocation(filteredData.location)
-      ) {
-        throw new Error(
-          "USER_SERVICE_VALIDATION_ERROR: Location must be 100 characters or less"
-        );
-      }
-
-      if (
-        filteredData.interests &&
-        !validators.isValidInterests(filteredData.interests)
-      ) {
-        throw new Error(
-          "USER_SERVICE_VALIDATION_ERROR: Maximum 10 interests allowed"
-        );
-      }
-
-      if (
-        filteredData.social_links &&
-        !validators.isValidSocialLinks(filteredData.social_links)
-      ) {
-        throw new Error(
-          "USER_SERVICE_VALIDATION_ERROR: Maximum 5 social links allowed"
-        );
+      if (updateData.social_links !== undefined) {
+        ValidationUtils.socialLinks(updateData.social_links, "USER");
       }
 
       // Add update timestamp
@@ -317,49 +258,36 @@ class UserService {
         providerData,
       } = syncData;
 
-      // Validate required fields
-      if (!firebaseUid || !email) {
-        throw new Error(
-          "USER_SERVICE_VALIDATION_ERROR: Firebase UID and email are required"
-        );
-      }
+      ValidationUtils.required({ firebaseUid, email }, "USER", "sync user");
+      ValidationUtils.email(email, "USER");
 
-      if (!validators.isValidEmail(email)) {
-        throw new Error("USER_SERVICE_VALIDATION_ERROR: Invalid email format");
-      }
-
-      // Check if user already exists
-      let existingUser;
-      try {
-        existingUser = await this.getUserProfile(firebaseUid);
-      } catch (error) {
-        if (!error.message.includes("NOT_FOUND_ERROR")) {
-          throw error;
-        }
-        existingUser = null;
-      }
+      // Simple check - does user exist?
+      const existingUser = await this._checkUserExists("uid", firebaseUid);
 
       if (existingUser) {
-        // Update existing user
+        // User exists - update their info
+        console.log(`Updating existing user: ${firebaseUid}`);
+
         const updateData = {
           email,
-          displayName,
-          avatar: photoURL || existingUser.avatar,
           emailVerified,
           authProvider: this._getAuthProvider(providerData),
           lastLogin: this.queries.getServerTimestamp(),
         };
 
-        // Remove undefined fields
-        Object.keys(updateData).forEach((key) => {
-          if (updateData[key] === undefined) {
-            delete updateData[key];
-          }
-        });
+        // Only update displayName and avatar if they're currently empty
+        if (!existingUser.displayName && displayName) {
+          updateData.displayName = displayName;
+        }
+        if (!existingUser.avatar && photoURL) {
+          updateData.avatar = photoURL;
+        }
 
         return await this.updateUserProfile(firebaseUid, updateData);
       } else {
-        // Create new user
+        // User doesn't exist - create new one
+        console.log(`Creating new user: ${firebaseUid}`);
+
         const username = await this._generateUniqueUsername(
           displayName || email?.split("@")[0]
         );
@@ -369,11 +297,9 @@ class UserService {
           email,
           username,
           displayName: displayName || username,
-          avatar: photoURL,
+          avatar: photoURL || "",
           emailVerified,
           authProvider: this._getAuthProvider(providerData),
-          createdAt: this.queries.getServerTimestamp(),
-          lastLogin: this.queries.getServerTimestamp(),
         };
 
         return await this.createUserProfile(newUserData);
@@ -442,6 +368,21 @@ class UserService {
       throw new Error(
         `USER_SERVICE_ERROR: Failed to generate unique username - ${error.message}`
       );
+    }
+  }
+
+  // Simple helper to check if user exists without throwing errors
+  async _checkUserExists(field, value) {
+    try {
+      if (field === "uid") {
+        return await this.queries.getUserById(value);
+      } else if (field === "username") {
+        return await this.queries.getUserByUsername(value);
+      }
+      return null;
+    } catch (error) {
+      // If user doesn't exist, return null instead of throwing
+      return null;
     }
   }
 

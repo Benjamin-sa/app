@@ -36,9 +36,7 @@
                     <div class="flex flex-col lg:flex-row lg:items-start space-y-6 lg:space-y-0 lg:space-x-6">
                         <!-- Vote Section - Desktop (sidebar) -->
                         <div class="hidden lg:flex flex-shrink-0">
-                            <VoteButton :value="topic.votes?.score || 0" :user-vote="topic.userVote"
-                                :loading="votingLoading" @vote="(voteData) => handleVote(topic.id, 'topic', voteData)"
-                                size="lg" />
+                            <VoteButton :target-id="topic.id" target-type="topic" size="lg" />
                         </div>
 
                         <!-- Main Content -->
@@ -60,24 +58,15 @@
                                 </h1>
                                 <!-- Vote Section - Mobile (inline) -->
                                 <div class="lg:hidden flex-shrink-0">
-                                    <VoteButton :value="topic.votes?.score || 0" :user-vote="topic.userVote"
-                                        :loading="votingLoading"
-                                        @vote="(voteData) => handleVote(topic.id, 'topic', voteData)" size="md" />
+                                    <VoteButton :target-id="topic.id" target-type="topic" size="md" />
                                 </div>
                             </div>
 
                             <!-- Author Info -->
                             <div
                                 class="flex items-center space-x-3 mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
-                                <img v-if="topic.authorAvatar" :src="topic.authorAvatar" :alt="topic.authorDisplayName"
-                                    class="w-12 h-12 rounded-full border-2 border-white dark:border-gray-600 shadow-sm">
-                                <div v-else
-                                    class="w-12 h-12 rounded-full bg-primary-500 dark:bg-primary-600 flex items-center justify-center text-white text-lg font-semibold border-2 border-white dark:border-gray-600 shadow-sm">
-                                    {{ topic.authorDisplayName?.charAt(0).toUpperCase() }}
-                                </div>
+                                <AuthorDisplay :userId="topic.userId" size="lg" />
                                 <div class="flex-1 min-w-0">
-                                    <div class="font-semibold text-gray-900 dark:text-gray-100 text-lg">{{
-                                        topic.authorDisplayName }}</div>
                                     <div class="text-sm text-gray-500 dark:text-gray-400">
                                         Posted {{ formatDate(topic.createdAt) }}
                                         <span v-if="topic.updatedAt !== topic.createdAt" class="ml-2">
@@ -127,8 +116,8 @@
                                 </div>
                                 <div class="flex items-center space-x-1">
                                     <ChatBubbleLeftIcon class="w-4 h-4" />
-                                    <span class="font-medium">{{ formatNumber(topic.answerCount || 0) }}</span>
-                                    <span>{{ topic.answerCount === 1 ? 'answer' : 'answers' }}</span>
+                                    <span class="font-medium">{{ formatNumber(answerCount) }}</span>
+                                    <span>{{ answerCount === 1 ? 'answer' : 'answers' }}</span>
                                 </div>
                                 <div v-if="topic.lastActivity" class="flex items-center space-x-1">
                                     <ClockIcon class="w-4 h-4" />
@@ -170,13 +159,12 @@
                     class="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 border-b border-gray-200 dark:border-gray-600">
                     <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                         <ChatBubbleLeftIcon class="w-5 h-5 mr-2 text-primary-600 dark:text-primary-400" />
-                        {{ formatNumber(answers.length) }} {{ answers.length === 1 ? 'Answer' : 'Answers' }}
+                        {{ formatNumber(answerCount) }} {{ answerCount === 1 ? 'Answer' : 'Answers' }}
                     </h2>
                 </div>
 
-                <AnswerList :answers="answers" :loading="answersLoading" :topic-author-id="topic.author?.id"
-                    @vote="(answerId, voteData) => handleVote(answerId, 'answer', voteData)" @edit="handleAnswerEdit"
-                    @delete="handleAnswerDelete" />
+                <AnswerList :topic-id="topic.id" :topic-author-id="topic.author?.id"
+                    @answer-count-changed="updateAnswerCount" />
             </div>
 
             <!-- Answer Form -->
@@ -208,7 +196,6 @@
             :initial-index="selectedImageIndex" :is-open="showImageViewer" @close="closeImageViewer"
             @change="(index) => selectedImageIndex = index" />
 
-        <!-- Debug: Simple test modal -->
         <div v-if="showEditTopic" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
             @click="showEditTopic = false">
             <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
@@ -222,8 +209,8 @@
                         </svg>
                     </button>
                 </div>
-                <EditTopicForm v-if="topic" :topic="topic" @success="handleTopicUpdated"
-                    @cancel="showEditTopic = false" />
+                <TopicForm v-if="topic" :topic="topic" @cancel="showEditTopic = false"
+                    @success="handleTopicEditSuccess" />
             </div>
         </div>
 
@@ -259,8 +246,9 @@ import Modal from '@/components/common/Modal.vue';
 import VoteButton from '@/components/forum/VoteButton.vue';
 import AnswerList from '@/components/forum/AnswerList.vue';
 import AnswerForm from '@/components/forum/AnswerForm.vue';
-import EditTopicForm from '@/components/forum/EditTopicForm.vue';
+import TopicForm from '@/components/forum/TopicForm.vue';
 import ImageViewer from '@/components/common/ImageViewer.vue';
+import AuthorDisplay from '@/components/common/AuthorDisplay.vue';
 import {
     ChevronRightIcon,
     LockClosedIcon,
@@ -280,21 +268,20 @@ const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
 
 const topic = ref(null);
-const answers = ref([]);
 const loading = ref(false);
 const deleting = ref(false);
-const votingLoading = ref(false);
 const showAnswerForm = ref(false);
 const showEditTopic = ref(false);
 const showDeleteConfirm = ref(false);
 const showImageViewer = ref(false);
 const selectedImageIndex = ref(0);
+const answerCount = ref(0);
 
 const canEditTopic = computed(() => {
     if (!authStore.user || !topic.value) return false;
 
     // Author can edit their own topic
-    if (authStore.user.id === topic.value.authorId) return true;
+    if (authStore.user.id === topic.value.userId) return true;
 
     // Admin can edit any topic
     if (authStore.user.role === 'admin') return true;
@@ -306,7 +293,7 @@ const canDeleteTopic = computed(() => {
     if (!authStore.user || !topic.value) return false;
 
     // Author can delete their own topic
-    if (authStore.user.id === topic.value.authorId) return true;
+    if (authStore.user.id === topic.value.userId) return true;
 
     // Admin can delete any topic
     if (authStore.user.role === 'admin') return true;
@@ -314,123 +301,28 @@ const canDeleteTopic = computed(() => {
     return false;
 });
 
-// Unified voting function for both topics and answers
-const handleVote = async (targetId, targetType, { voteType, previousVote }) => {
-    if (!authStore.isAuthenticated) {
-        notificationStore.info('Sign in required', 'Please sign in to vote.');
-        return;
-    }
-
-    try {
-        // Set loading state based on target type
-        if (targetType === 'topic') {
-            votingLoading.value = true;
-        }
-
-        const response = await apiService.vote(targetId.trim(), targetType, voteType);
-
-        if (response.success) {
-            // Update the appropriate data based on target type
-            if (targetType === 'topic') {
-                topic.value.votes = { score: response.data.newVoteCount };
-                topic.value.userVote = response.data.userVote;
-            } else if (targetType === 'answer') {
-                const answerIndex = answers.value.findIndex(a => a.id === targetId);
-                if (answerIndex !== -1) {
-                    answers.value[answerIndex].votes = { score: response.data.newVoteCount };
-                    answers.value[answerIndex].userVote = response.data.userVote;
-                }
-            }
-
-            // Show user-friendly feedback
-            const targetName = targetType === 'topic' ? 'topic' : 'answer';
-            if (voteType === null) {
-                notificationStore.success('Vote removed', `Your vote on this ${targetName} has been removed.`);
-            } else if (previousVote) {
-                notificationStore.success('Vote changed', `Changed from ${previousVote}vote to ${voteType}vote on this ${targetName}.`);
-            } else {
-                notificationStore.success('Vote recorded', `Your ${voteType}vote on this ${targetName} has been recorded.`);
-            }
-        }
-    } catch (error) {
-        const targetName = targetType === 'topic' ? 'topic' : 'answer';
-        notificationStore.error('Vote failed', `Unable to record your vote on this ${targetName}. Please try again.`, { duration: 5000 });
-    } finally {
-        if (targetType === 'topic') {
-            votingLoading.value = false;
-        }
-    }
-};
-
 const loadTopic = async () => {
     try {
         loading.value = true;
         const response = await apiService.get(`/forum/topics/${route.params.id}`);
         topic.value = response.data;
-
-        // Extract answers from topic data
-        answers.value = response.data.answers || [];
-
-        // If user is authenticated, get their vote status for topic and answers
-        if (authStore.isAuthenticated && topic.value) {
-            await loadUserVote();
-            if (answers.value.length > 0) {
-                await loadAnswerVotes();
-            }
-        }
+        answerCount.value = response.data.answerCount || 0;
     } catch (error) {
         console.error('Error loading topic:', error);
         topic.value = null;
-        answers.value = [];
     } finally {
         loading.value = false;
     }
 };
 
-const loadUserVote = async () => {
-    try {
-        const response = await apiService.getUserVote(topic.value.id);
-        if (response.success) {
-            topic.value.userVote = response.data;
-        }
-    } catch (error) {
-        console.error('Error loading user vote:', error);
-        // Don't throw error, just log it
-    }
+const updateAnswerCount = (newCount) => {
+    answerCount.value = newCount;
 };
 
-const loadAnswerVotes = async () => {
-    try {
-        const votePromises = answers.value.map(async (answer) => {
-            try {
-                const response = await apiService.getUserVote(answer.id);
-                if (response.success) {
-                    answer.userVote = response.data;
-                }
-            } catch (error) {
-                console.error('Error loading answer vote:', error);
-            }
-        });
-        await Promise.all(votePromises);
-    } catch (error) {
-        console.error('Error loading answer votes:', error);
-    }
-};
-
-const handleAnswerSuccess = (newAnswer) => {
-    answers.value.push(newAnswer);
-    // Update topic answer count
-    if (topic.value) {
-        topic.value.answerCount = (topic.value.answerCount || 0) + 1;
-    }
+const handleAnswerSuccess = () => {
     showAnswerForm.value = false;
+    answerCount.value += 1;
     notificationStore.success('Answer posted!', 'Your answer has been added successfully.');
-};
-
-const handleTopicUpdated = (updatedTopic) => {
-    topic.value = { ...topic.value, ...updatedTopic };
-    showEditTopic.value = false;
-    notificationStore.success('Topic updated!', 'Your changes have been saved.');
 };
 
 const handleTopicDelete = async () => {
@@ -448,34 +340,22 @@ const handleTopicDelete = async () => {
     }
 };
 
-const handleAnswerEdit = (answerId) => {
-    // Implementation for editing answers
-    console.log('Edit answer:', answerId);
-};
-
-const handleAnswerDelete = async (answerId) => {
-    try {
-        await apiService.delete(`/forum/answers/${answerId}`);
-        answers.value = answers.value.filter(a => a.id !== answerId);
-        // Update topic answer count
-        if (topic.value) {
-            topic.value.answerCount = Math.max((topic.value.answerCount || 1) - 1, 0);
-        }
-        notificationStore.success('Answer deleted', 'The answer has been removed.');
-    } catch (error) {
-        console.error('Error deleting answer:', error);
-        notificationStore.error('Delete failed', 'Unable to delete the answer. Please try again.', { duration: 5000 });
-    }
-};
-
 const handleEditTopic = () => {
-    console.log('Edit topic clicked, topic:', topic.value); // Debug log
     if (!topic.value) {
         notificationStore.error('Error', 'Topic data not available. Please refresh the page.');
         return;
     }
-    console.log('Setting showEditTopic to true'); // Debug log
     showEditTopic.value = true;
+};
+
+const handleTopicEditSuccess = (updatedTopic) => {
+    showEditTopic.value = false;
+    // Optionally update the local topic data with the response
+    if (updatedTopic?.data) {
+        topic.value = { ...topic.value, ...updatedTopic.data };
+    }
+    // Or reload the topic to get fresh data
+    loadTopic();
 };
 
 const openImageModal = (imageUrl) => {
@@ -490,19 +370,11 @@ const closeImageViewer = () => {
     showImageViewer.value = false;
 };
 
+
+
 watch(() => route.params.id, (newId, oldId) => {
     if (newId !== oldId) {
         loadTopic();
-    }
-});
-
-// Watch for authentication changes to load votes
-watch(() => authStore.isAuthenticated, (isAuth) => {
-    if (isAuth && topic.value) {
-        loadUserVote();
-        if (answers.value.length > 0) {
-            loadAnswerVotes();
-        }
     }
 });
 

@@ -36,14 +36,13 @@
 
                 <!-- Filters -->
                 <div class="flex flex-wrap gap-3">
+
                     <select v-model="selectedCategory"
                         class="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                        <option value="">All Categories</option>
-                        <option value="general">General Discussion</option>
-                        <option value="technical">Technical Help</option>
-                        <option value="maintenance">Maintenance</option>
-                        <option value="rides">Rides & Events</option>
-                        <option value="marketplace">Marketplace</option>
+                        <option value="">Select a category</option>
+                        <option v-for="category in FORUM_CATEGORIES" :key="category" :value="category">
+                            {{ getCategoryLabel(category) }}
+                        </option>
                     </select>
 
                     <select v-model="sortBy"
@@ -58,7 +57,9 @@
 
         <!-- Topics List -->
         <div class="space-y-4">
-            <LoadingSpinner v-if="loading" />
+            <div v-if="loading" class="flex justify-center items-center min-h-64">
+                <LoadingSpinner size="lg" />
+            </div>
 
             <div v-else-if="topics.length === 0" class="text-center py-12">
                 <ChatBubbleLeftRightIcon class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
@@ -112,7 +113,7 @@
                             <XMarkIcon class="w-6 h-6" />
                         </button>
                     </div>
-                    <CreateTopicForm @success="handleTopicCreated" @cancel="showCreateTopic = false" />
+                    <TopicForm @success="handleTopicCreated" @cancel="showCreateTopic = false" />
                 </div>
             </div>
         </div>
@@ -122,12 +123,13 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import { debounce } from '@/utils/helpers';
+import { debounce, getCategoryLabel } from '@/utils/helpers';
+import { FORUM_CATEGORIES } from '@/utils/constants.repository.js'
 import { apiService } from '@/services/api.service';
 import Button from '@/components/common/Button.vue';
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
 import TopicCard from '@/components/forum/TopicCard.vue';
-import CreateTopicForm from '@/components/forum/CreateTopicForm.vue';
+import TopicForm from '@/components/forum/TopicForm.vue';
 import {
     PlusIcon,
     MagnifyingGlassIcon,

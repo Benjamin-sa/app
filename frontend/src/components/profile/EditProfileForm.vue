@@ -145,10 +145,10 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notification';
 import { useApi } from '@/composables/useApi';
-import { validateUsername } from '@/utils/helpers';
+import { validateUsername, validateImageFile, createImagePreview } from '@/utils/helpers';
+import { apiService } from '@/services/api.service';
 import Button from '@/components/common/Button.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
 import { UserIcon } from '@heroicons/vue/24/outline';
@@ -166,7 +166,6 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'updated']);
 
-const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
 
 // Replace manual loading/error with useApi
@@ -223,66 +222,62 @@ const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-        notificationStore.error('Invalid file type', 'Please select an image file');
-        return;
-    }
+    // Use helper function for validation
+    const validation = validateImageFile(file);
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-        notificationStore.error('File too large', 'Please select an image smaller than 5MB');
+    if (!validation.isValid) {
+        notificationStore.error('Invalid file', validation.error);
         return;
     }
 
     selectedFile.value = file;
 
-    // Create preview URL
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        previewUrl.value = e.target.result;
-    };
-    reader.readAsDataURL(file);
+    // Use helper function to create preview
+    const imagePreview = createImagePreview(file);
+    previewUrl.value = imagePreview.preview;
 };
 
 const handleSubmit = async () => {
-
     if (!isFormValid.value || loading.value) {
         console.log('Form validation failed or loading');
         return;
     }
 
-    const profileDataPayload = {
-        username: form.value.username,
-        displayName: form.value.displayName || form.value.username,
-        bio: form.value.bio,
-        location: form.value.location,
-        website: form.value.website,
-        // Remove avatar from here since it will be sent as a file
-        show_email: form.value.show_email,
-        allow_messages: form.value.allow_messages
-    };
+    const result = await execute(
+        async () => {
+            const formData = new FormData();
 
-    try {
-        const result = await execute(
-            () => authStore.updateProfile(profileDataPayload, selectedFile.value),
-            {
-                showNotification: true,
-                notificationStore,
-            }
-        );
+            // Add profile data
+            formData.append('username', form.value.username);
+            formData.append('displayName', form.value.displayName || form.value.username);
+            formData.append('bio', form.value.bio || '');
+            formData.append('location', form.value.location || '');
+            formData.append('website', form.value.website || '');
+            formData.append('show_email', form.value.show_email);
+            formData.append('allow_messages', form.value.allow_messages);
 
-        if (result && result.success) {
-            notificationStore.success('Profile updated', 'Your profile has been updated successfully!');
-            emit('updated', result.data);
-            emit('close');
-        } else if (result && !result.success) {
-            if (result.errors) {
-                errors.value = result.errors;
+            // Add avatar file if selected
+            if (selectedFile.value) {
+                formData.append('images', selectedFile.value);
             }
+
+            return await apiService.put('/auth/profile', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+        },
+        {
+            showErrorNotification: true,
+            notificationStore,
+            errorTitle: 'Profile Update Failed'
         }
-    } catch (err) {
-        console.error('Submit error:', err);
+    );
+
+    if (result) {
+        notificationStore.success('Profile updated', 'Your profile has been updated successfully!');
+        emit('updated', result);
+        emit('close');
     }
 };
 </script>

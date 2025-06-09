@@ -26,8 +26,14 @@ export function useApi() {
           result?.message || result?.error || "An error occurred";
         error.value = errorMessage;
 
-        // Show error notification if requested
-        if (options.showErrorNotification && options.notificationStore) {
+        // Handle validation errors specifically
+        if (result?.errors && options.notificationStore) {
+          const validationErrors = Object.values(result.errors).join(", ");
+          options.notificationStore.error(
+            options.errorTitle || "Validation Error",
+            validationErrors
+          );
+        } else if (options.showErrorNotification && options.notificationStore) {
           options.notificationStore.error(
             options.errorTitle || "Error",
             errorMessage

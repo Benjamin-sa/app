@@ -25,7 +25,7 @@
         <!-- Tab Content -->
         <div class="p-6">
             <slot :activeTab="activeTab" :userProfile="userProfile" :userTopics="userTopics" :userAnswers="userAnswers"
-                :userProducts="userProducts">
+                :userBikes="userBikes" :userProducts="userProducts">
             </slot>
         </div>
     </div>
@@ -47,6 +47,10 @@ const props = defineProps({
         type: Array,
         default: () => []
     },
+    userBikes: {
+        type: Array,
+        default: () => []
+    },
     userProducts: {
         type: Array,
         default: () => []
@@ -65,6 +69,11 @@ const tabs = computed(() => [
         id: 'answers',
         name: 'Answers',
         count: props.userProfile?.answers_posted || 0
+    },
+    {
+        id: 'bikes',
+        name: 'Bikes',
+        count: props.userBikes?.length || 0
     },
     {
         id: 'products',

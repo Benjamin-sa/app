@@ -4,36 +4,36 @@
         @click="handleBackdropClick" @keydown.esc="close" tabindex="0">
 
         <!-- Close Button - Mobile optimized -->
-        <button @click="close"
-            class="absolute top-2 right-2 sm:top-4 sm:right-4 z-60 p-2 sm:p-3 rounded-full bg-black bg-opacity-60 text-white hover:bg-opacity-80 transition-all duration-200 touch-manipulation">
+        <button @click.stop="close"
+            class="absolute top-2 right-2 sm:top-4 sm:right-4 z-[60] p-2 sm:p-3 rounded-full bg-black bg-opacity-60 text-white hover:bg-opacity-80 transition-all duration-200 touch-manipulation">
             <XMarkIcon class="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
 
         <!-- Navigation Buttons (if multiple images) - Mobile optimized -->
         <template v-if="images.length > 1">
             <!-- Previous Button -->
-            <button v-if="currentIndex > 0" @click="previousImage"
-                class="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 z-60 p-2 sm:p-3 rounded-full bg-black bg-opacity-60 text-white hover:bg-opacity-80 transition-all duration-200 touch-manipulation">
+            <button v-if="currentIndex > 0" @click.stop="previousImage"
+                class="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 z-[60] p-2 sm:p-3 rounded-full bg-black bg-opacity-60 text-white hover:bg-opacity-80 transition-all duration-200 touch-manipulation">
                 <ChevronLeftIcon class="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
 
             <!-- Next Button -->
-            <button v-if="currentIndex < images.length - 1" @click="nextImage"
-                class="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 z-60 p-2 sm:p-3 rounded-full bg-black bg-opacity-60 text-white hover:bg-opacity-80 transition-all duration-200 touch-manipulation">
+            <button v-if="currentIndex < images.length - 1" @click.stop="nextImage"
+                class="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 z-[60] p-2 sm:p-3 rounded-full bg-black bg-opacity-60 text-white hover:bg-opacity-80 transition-all duration-200 touch-manipulation">
                 <ChevronRightIcon class="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
         </template>
 
         <!-- Image Counter - Mobile optimized -->
         <div v-if="images.length > 1"
-            class="absolute top-2 left-1/2 transform -translate-x-1/2 z-60 px-2 py-1 sm:px-3 sm:py-1 rounded-full bg-black bg-opacity-60 text-white text-xs sm:text-sm">
+            class="absolute top-2 left-1/2 transform -translate-x-1/2 z-[60] px-2 py-1 sm:px-3 sm:py-1 rounded-full bg-black bg-opacity-60 text-white text-xs sm:text-sm">
             {{ currentIndex + 1 }} / {{ images.length }}
         </div>
 
         <!-- Zoom Controls - Hidden on mobile, shown on desktop -->
         <div
-            class="hidden sm:flex absolute bottom-4 left-1/2 transform -translate-x-1/2 z-60 items-center space-x-2 bg-black bg-opacity-60 rounded-full px-4 py-2">
-            <button @click="zoomOut" :disabled="zoomLevel <= 0.5"
+            class="hidden sm:flex absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[60] items-center space-x-2 bg-black bg-opacity-60 rounded-full px-4 py-2">
+            <button @click.stop="zoomOut" :disabled="zoomLevel <= 0.5"
                 class="p-1 rounded text-white hover:bg-white hover:bg-opacity-20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation">
                 <MinusIcon class="w-4 h-4" />
             </button>
@@ -42,12 +42,12 @@
                 {{ Math.round(zoomLevel * 100) }}%
             </span>
 
-            <button @click="zoomIn" :disabled="zoomLevel >= 3"
+            <button @click.stop="zoomIn" :disabled="zoomLevel >= 3"
                 class="p-1 rounded text-white hover:bg-white hover:bg-opacity-20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation">
                 <PlusIcon class="w-4 h-4" />
             </button>
 
-            <button @click="resetZoom"
+            <button @click.stop="resetZoom"
                 class="p-1 rounded text-white hover:bg-white hover:bg-opacity-20 transition-colors ml-2 touch-manipulation">
                 <ArrowsPointingOutIcon class="w-4 h-4" />
             </button>
@@ -55,8 +55,8 @@
 
         <!-- Mobile Zoom Controls - Bottom sheet style -->
         <div
-            class="sm:hidden absolute bottom-0 left-0 right-0 z-60 bg-black bg-opacity-60 backdrop-blur-sm px-4 py-3 flex items-center justify-center space-x-4">
-            <button @click="zoomOut" :disabled="zoomLevel <= 0.5"
+            class="sm:hidden absolute bottom-0 left-0 right-0 z-[60] bg-black bg-opacity-60 backdrop-blur-sm px-4 py-3 flex items-center justify-center space-x-4">
+            <button @click.stop="zoomOut" :disabled="zoomLevel <= 0.5"
                 class="p-2 rounded-full bg-white bg-opacity-20 text-white disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:bg-opacity-30">
                 <MinusIcon class="w-5 h-5" />
             </button>
@@ -65,12 +65,12 @@
                 {{ Math.round(zoomLevel * 100) }}%
             </span>
 
-            <button @click="zoomIn" :disabled="zoomLevel >= 3"
+            <button @click.stop="zoomIn" :disabled="zoomLevel >= 3"
                 class="p-2 rounded-full bg-white bg-opacity-20 text-white disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:bg-opacity-30">
                 <PlusIcon class="w-5 h-5" />
             </button>
 
-            <button @click="resetZoom"
+            <button @click.stop="resetZoom"
                 class="p-2 rounded-full bg-white bg-opacity-20 text-white touch-manipulation active:bg-opacity-30">
                 <ArrowsPointingOutIcon class="w-5 h-5" />
             </button>
@@ -91,13 +91,13 @@
         </div>
 
         <!-- Loading Spinner -->
-        <div v-if="imageLoading" class="absolute inset-0 flex items-center justify-center">
+        <div v-if="imageLoading" class="absolute inset-0 flex items-center justify-center z-[55]">
             <div class="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-white"></div>
         </div>
 
         <!-- Touch instructions for mobile -->
         <div
-            class="sm:hidden absolute top-16 left-1/2 transform -translate-x-1/2 text-white text-xs bg-black bg-opacity-50 px-3 py-1 rounded-full opacity-70 pointer-events-none">
+            class="sm:hidden absolute top-16 left-1/2 transform -translate-x-1/2 text-white text-xs bg-black bg-opacity-50 px-3 py-1 rounded-full opacity-70 pointer-events-none z-[55]">
             Pinch to zoom • Swipe to navigate
         </div>
     </div>
@@ -341,6 +341,7 @@ const handleImageClick = (event) => {
 };
 
 const handleBackdropClick = (event) => {
+    // Only close if clicking directly on the backdrop, not on any child elements
     if (event.target === event.currentTarget) {
         close();
     }
