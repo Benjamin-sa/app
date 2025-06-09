@@ -6,6 +6,7 @@
 const firebaseQueries = require("../../queries/firebase.queries");
 const { validators, Topic } = require("../../models/forum.models");
 const ValidationUtils = require("../../utils/validation.utils");
+const htmlSanitizerService = require("../htmlSanitizer.service");
 
 class TopicService {
   constructor() {
@@ -31,7 +32,7 @@ class TopicService {
     }
 
     if (ValidationUtils.exists(content)) {
-      ValidationUtils.content(content, "TOPIC");
+      ValidationUtils.htmlContent(content, "TOPIC");
     }
 
     if (ValidationUtils.exists(category)) {
@@ -71,14 +72,18 @@ class TopicService {
         "create topic"
       );
       ValidationUtils.topicTitle(title, "TOPIC");
-      ValidationUtils.content(content, "TOPIC");
+      ValidationUtils.htmlContent(content, "TOPIC");
       ValidationUtils.category(category, "TOPIC");
       ValidationUtils.array(images, "images", "TOPIC", false, 5);
+
+      // Sanitize HTML content
+      const sanitizedContent =
+        htmlSanitizerService.sanitizeForumContent(content);
 
       const topicDoc = {
         ...Topic,
         title: title.trim(),
-        content: content.trim(),
+        content: sanitizedContent,
         userId,
         category,
         tags,
@@ -132,7 +137,12 @@ class TopicService {
       // Prepare update object with only provided fields
       const updateObj = {};
       if (updateData.title) updateObj.title = updateData.title.trim();
-      if (updateData.content) updateObj.content = updateData.content.trim();
+      if (updateData.content) {
+        // Sanitize HTML content for updates
+        updateObj.content = htmlSanitizerService.sanitizeForumContent(
+          updateData.content
+        );
+      }
       if (updateData.category) updateObj.category = updateData.category;
       if (updateData.tags) updateObj.tags = updateData.tags;
       if (updateData.images) updateObj.images = updateData.images;

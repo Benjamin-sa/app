@@ -38,20 +38,10 @@
 
             <!-- Content -->
             <div>
-                <label for="content" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Content
-                </label>
-                <textarea id="content" v-model="form.content" rows="8" required
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                <RichTextEditor :key="`rich-editor-${isEditMode ? 'edit' : 'create'}-${formInitialized}`"
+                    v-model="form.content" label="Content"
                     placeholder="Describe your topic in detail. Be specific and provide context to help others understand and respond."
-                    :disabled="loading"></textarea>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    {{ form.content.length }}/5000 characters
-                </p>
-                <p v-if="form.content && form.content.length < 20"
-                    class="mt-1 text-sm text-orange-600 dark:text-orange-400">
-                    Content should be at least 20 characters long
-                </p>
+                    :disabled="loading" :min-length="20" :max-length="5000" />
             </div>
 
             <!-- Tags -->
@@ -178,6 +168,7 @@ import { getCategoryLabel, processImageFiles, cleanupImagePreviews } from '@/uti
 import { FORUM_CATEGORIES } from '@/utils/constants.repository';
 import Button from '@/components/common/Button.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
+import RichTextEditor from '@/components/common/RichTextEditor.vue';
 import { XMarkIcon, PhotoIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -212,11 +203,21 @@ const formInitialized = ref(false);
 
 // Computed properties
 const isFormValid = computed(() => {
+    const contentLength = getTextLength(form.value.content);
     return form.value.title.length >= 10 &&
         form.value.category &&
-        form.value.content.length >= 20 &&
-        form.value.content.length <= 5000;
+        contentLength >= 20 &&
+        contentLength <= 5000;
 });
+
+// Helper function to get text length from HTML content
+const getTextLength = (htmlContent) => {
+    if (!htmlContent) return 0;
+    // Create a temporary div to strip HTML tags
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    return tempDiv.textContent?.length || 0;
+};
 
 const totalImagesCount = computed(() => {
     return (form.value.existingImages?.length || 0) + (form.value.newImages?.length || 0);
@@ -235,12 +236,17 @@ const initializeForm = () => {
             newImages: [],
             imagesToRemove: []
         };
-        formInitialized.value = true;
+        // Add a small delay to ensure the RichTextEditor can initialize properly
+        setTimeout(() => {
+            formInitialized.value = true;
+        }, 100);
         console.log('Form initialized for edit:', form.value);
     } else {
         // Create mode - reset form
         resetForm();
-        formInitialized.value = true;
+        setTimeout(() => {
+            formInitialized.value = true;
+        }, 100);
         console.log('Form initialized for create');
     }
 };

@@ -10,6 +10,7 @@ const {
   Answer,
 } = require("../../models/forum.models");
 const ValidationUtils = require("../../utils/validation.utils");
+const htmlSanitizerService = require("../htmlSanitizer.service");
 
 class AnswerService {
   constructor() {
@@ -34,7 +35,7 @@ class AnswerService {
       );
 
       // Validate content
-      ValidationUtils.content(content, "ANSWER");
+      ValidationUtils.htmlContent(content, "ANSWER");
 
       // Validate images array
       ValidationUtils.array(images, "images", "ANSWER", false, 5);
@@ -52,7 +53,7 @@ class AnswerService {
       const answer = {
         ...Answer,
         topicId,
-        content: content.trim(),
+        content: htmlSanitizerService.sanitizeHtml(content),
         userId,
         images,
         parentAnswerId,
@@ -125,8 +126,10 @@ class AnswerService {
 
       // Validate and add content if provided
       if (updateData.hasOwnProperty("content")) {
-        ValidationUtils.content(updateData.content, "ANSWER");
-        fieldsToUpdate.content = updateData.content.trim();
+        ValidationUtils.htmlContent(updateData.content, "ANSWER");
+        fieldsToUpdate.content = htmlSanitizerService.sanitizeHtml(
+          updateData.content
+        );
       }
 
       // Validate and add images if provided

@@ -112,6 +112,57 @@ class ValidationUtils {
   }
 
   /**
+   * Validate HTML content and extract text length for validation
+   * @param {string} htmlContent - HTML content to validate
+   * @param {string} serviceName - Service name for error messages
+   * @param {string} fieldName - Field name for error message (default: "content")
+   */
+  static htmlContent(htmlContent, serviceName, fieldName = "content") {
+    if (this.isEmpty(htmlContent)) {
+      throw new Error(
+        `${serviceName.toUpperCase()}_SERVICE_VALIDATION_ERROR: ${fieldName} is required`
+      );
+    }
+
+    // Extract text content from HTML for length validation
+    const textContent = this.extractTextFromHtml(htmlContent);
+
+    if (textContent.length < 10 || textContent.length > 10000) {
+      throw new Error(
+        `${serviceName.toUpperCase()}_SERVICE_VALIDATION_ERROR: ${fieldName} text content must be between 10 and 10000 characters`
+      );
+    }
+
+    // Validate HTML size (raw HTML shouldn't be excessively large)
+    if (htmlContent.length > 50000) {
+      throw new Error(
+        `${serviceName.toUpperCase()}_SERVICE_VALIDATION_ERROR: ${fieldName} HTML is too large (max 50KB)`
+      );
+    }
+  }
+
+  /**
+   * Extract text content from HTML string
+   * @param {string} html - HTML string to extract text from
+   * @returns {string} - Plain text content
+   */
+  static extractTextFromHtml(html) {
+    if (!html) return "";
+
+    // Simple HTML tag removal for server-side validation
+    // This is a basic implementation - for production you might want to use a proper HTML parser
+    return html
+      .replace(/<[^>]*>/g, "") // Remove HTML tags
+      .replace(/&nbsp;/g, " ") // Replace &nbsp; with space
+      .replace(/&amp;/g, "&") // Replace &amp; with &
+      .replace(/&lt;/g, "<") // Replace &lt; with <
+      .replace(/&gt;/g, ">") // Replace &gt; with >
+      .replace(/&quot;/g, '"') // Replace &quot; with "
+      .replace(/&#39;/g, "'") // Replace &#39; with '
+      .trim();
+  }
+
+  /**
    * Validate category and throw error if invalid
    * @param {string} category - Category to validate
    * @param {string} serviceName - Service name for error messages

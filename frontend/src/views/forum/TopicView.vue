@@ -196,13 +196,14 @@
             :initial-index="selectedImageIndex" :is-open="showImageViewer" @close="closeImageViewer"
             @change="(index) => selectedImageIndex = index" />
 
-        <div v-if="showEditTopic" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        <div v-if="showEditTopic" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
             @click="showEditTopic = false">
-            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[95vh] overflow-y-auto"
                 @click.stop>
-                <div class="flex justify-between items-center mb-4">
+                <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Edit Topic</h2>
-                    <button @click="showEditTopic = false" class="text-gray-400 hover:text-gray-600">
+                    <button @click="showEditTopic = false"
+                        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M6 18L18 6M6 6l12 12"></path>
