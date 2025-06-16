@@ -3,7 +3,7 @@
  * Handles all user-related operations
  */
 
-const firebaseQueries = require("../../queries/firebase.queries");
+const firebaseQueries = require("../../queries/FirebaseQueries");
 const { UserProfile } = require("../../models/forum.models");
 const ValidationUtils = require("../../utils/validation.utils");
 

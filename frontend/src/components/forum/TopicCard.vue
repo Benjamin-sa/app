@@ -1,110 +1,96 @@
 <template>
-    <div
-        class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md dark:hover:shadow-gray-900/25 transition-shadow cursor-pointer overflow-hidden">
-        <!-- Image Section (if available) -->
-        <div v-if="topic.images && topic.images.length > 0" class="relative h-48 sm:h-32 bg-gray-100 dark:bg-gray-700">
-            <img :src="topic.images[0].thumbnailUrl || topic.images[0].url" :alt="topic.title"
-                class="w-full h-full object-cover">
-            <div v-if="topic.images.length > 1"
-                class="absolute top-2 right-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded-full">
-                +{{ topic.images.length - 1 }} more
+    <div class="group bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 cursor-pointer"
+        @click="$router.push(`/forum/topic/${topic.id}`)">
+
+
+
+        <div class="p-4 sm:p-5 space-y-3">
+            <!-- Category and Status -->
+            <div class="flex items-center justify-between">
+                <span v-if="topic.category" class="inline-flex items-center space-x-1">
+                    <div class="w-2 h-2 bg-primary-500 rounded-full"></div>
+                    <span class="text-sm font-medium text-primary-600 dark:text-primary-400">{{
+                        getCategoryLabel(topic.category) }}</span>
+                </span>
+                <div class="flex items-center space-x-2">
+                    <span v-if="topic.isPinned"
+                        class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+                        <MapPinIcon class="w-3 h-3 mr-1" />
+                        Pinned
+                    </span>
+                    <span v-if="topic.isLocked"
+                        class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                        <LockClosedIcon class="w-3 h-3 mr-1" />
+                        Locked
+                    </span>
+                </div>
             </div>
-        </div>
 
-        <div class="p-4 sm:p-6">
-            <div class="flex items-start space-x-3 sm:space-x-4">
+            <!-- Topic Title -->
+            <h3
+                class="font-bold text-gray-900 dark:text-white text-lg leading-tight line-clamp-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                {{ topic.title }}
+            </h3>
 
-                <!-- Content Section -->
-                <div class="flex-1 min-w-0">
-                    <!-- Header with Category -->
-                    <div class="flex items-start justify-between mb-2">
-                        <div class="flex-1">
-                            <!-- Category Badge -->
-                            <span v-if="topic.category"
-                                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mb-2"
-                                :class="getCategoryClass(topic.category)">
-                                {{ getCategoryLabel(topic.category) }}
-                            </span>
+            <!-- Content Preview -->
+            <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed line-clamp-2">
+                {{ topic.excerpt || (topic.content ? topic.content.replace(/<[^>]*>/g, '').substring(0, 120) + '...' :
+                    '') }}
+            </p>
 
-                            <h3 class="text-base sm:text-lg font-medium text-gray-900 dark:text-white leading-tight">
-                                {{ topic.title }}
-                            </h3>
-                        </div>
+            <!-- Author Section -->
+            <div class="flex items-center space-x-2">
+                <AuthorDisplay :userId="topic.authorId || topic.userId" size="sm" />
+                <span class="text-gray-500 dark:text-gray-400 text-xs">•</span>
+                <time class="text-gray-500 dark:text-gray-400 text-xs">{{ formatDate(topic.createdAt) }}</time>
+            </div>
 
-                        <!-- Status Indicators -->
-                        <div class="flex items-center space-x-1 ml-2 flex-shrink-0">
-                            <span v-if="topic.isPinned" class="text-yellow-600 dark:text-yellow-500" title="Pinned">
-                                📌
-                            </span>
-                            <span v-if="topic.isLocked" class="text-red-600 dark:text-red-500" title="Locked">
-                                <LockClosedIcon class="w-4 h-4" />
-                            </span>
-                        </div>
+            <!-- Stats Row -->
+            <div class="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
+                <div class="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                    <div class="flex items-center space-x-1">
+                        <ChatBubbleLeftIcon class="w-4 h-4" />
+                        <span class="font-medium">{{ topic.answerCount || 0 }}</span>
                     </div>
-
-                    <!-- Content Preview -->
-                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2 leading-relaxed">
-                        {{ topic.content }}
-                    </p>
-
-                    <!-- Author Section -->
-                    <div class="flex items-center space-x-2 mb-3">
-                        <AuthorDisplay :author-id="topic.userId" size="sm" />
-                        <span class="text-xs text-gray-500 dark:text-gray-400">
-                            • {{ formatDate(topic.createdAt) }}
-                        </span>
-                    </div>
-
-                    <!-- Stats Row -->
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-                            <!-- Answer Count -->
-                            <div class="flex items-center space-x-1">
-                                <ChatBubbleLeftIcon class="w-4 h-4" />
-                                <span>{{ topic.answerCount || 0 }}</span>
-                            </div>
-
-                            <!-- View Count -->
-                            <div class="flex items-center space-x-1">
-                                <EyeIcon class="w-4 h-4" />
-                                <span>{{ formatViewCount(topic.viewCount || 0) }}</span>
-                            </div>
-                        </div>
-
-                        <!-- Last Activity (desktop only) -->
-                        <div v-if="topic.lastActivity"
-                            class="hidden sm:flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400">
-                            <ClockIcon class="w-3 h-3" />
-                            <span>{{ formatDate(topic.lastActivity) }}</span>
-                        </div>
-                    </div>
-
-                    <!-- Tags (if available) -->
-                    <div v-if="topic.tags && topic.tags.length > 0" class="mt-3 flex flex-wrap gap-1">
-                        <span v-for="tag in topic.tags.slice(0, 3)" :key="tag"
-                            class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                            #{{ tag }}
-                        </span>
-                        <span v-if="topic.tags.length > 3" class="text-xs text-gray-500 dark:text-gray-400">
-                            +{{ topic.tags.length - 3 }} more
-                        </span>
+                    <div class="flex items-center space-x-1">
+                        <EyeIcon class="w-4 h-4" />
+                        <span class="font-medium">{{ formatViewCount(topic.viewCount || 0) }}</span>
                     </div>
                 </div>
+
+                <!-- Share Button -->
+                <ActionButton @click.stop="sharePost" :icon="ShareIcon"
+                    :activeClasses="'p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-500'"
+                    :inactiveClasses="'p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-500'" />
+            </div>
+
+            <!-- Tags (if available) -->
+            <div v-if="topic.tags && topic.tags.length > 0" class="flex flex-wrap gap-1.5">
+                <span v-for="tag in topic.tags.slice(0, 3)" :key="tag"
+                    class="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    #{{ tag }}
+                </span>
+                <span v-if="topic.tags.length > 3"
+                    class="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                    +{{ topic.tags.length - 3 }} more
+                </span>
             </div>
         </div>
     </div>
 </template>
 
 <script setup>
-
-import { formatDate, getCategoryClass, getCategoryLabel } from '@/utils/helpers';
+import { useNotificationStore } from '@/stores/notification';
+import { formatDate, getCategoryLabel } from '@/utils/helpers';
+import ActionButton from '@/components/common/buttons/ActionButton.vue';
+import AuthorDisplay from '@/components/common/AuthorDisplay.vue';
 import {
     ChatBubbleLeftIcon,
     EyeIcon,
-    ClockIcon,
-    LockClosedIcon
+    LockClosedIcon,
+    MapPinIcon,
+    ShareIcon,
 } from '@heroicons/vue/24/outline';
-import AuthorDisplay from '@/components/common/AuthorDisplay.vue';
 
 const props = defineProps({
     topic: {
@@ -113,7 +99,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['vote-updated']);
+const notificationStore = useNotificationStore();
 
 const formatViewCount = (count) => {
     if (count >= 1000000) {
@@ -124,6 +110,18 @@ const formatViewCount = (count) => {
     return count.toString();
 };
 
+const sharePost = () => {
+    if (navigator.share) {
+        navigator.share({
+            title: props.topic.title,
+            url: window.location.origin + `/forum/topic/${props.topic.id}`
+        });
+    } else {
+        // Fallback to clipboard
+        navigator.clipboard.writeText(window.location.origin + `/forum/topic/${props.topic.id}`);
+        notificationStore.success('Link copied', 'Topic link copied to clipboard');
+    }
+};
 </script>
 
 <style scoped>

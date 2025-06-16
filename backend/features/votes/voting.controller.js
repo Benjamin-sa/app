@@ -23,6 +23,8 @@ class VotingController extends BaseController {
         await this.invalidateCache(`topic:${targetId}:*`);
         await this.invalidateCache("topics:*");
       }
+      // Note: Bikes and profiles fetch vote data separately via voting API,
+      // so no cache invalidation needed for those target types
 
       return this.sendSuccess(res, result);
     } catch (error) {

@@ -1,158 +1,105 @@
 <template>
-    <div class="container mx-auto px-4 py-8">
-        <!-- Loading State -->
-        <div v-if="loading" class="flex justify-center items-center min-h-64">
-            <LoadingSpinner size="lg" />
-        </div>
+    <DetailPageLayout :loading="loading" :error="error" :item="product" loading-message="Loading product details..."
+        :breadcrumb-items="breadcrumbItems" :related-items="relatedProducts" related-title="Related Products"
+        view-all-link="/products" not-found-title="Product Not Found"
+        not-found-description="The product you're looking for doesn't exist or has been removed." @retry="fetchProduct">
 
-        <!-- Error State -->
-        <ErrorMessage v-else-if="error" :message="error" />
+        <template #before-content>
+            <BackButton label="Back to Products" fallback-path="/products" />
+        </template>
 
-        <!-- Product Content -->
-        <div v-else-if="product" class="max-w-6xl mx-auto">
-            <!-- Breadcrumb -->
-            <nav class="mb-6 text-sm">
-                <ol class="flex space-x-2">
-                    <li><router-link to="/" class="text-primary-600 hover:text-primary-700">Home</router-link></li>
-                    <li class="text-gray-400">/</li>
-                    <li><router-link to="/products"
-                            class="text-primary-600 hover:text-primary-700">Products</router-link></li>
-                    <li class="text-gray-400">/</li>
-                    <li class="text-gray-600">{{ product.title }}</li>
-                </ol>
-            </nav>
-
-            <!-- Product Details -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <template #content="{ item }">
+            <!-- Product Details Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
                 <!-- Product Images -->
-                <div class="space-y-4">
-                    <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                        <img v-if="primaryImage" :src="primaryImage" :alt="product.title"
-                            class="w-full h-full object-cover" />
-                        <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
-                            <svg> class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"</svg>
-                            <path fill-rule="evenodd"
-                                d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                                clip-rule="evenodd" />
-                        </div>
-                    </div>
-
-                    <!-- Additional Images -->
-                    <div v-if="product.images && product.images.length > 1" class="grid grid-cols-4 gap-2">
-                        <div v-for="(image, index) in product.images.slice(1, 5)" :key="image.id"
-                            class="aspect-square bg-gray-100 rounded-md overflow-hidden cursor-pointer hover:opacity-75"
-                            @click="selectImage(image.src)">
-                            <img :src="image.src" :alt="image.alt || product.title"
-                                class="w-full h-full object-cover" />
-                        </div>
-                    </div>
-                </div>
+                <ImageGallery :images="item.images || []" :alt="item.title" ref="imageGallery">
+                    <template #action-button>
+                        <ActionButton :icon="HeartIcon" :is-active="item.isInWishlist" :fill-when-active="true"
+                            @click="toggleWishlist" />
+                    </template>
+                </ImageGallery>
 
                 <!-- Product Info -->
                 <div class="space-y-6">
-                    <div>
-                        <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ product.title }}</h1>
-                        <div class="flex items-center space-x-4 mb-4">
-                            <span class="text-2xl font-bold text-primary-600">${{ product.price }}</span>
-                            <span v-if="primaryCollection"
-                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
-                                {{ primaryCollection.title }}
-                            </span>
-                        </div>
-                    </div>
+                    <!-- Header -->
+                    <ProductHeader :title="item.title" :price="item.price" :collection="primaryCollection"
+                        @share="shareProduct" />
 
                     <!-- Description -->
-                    <div v-if="product.description">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Description</h3>
-                        <div class="text-gray-600 leading-relaxed" v-html="product.description"></div>
-                    </div>
+                    <InfoCard v-if="item.description" title="Description" :icon="InformationCircleIcon">
+                        <div class="text-gray-600 dark:text-gray-400 leading-relaxed prose prose-sm max-w-none"
+                            v-html="item.description"></div>
+                    </InfoCard>
 
                     <!-- Collections -->
-                    <div v-if="product.collections && product.collections.length > 0">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-3">Collections</h3>
+                    <InfoCard v-if="item.collections?.length > 0" title="Collections" :icon="TagIcon">
                         <div class="flex flex-wrap gap-2">
-                            <span v-for="collection in product.collections" :key="collection.id"
-                                class="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm">
+                            <span v-for="collection in item.collections" :key="collection.id"
+                                class="inline-flex items-center px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium">
                                 {{ collection.title }}
                             </span>
                         </div>
-                    </div>
+                    </InfoCard>
 
                     <!-- Action Buttons -->
-                    <div class="space-y-3">
-                        <a :href="`https://motordashbnl.myshopify.com/products/${product.handle}`" target="_blank"
-                            rel="noopener noreferrer" class="w-full btn-primary block text-center">
-                            View on Shopify
-                            <svg class="w-4 h-4 ml-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                        </a>
-                        <Button variant="secondary" class="w-full" @click="shareProduct">
-                            Share Product
-                        </Button>
-                    </div>
+                    <ProductActions :product="item" :is-in-wishlist="item.isInWishlist" @share="shareProduct"
+                        @toggle-wishlist="toggleWishlist" />
                 </div>
             </div>
+        </template>
 
-            <!-- Related Products -->
-            <div v-if="relatedProducts.length > 0" class="border-t border-gray-200 pt-8">
-                <h2 class="text-2xl font-bold text-gray-900 mb-6">Related Products</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <ProductCard v-for="relatedProduct in relatedProducts" :key="relatedProduct.id"
-                        :product="relatedProduct" />
-                </div>
-            </div>
-        </div>
-
-        <!-- Product Not Found -->
-        <div v-else class="text-center py-12">
-            <h1 class="text-2xl font-bold text-gray-900 mb-4">Product Not Found</h1>
-            <p class="text-gray-600 mb-6">The product you're looking for doesn't exist or has been removed.</p>
-            <router-link to="/products" class="btn-primary">Browse Products</router-link>
-        </div>
-    </div>
+        <template #related-item="{ item }">
+            <ProductCard :product="item" />
+        </template>
+    </DetailPageLayout>
 </template>
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notification'
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import ErrorMessage from '@/components/common/ErrorMessage.vue'
-import Button from '@/components/common/Button.vue'
+import { useApi } from '@/composables/useApi'
+import DetailPageLayout from '@/components/common/DetailPageLayout.vue'
+import ImageGallery from '@/components/common/images/ImageGallery.vue'
+import ActionButton from '@/components/common/buttons/ActionButton.vue'
+import InfoCard from '@/components/common/InfoCard.vue'
+import ProductHeader from '@/components/products/ProductHeader.vue'
+import ProductActions from '@/components/products/ProductActions.vue'
 import ProductCard from '@/components/products/ProductCard.vue'
 import apiService from '@/services/api.service'
+import {
+    HeartIcon,
+    InformationCircleIcon,
+    TagIcon
+} from '@heroicons/vue/24/outline'
+import BackButton from '@/components/common/buttons/BackButton.vue'
 
 const route = useRoute()
+const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
+const { execute } = useApi()
 
 const product = ref(null)
 const relatedProducts = ref([])
 const loading = ref(true)
 const error = ref(null)
-const selectedImageSrc = ref(null)
+const imageGallery = ref(null)
 
 const productId = computed(() => route.params.id)
 
-const primaryImage = computed(() => {
-    if (selectedImageSrc.value) return selectedImageSrc.value
-    if (product.value?.images && product.value.images.length > 0) {
-        return product.value.images[0].src
-    }
-    return null
-})
+const breadcrumbItems = computed(() => [
+    { label: 'Home', to: '/' },
+    { label: 'Products', to: '/products' },
+    { label: product.value?.title || 'Product', current: true }
+])
 
 const primaryCollection = computed(() => {
     if (product.value?.collections && product.value.collections.length > 0) {
-        return product.value.collections[1] // collectie 0 is voor ALLE producten
+        return product.value.collections[1] // Skip "All Products" collection
     }
     return null
 })
-
-const selectImage = (src) => {
-    selectedImageSrc.value = src
-}
 
 const fetchProduct = async () => {
     try {
@@ -177,12 +124,42 @@ const fetchProduct = async () => {
 const fetchRelatedProducts = async () => {
     try {
         const response = await apiService.client.get(`/products/collection/${primaryCollection.value.handle}`)
-        // Fix: Use response.data if the related products API has the same structure
         relatedProducts.value = (response.data || response)
             .filter(p => p.id !== productId.value)
             .slice(0, 4)
     } catch (err) {
         console.error('Error fetching related products:', err)
+    }
+}
+
+const toggleWishlist = async () => {
+    if (!authStore.isAuthenticated) {
+        notificationStore.info('Sign in required', 'Please sign in to add products to your wishlist.')
+        return
+    }
+
+    const isCurrentlyInWishlist = product.value.isInWishlist
+
+    const result = await execute(
+        () => isCurrentlyInWishlist
+            ? apiService.client.delete(`/users/wishlist/${product.value.id}`)
+            : apiService.client.post(`/users/wishlist/${product.value.id}`),
+        {
+            successMessage: isCurrentlyInWishlist
+                ? 'Product removed from your wishlist.'
+                : 'Product added to your wishlist.',
+            successTitle: isCurrentlyInWishlist
+                ? 'Removed from wishlist'
+                : 'Added to wishlist',
+            showErrorNotification: true,
+            notificationStore,
+            errorTitle: 'Wishlist error',
+            errorMessage: 'Unable to update wishlist. Please try again.'
+        }
+    )
+
+    if (result) {
+        product.value.isInWishlist = !isCurrentlyInWishlist
     }
 }
 
@@ -220,7 +197,6 @@ onMounted(() => {
 // Watch for route changes to handle navigation between products
 watch(() => route.params.id, () => {
     if (route.name === 'Product') {
-        selectedImageSrc.value = null // Reset selected image
         fetchProduct()
     }
 })

@@ -1,172 +1,112 @@
 <template>
-    <!-- Simple Modal Structure for Testing -->
-    <div v-if="open" class="fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <!-- Background overlay -->
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 transition-opacity"
-                @click="$emit('close')"></div>
-
-            <!-- Modal panel -->
-            <div
-                class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-                <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Edit Profile</h3>
-
-                    <form @submit.prevent="handleSubmit" class="space-y-6">
-                        <!-- Avatar Upload -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Profile Picture
-                            </label>
-                            <div class="flex items-center space-x-4">
-                                <div
-                                    class="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center overflow-hidden">
-                                    <img v-if="previewUrl || form.avatar_url" :src="previewUrl || form.avatar_url"
-                                        alt="Profile preview" class="w-16 h-16 object-cover" />
-                                    <UserIcon v-else class="w-8 h-8 text-gray-400 dark:text-gray-500" />
-                                </div>
-                                <div>
-                                    <input ref="fileInput" type="file" accept="image/*" @change="handleFileSelect"
-                                        class="hidden" />
-                                    <Button type="button" variant="secondary" size="sm"
-                                        @click="$refs.fileInput.click()">
-                                        Change Photo
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Username -->
-                        <div>
-                            <label for="username"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Username
-                            </label>
-                            <input id="username" v-model="form.username" type="text" required
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:focus:border-primary-400"
-                                :class="{ 'border-red-300 dark:border-red-500': errors.username }" />
-                            <p v-if="errors.username" class="mt-1 text-sm text-red-600 dark:text-red-400">
-                                {{ errors.username }}
-                            </p>
-                        </div>
-
-                        <!-- Display Name -->
-                        <div>
-                            <label for="displayName"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Display Name
-                            </label>
-                            <input id="displayName" v-model="form.displayName" type="text"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:focus:border-primary-400"
-                                placeholder="Your display name" />
-                        </div>
-
-                        <!-- Bio -->
-                        <div>
-                            <label for="bio" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Bio
-                            </label>
-                            <textarea id="bio" v-model="form.bio" rows="3"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:focus:border-primary-400"
-                                placeholder="Tell us about yourself..." />
-                        </div>
-
-                        <!-- Location -->
-                        <div>
-                            <label for="location"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Location
-                            </label>
-                            <input id="location" v-model="form.location" type="text"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:focus:border-primary-400"
-                                placeholder="City, Country" />
-                        </div>
-
-                        <!-- Website -->
-                        <div>
-                            <label for="website"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Website
-                            </label>
-                            <input id="website" v-model="form.website" type="url"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:focus:border-primary-400"
-                                placeholder="https://example.com" />
-                        </div>
-
-                        <!-- Privacy Settings -->
-                        <div class="space-y-4">
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Privacy Settings</h3>
-
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                        Show email publicly
-                                    </label>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                                        Allow other users to see your email address
-                                    </p>
-                                </div>
-                                <input v-model="form.show_email" type="checkbox"
-                                    class="h-4 w-4 text-primary-600 focus:ring-primary-500 dark:focus:ring-primary-400 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded" />
-                            </div>
-
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                        Allow messages
-                                    </label>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                                        Allow other users to send you private messages
-                                    </p>
-                                </div>
-                                <input v-model="form.allow_messages" type="checkbox"
-                                    class="h-4 w-4 text-primary-600 focus:ring-primary-500 dark:focus:ring-primary-400 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded" />
-                            </div>
-                        </div>
-
-                        <!-- Error Message -->
-                        <ErrorMessage v-if="error" :message="error" />
-
-                        <!-- Actions -->
-                        <div class="flex justify-end space-x-3 pt-6">
-                            <Button type="button" variant="secondary" @click="$emit('close')" :disabled="loading">
-                                Cancel
-                            </Button>
-                            <Button type="submit" :loading="loading" :disabled="!isFormValid || loading">
-                                Save Changes
-                            </Button>
-                        </div>
-                    </form>
+    <form @submit.prevent="handleSubmit" class="space-y-6">
+        <!-- Avatar Upload -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Profile Picture
+            </label>
+            <div class="flex items-center space-x-4">
+                <div
+                    class="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center overflow-hidden">
+                    <img v-if="previewUrl || form.avatar_url" :src="previewUrl || form.avatar_url" alt="Profile preview"
+                        class="w-16 h-16 object-cover" />
+                    <UserIcon v-else class="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                </div>
+                <div>
+                    <input ref="fileInput" type="file" accept="image/*" @change="handleFileSelect" class="hidden" />
+                    <ActionButton type="button" variant="secondary" size="sm" @click="$refs.fileInput.click()">
+                        Change Photo
+                    </ActionButton>
                 </div>
             </div>
         </div>
-    </div>
+
+        <!-- Username -->
+        <FormField id="username" v-model="form.username" label="Username" type="text" required
+            :error="errors.username" />
+
+        <!-- Display Name -->
+        <FormField id="displayName" v-model="form.displayName" label="Display Name" type="text"
+            placeholder="Your display name" />
+
+        <!-- Bio -->
+        <div class="space-y-2">
+            <RichTextEditor v-model="form.bio" label="Bio" placeholder="Tell us about yourself..." :min-length="0"
+                :max-length="500" />
+        </div>
+
+        <!-- Location -->
+        <FormField id="location" v-model="form.location" label="Location" type="text" placeholder="City, Country" />
+
+        <!-- Website -->
+        <FormField id="website" v-model="form.website" label="Website" type="url" placeholder="https://example.com" />
+
+        <!-- Privacy Settings -->
+        <div class="space-y-4">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Privacy Settings</h3>
+
+            <div class="flex items-center justify-between">
+                <div>
+                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Show email publicly
+                    </label>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Allow other users to see your email address
+                    </p>
+                </div>
+                <input v-model="form.show_email" type="checkbox"
+                    class="h-4 w-4 text-primary-600 focus:ring-primary-500 dark:focus:ring-primary-400 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded" />
+            </div>
+
+            <div class="flex items-center justify-between">
+                <div>
+                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Allow messages
+                    </label>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Allow other users to send you private messages
+                    </p>
+                </div>
+                <input v-model="form.allow_messages" type="checkbox"
+                    class="h-4 w-4 text-primary-600 focus:ring-primary-500 dark:focus:ring-primary-400 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded" />
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <ErrorSection v-if="error" :error="error" title="Profile Update Error" />
+
+        <!-- Form Actions -->
+        <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200/50 dark:border-gray-600/50">
+            <ActionButton @click="$emit('cancel')" variant="outline" size="lg" :disabled="loading">
+                Cancel
+            </ActionButton>
+            <ActionButton type="submit" size="lg" :loading="loading" :disabled="!isFormValid"
+                class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg">
+                Save Changes
+            </ActionButton>
+        </div>
+    </form>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useNotificationStore } from '@/stores/notification';
 import { useApi } from '@/composables/useApi';
 import { validateUsername, validateImageFile, createImagePreview } from '@/utils/helpers';
 import { apiService } from '@/services/api.service';
-import Button from '@/components/common/Button.vue';
-import ErrorMessage from '@/components/common/ErrorMessage.vue';
+import ActionButton from '@/components/common/buttons/ActionButton.vue';
+import ErrorSection from '@/components/common/sections/ErrorSection.vue';
+import FormField from '@/components/common/forms/FormField.vue';
+import RichTextEditor from '@/components/common/forms/RichTextEditor.vue';
 import { UserIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
-    open: {
-        type: Boolean,
-        required: true
-    },
     user: {
         type: Object,
         required: true
     }
 });
 
-const emit = defineEmits(['close', 'updated']);
-
-const notificationStore = useNotificationStore();
+const emit = defineEmits(['updated', 'cancel']);
 
 // Replace manual loading/error with useApi
 const { loading, error, execute } = useApi();
@@ -226,7 +166,7 @@ const handleFileSelect = (event) => {
     const validation = validateImageFile(file);
 
     if (!validation.isValid) {
-        notificationStore.error('Invalid file', validation.error);
+        error.value = validation.error;
         return;
     }
 
@@ -268,16 +208,13 @@ const handleSubmit = async () => {
             });
         },
         {
-            showErrorNotification: true,
-            notificationStore,
-            errorTitle: 'Profile Update Failed'
+            successMessage: 'Profile updated successfully!',
+            errorMessage: 'Failed to update profile. Please try again.'
         }
     );
 
     if (result) {
-        notificationStore.success('Profile updated', 'Your profile has been updated successfully!');
         emit('updated', result);
-        emit('close');
     }
 };
 </script>

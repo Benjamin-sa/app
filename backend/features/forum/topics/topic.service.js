@@ -3,7 +3,7 @@
  * Handles all topic-related operations with validation
  */
 
-const firebaseQueries = require("../../../queries/firebase.queries");
+const firebaseQueries = require("../../../queries/FirebaseQueries");
 const { validators, Topic } = require("../../../models/forum.models");
 const ValidationUtils = require("../../../utils/validation.utils");
 const htmlSanitizerService = require("../../../core/services/htmlSanitizer.service");
@@ -90,7 +90,7 @@ class TopicService {
         images,
       };
 
-      // Create topic in Firestore (timestamps will be added by firebase.queries)
+      // Create topic in Firestore (timestamps will be added by FirebaseQueries)
       const topicRef = await this.queries.createTopic(topicDoc);
 
       // Retrieve the created topic with actual server timestamps and ID

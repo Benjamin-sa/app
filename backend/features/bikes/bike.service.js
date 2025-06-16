@@ -3,7 +3,7 @@
  * Handles business logic for user bike galleries
  */
 
-const firebaseQueries = require("../../queries/firebase.queries");
+const firebaseQueries = require("../../queries/FirebaseQueries");
 const { deleteImage } = require("../../core/services/image.service");
 const ValidationUtils = require("../../utils/validation.utils");
 

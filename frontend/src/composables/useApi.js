@@ -1,8 +1,10 @@
 import { ref, readonly } from "vue";
+import { useNotification } from "./useNotification";
 
 export function useApi() {
   const loading = ref(false);
   const error = ref(null);
+  const { success: showSuccess, error: showError } = useNotification();
 
   const execute = async (apiCall, options = {}) => {
     loading.value = true;
@@ -13,12 +15,9 @@ export function useApi() {
 
       // Handle your current service response pattern
       if (result && result.success) {
-        // Show success notification if requested
-        if (options.successMessage && options.notificationStore) {
-          options.notificationStore.success(
-            options.successTitle || "Success",
-            options.successMessage
-          );
+        // Show success notification automatically if message provided
+        if (options.successMessage) {
+          showSuccess(options.successMessage);
         }
         return result.data || result;
       } else {
@@ -27,17 +26,12 @@ export function useApi() {
         error.value = errorMessage;
 
         // Handle validation errors specifically
-        if (result?.errors && options.notificationStore) {
+        if (result?.errors) {
           const validationErrors = Object.values(result.errors).join(", ");
-          options.notificationStore.error(
-            options.errorTitle || "Validation Error",
-            validationErrors
-          );
-        } else if (options.showErrorNotification && options.notificationStore) {
-          options.notificationStore.error(
-            options.errorTitle || "Error",
-            errorMessage
-          );
+          showError(validationErrors);
+        } else if (options.showErrorNotification !== false) {
+          // Show error notification by default unless explicitly disabled
+          showError(options.errorMessage || errorMessage);
         }
 
         if (options.throwOnError) {
@@ -50,12 +44,9 @@ export function useApi() {
         err.response?.data?.message || err.message || "An error occurred";
       error.value = errorMessage;
 
-      // Show error notification if requested
-      if (options.showErrorNotification && options.notificationStore) {
-        options.notificationStore.error(
-          options.errorTitle || "Error",
-          errorMessage
-        );
+      // Show error notification by default unless explicitly disabled
+      if (options.showErrorNotification !== false) {
+        showError(options.errorMessage || errorMessage);
       }
 
       if (options.throwOnError) {

@@ -3,7 +3,7 @@
  * Sets up default categories and forum structure
  */
 
-const firebaseQueries = require("../queries/firebase.queries");
+const firebaseQueries = require("../queries/FirebaseQueries");
 const { COLLECTIONS } = require("../models/forum.models");
 
 // Default forum categories

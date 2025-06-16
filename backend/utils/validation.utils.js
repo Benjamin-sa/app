@@ -447,9 +447,9 @@ class ValidationUtils {
 
     const trimmedDescription = description.trim();
 
-    if (trimmedDescription.length > 1000) {
+    if (trimmedDescription.length > 2000) {
       throw new Error(
-        `${serviceName.toUpperCase()}_SERVICE_VALIDATION_ERROR: ${fieldName} must be 1000 characters or less`
+        `${serviceName.toUpperCase()}_SERVICE_VALIDATION_ERROR: ${fieldName} must be 2000 characters or less`
       );
     }
 

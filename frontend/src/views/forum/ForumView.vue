@@ -1,52 +1,59 @@
 <template>
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Forum</h1>
-                <p class="mt-2 text-gray-600 dark:text-gray-400">
-                    Join the conversation with fellow motorcycle enthusiasts
-                </p>
-            </div>
-            <div class="mt-4 sm:mt-0">
-                <Button v-if="authStore.isAuthenticated" @click="showCreateTopic = true" class="w-full sm:w-auto">
-                    <PlusIcon class="w-4 h-4 mr-2" />
-                    New Topic
-                </Button>
-                <Button v-else @click="$router.push('/login')" variant="outline" class="w-full sm:w-auto">
-                    Sign in to post
-                </Button>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+        :style="{ paddingTop: `${navbarStore.navbarHeight + 32}px` }">
+        <!-- Modern Header with Professional Gradient Background -->
+        <div class="relative mb-8 p-8 rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-gray-800 shadow-xl">
+            <div class="absolute inset-0 bg-black/10 rounded-2xl backdrop-blur-sm"></div>
+            <div class="relative z-10">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                    <div class="text-white">
+                        <h1 class="text-4xl font-bold mb-2">Forum</h1>
+                        <p class="text-blue-100 text-lg">
+                            Join the conversation with fellow motorcycle enthusiasts
+                        </p>
+                    </div>
+                    <div class="mt-6 sm:mt-0">
+                        <ActionButton v-if="authStore.isAuthenticated" @click="showCreateTopic = true" variant="white"
+                            size="lg" class="w-full sm:w-auto">
+                            <PlusIcon class="w-5 h-5 mr-2" />
+                            New Topic
+                        </ActionButton>
+                        <ActionButton v-else @click="$router.push('/login')" variant="outline" size="lg"
+                            class="w-full sm:w-auto border-white text-white hover:bg-white hover:text-gray-900">
+                            Sign in to post
+                        </ActionButton>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Filters and Search -->
+        <!-- Modern Filters and Search Card -->
         <div
-            class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <!-- Search -->
+            class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 mb-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <!-- Enhanced Search -->
                 <div class="flex-1 max-w-lg">
-                    <div class="relative">
+                    <div class="relative group">
                         <MagnifyingGlassIcon
-                            class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
+                            class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500 transition-colors group-focus-within:text-blue-500" />
                         <input v-model="searchQuery" type="text" placeholder="Search topics..."
-                            class="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                            class="pl-12 pr-4 py-3 w-full border border-gray-300/50 dark:border-gray-600/50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white/50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200 backdrop-blur-sm"
                             @input="debouncedSearch">
                     </div>
                 </div>
 
-                <!-- Filters -->
-                <div class="flex flex-wrap gap-3">
-
+                <!-- Enhanced Filters -->
+                <div class="flex flex-wrap gap-4">
                     <select v-model="selectedCategory"
-                        class="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                        <option value="">Select a category</option>
+                        class="border border-gray-300/50 dark:border-gray-600/50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white/50 dark:bg-gray-700/50 text-gray-900 dark:text-white backdrop-blur-sm transition-all duration-200">
+                        <option value="">All Categories</option>
                         <option v-for="category in FORUM_CATEGORIES" :key="category" :value="category">
                             {{ getCategoryLabel(category) }}
                         </option>
                     </select>
 
                     <select v-model="sortBy"
-                        class="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        class="border border-gray-300/50 dark:border-gray-600/50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white/50 dark:bg-gray-700/50 text-gray-900 dark:text-white backdrop-blur-sm transition-all duration-200">
                         <option value="createdAt">Latest</option>
                         <option value="updatedAt">Recently Active</option>
                         <option value="voteCount">Most Popular</option>
@@ -57,9 +64,7 @@
 
         <!-- Topics List -->
         <div class="space-y-4">
-            <div v-if="loading" class="flex justify-center items-center min-h-64">
-                <LoadingSpinner size="lg" />
-            </div>
+            <LoadingSection v-if="loading" message="Loading topics..." />
 
             <div v-else-if="topics.length === 0" class="text-center py-12">
                 <ChatBubbleLeftRightIcon class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
@@ -79,39 +84,43 @@
                 @click="$router.push(`/forum/topic/${topic.id}`)" />
         </div>
 
-        <!-- Pagination -->
-        <div v-if="hasMore || currentPage > 1" class="mt-8 flex justify-center">
-            <nav class="flex items-center space-x-2">
-                <Button variant="outline" size="sm" :disabled="currentPage === 1" @click="loadPage(currentPage - 1)">
+        <!-- Enhanced Pagination -->
+        <div v-if="hasMore || currentPage > 1" class="mt-12 flex justify-center">
+            <nav
+                class="flex items-center space-x-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-4">
+                <ActionButton variant="outline" size="sm" :disabled="currentPage === 1"
+                    @click="loadPage(currentPage - 1)" class="disabled:opacity-50">
                     Previous
-                </Button>
+                </ActionButton>
 
-                <span class="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
+                <span
+                    class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100/50 dark:bg-gray-700/50 rounded-lg backdrop-blur-sm">
                     Page {{ currentPage }}
                 </span>
 
-                <Button variant="outline" size="sm" :disabled="!hasMore" @click="loadPage(currentPage + 1)">
+                <ActionButton variant="outline" size="sm" :disabled="!hasMore" @click="loadPage(currentPage + 1)"
+                    class="disabled:opacity-50">
                     Next
-                </Button>
+                </ActionButton>
             </nav>
         </div>
 
-        <!-- Create Topic Modal - Working Fallback Implementation -->
+        <!-- Enhanced Create Topic Modal -->
         <div v-if="showCreateTopic" class="fixed inset-0 z-50 overflow-y-auto">
             <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                <!-- Backdrop -->
-                <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75"
+                <!-- Enhanced Backdrop -->
+                <div class="fixed inset-0 transition-opacity bg-black/60 backdrop-blur-sm"
                     @click="showCreateTopic = false"></div>
 
-                <!-- Modal Content -->
+                <!-- Enhanced Modal Content -->
                 <div
-                    class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg relative z-60">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Create New Topic</h3>
-                        <button @click="showCreateTopic = false"
-                            class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+                    class="inline-block w-full max-w-2xl p-8 my-8 overflow-hidden text-left align-middle transition-all transform bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl shadow-2xl rounded-2xl relative z-60 border border-gray-200/50 dark:border-gray-700/50">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Create New Topic</h3>
+                        <ActionButton @click="showCreateTopic = false" variant="ghost" size="sm"
+                            class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded-xl">
                             <XMarkIcon class="w-6 h-6" />
-                        </button>
+                        </ActionButton>
                     </div>
                     <TopicForm @success="handleTopicCreated" @cancel="showCreateTopic = false" />
                 </div>
@@ -123,11 +132,12 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { useAuthStore } from '@/stores/auth';
+import { useApi } from '@/composables/useApi';
 import { debounce, getCategoryLabel } from '@/utils/helpers';
 import { FORUM_CATEGORIES } from '@/utils/constants.repository.js'
 import { apiService } from '@/services/api.service';
-import Button from '@/components/common/Button.vue';
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
+import ActionButton from '@/components/common/buttons/ActionButton.vue';
+import LoadingSection from '@/components/common/sections/LoadingSection.vue';
 import TopicCard from '@/components/forum/TopicCard.vue';
 import TopicForm from '@/components/forum/TopicForm.vue';
 import {
@@ -136,8 +146,13 @@ import {
     ChatBubbleLeftRightIcon,
     XMarkIcon
 } from '@heroicons/vue/24/outline';
+import { useNavbarStore } from '@/stores/navbar';
 
 const authStore = useAuthStore();
+const navbarStore = useNavbarStore();
+
+// Use the composable
+const { loading, error, execute } = useApi();
 
 // Local state for this view
 const topics = ref([]);
@@ -147,8 +162,6 @@ const sortBy = ref('createdAt');
 const currentPage = ref(1);
 const hasMore = ref(false);
 const showCreateTopic = ref(false);
-const loading = ref(false);
-const error = ref(null);
 
 const debouncedSearch = debounce(() => {
     currentPage.value = 1;
@@ -156,33 +169,26 @@ const debouncedSearch = debounce(() => {
 }, 300);
 
 const loadTopics = async () => {
-    try {
-        loading.value = true;
-        error.value = null;
-
-        const result = await apiService.getTopics(
+    const result = await execute(
+        () => apiService.getTopics(
             currentPage.value,
             20,
             searchQuery.value,
             selectedCategory.value
-        );
-
-        if (result.success) {
-            topics.value = result.data.topics || [];
-            hasMore.value = result.data.hasMore || false;
-        } else {
-            error.value = result.message;
-            console.error('Error loading topics:', result.message);
-            topics.value = [];
-            hasMore.value = false;
+        ),
+        {
+            showErrorNotification: true,
+            notificationStore: { error: () => { } }, // Add notification store if available
+            errorTitle: 'Failed to load topics'
         }
-    } catch (error) {
-        error.value = 'Failed to load topics';
-        console.error('Error loading topics:', error);
+    );
+
+    if (result) {
+        topics.value = result.topics || [];
+        hasMore.value = result.hasMore || false;
+    } else {
         topics.value = [];
         hasMore.value = false;
-    } finally {
-        loading.value = false;
     }
 };
 

@@ -37,7 +37,7 @@
                             </div>
 
                             <!-- Body -->
-                            <div class="p-6 overflow-y-auto max-h-96">
+                            <div :class="['p-6 overflow-y-auto', bodyHeightClasses]">
                                 <slot />
                             </div>
 
@@ -90,10 +90,22 @@ const sizeClasses = computed(() => {
         sm: 'w-full max-w-sm',
         md: 'w-full max-w-md',
         lg: 'w-full max-w-lg',
-        xl: 'w-full max-w-xl',
-        full: 'w-full max-w-6xl',
+        xl: 'w-full max-w-2xl',   // 672px - better for forms
+        full: 'w-full max-w-4xl', // 896px - more reasonable full size
     };
     return sizes[props.size];
+});
+
+const bodyHeightClasses = computed(() => {
+    const heights = {
+        xs: 'max-h-64',      // 256px
+        sm: 'max-h-80',      // 320px
+        md: 'max-h-96',      // 384px (original)
+        lg: 'max-h-[500px]', // 500px
+        xl: 'max-h-[600px]', // 600px
+        full: 'max-h-[80vh]', // 80% of viewport height
+    };
+    return heights[props.size];
 });
 
 const close = () => {

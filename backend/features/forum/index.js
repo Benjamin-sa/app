@@ -5,14 +5,11 @@ const router = express.Router();
 const userRoutes = require("../auth/user.routes");
 const topicRoutes = require("./topics/topic.routes");
 const answerRoutes = require("./answers/answer.routes");
-const voteRoutes = require("../votes/vote.routes");
 
 // Mount routes with appropriate prefixes
 router.use("/users", userRoutes);
 router.use("/topics", topicRoutes);
 router.use("/answers", answerRoutes);
-router.use("/vote", voteRoutes);
-router.use("/votes", voteRoutes);
 
 // Add search route (mounted directly since it's a special case)
 const topicController = require("../forum/topics/topic.controller");

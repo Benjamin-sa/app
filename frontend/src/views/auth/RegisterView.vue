@@ -86,12 +86,12 @@
                     </label>
                 </div>
 
-                <ErrorMessage v-if="error" :message="error" />
+                <ErrorSection :error="error" @retry="fetchBike" />
 
                 <div>
-                    <Button type="submit" size="lg" class="w-full" :loading="loading" :disabled="!isFormValid">
+                    <ActionButton type="submit" size="lg" class="w-full" :loading="loading" :disabled="!isFormValid">
                         Create Account
-                    </Button>
+                    </ActionButton>
                 </div>
 
                 <div class="mt-6">
@@ -132,8 +132,8 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notification';
 import { validateEmail, validateUsername } from '@/utils/helpers';
-import Button from '@/components/common/Button.vue';
-import ErrorMessage from '@/components/common/ErrorMessage.vue';
+import ActionButton from '@/components/common/buttons/ActionButton.vue'
+import ErrorSection from '@/components/common/sections/ErrorSection.vue'
 
 
 const router = useRouter();

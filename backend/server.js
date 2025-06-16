@@ -51,6 +51,8 @@ app.use("/api/auth", require("./features/auth/auth.routes"));
 app.use("/api/products", require("./features/shopify/products.routes"));
 app.use("/api/forum", require("./features/forum/index"));
 app.use("/api/bikes", require("./features/bikes/bike.routes"));
+app.use("/api/votes", require("./features/votes/vote.routes"));
+app.use("/api/messages", require("./features/messaging/messaging.routes"));
 
 // Default route
 app.get("/", (req, res) => {

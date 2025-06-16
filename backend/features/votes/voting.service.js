@@ -3,7 +3,7 @@
  * Handles all voting-related operations
  */
 
-const firebaseQueries = require("../../queries/firebase.queries");
+const firebaseQueries = require("../../queries/FirebaseQueries");
 const { COLLECTIONS } = require("../../models/forum.models");
 const ValidationUtils = require("../../utils/validation.utils");
 
@@ -31,7 +31,7 @@ class VotingService {
         );
       }
 
-      if (!["topic", "answer"].includes(targetType)) {
+      if (!["topic", "answer", "bike", "profile"].includes(targetType)) {
         throw new Error("VOTING_SERVICE_VALIDATION_ERROR: Invalid target type");
       }
 
@@ -39,7 +39,11 @@ class VotingService {
       const target =
         targetType === "topic"
           ? await this.queries.getTopicById(targetId)
-          : await this.queries.getAnswerById(targetId);
+          : targetType === "answer"
+          ? await this.queries.getAnswerById(targetId)
+          : targetType === "bike"
+          ? await this.queries.getBikeById(targetId)
+          : await this.queries.getUserById(targetId);
 
       if (!target) {
         throw new Error(
@@ -96,7 +100,7 @@ class VotingService {
     try {
       ValidationUtils.required({ targetId }, "VOTING", "get votes");
 
-      if (!["topic", "answer"].includes(targetType)) {
+      if (!["topic", "answer", "bike", "profile"].includes(targetType)) {
         throw new Error("VOTING_SERVICE_VALIDATION_ERROR: Invalid target type");
       }
 

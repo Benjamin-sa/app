@@ -1,6 +1,9 @@
 <template>
-    <nav
-        class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 transition-colors duration-200">
+    <nav :class="[
+        'bg-white/95 dark:bg-gray-800/95 backdrop-blur-md shadow-sm border-b border-gray-200/50 dark:border-gray-700/50 fixed top-0 left-0 right-0 z-40 transition-all duration-300 ease-out',
+        navbarStore.isVisible ? 'translate-y-0' : '-translate-y-full',
+        navbarStore.isAtTop ? 'bg-white/95 dark:bg-gray-800/95' : 'bg-white/98 dark:bg-gray-800/98 shadow-md'
+    ]">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <!-- Left side - Logo and main nav -->
@@ -11,12 +14,13 @@
                             <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
                                 <span class="text-white font-bold text-sm">MD</span>
                             </div>
-                            <span class="text-xl font-bold text-gray-900 dark:text-white">Motordash</span>
+                            <span
+                                class="hidden sm:block text-xl font-bold text-gray-900 dark:text-white">Motordash</span>
                         </RouterLink>
                     </div>
 
                     <!-- Desktop Navigation -->
-                    <div class="hidden md:ml-8 md:flex md:space-x-8">
+                    <div class="hidden md:ml-8 md:flex md:space-x-6 lg:space-x-8">
                         <RouterLink to="/"
                             class="inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2 transition-colors duration-200"
                             :class="$route.name === 'Home'
@@ -31,6 +35,13 @@
                                 : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'">
                             Forum
                         </RouterLink>
+                        <RouterLink to="/bikes"
+                            class="inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2 transition-colors duration-200"
+                            :class="$route.name === 'BikeGallery' || $route.name === 'BikeDetail'
+                                ? 'text-primary-600 dark:text-primary-400 border-primary-500'
+                                : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'">
+                            Bikes
+                        </RouterLink>
                         <RouterLink to="/products"
                             class="inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2 transition-colors duration-200"
                             :class="$route.name?.startsWith('Product')
@@ -42,9 +53,9 @@
                 </div>
 
                 <!-- Right side - Search, Theme toggle and user menu -->
-                <div class="flex items-center gap-4">
-                    <!-- Search Bar -->
-                    <div class="hidden sm:block">
+                <div class="flex items-center gap-2 sm:gap-4">
+                    <!-- Search Bar - Hidden on small screens -->
+                    <div class="hidden lg:block">
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <MagnifyingGlassIcon class="h-5 w-5 text-gray-400 dark:text-gray-500" />
@@ -70,7 +81,7 @@
                                     {{ authStore.userDisplayName.charAt(0).toUpperCase() }}
                                 </span>
                             </div>
-                            <ChevronDownIcon class="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                            <ChevronDownIcon class="hidden sm:block w-4 h-4 text-gray-500 dark:text-gray-400" />
                         </button>
 
                         <!-- User Dropdown -->
@@ -110,7 +121,7 @@
                     </div>
 
                     <!-- Login/Register buttons -->
-                    <div v-else class="flex items-center gap-2">
+                    <div v-else class="hidden sm:flex sm:items-center sm:gap-2">
                         <RouterLink to="/login"
                             class="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200">
                             Login
@@ -151,24 +162,41 @@
 
                         <!-- Navigation links -->
                         <RouterLink to="/"
-                            class="block px-3 py-2 text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                            @click="showMobileMenu = false">
+                            class="block px-3 py-2 text-base font-medium rounded-lg transition-colors duration-200"
+                            :class="$route.name === 'Home'
+                                ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+                                : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'"
+                            @click="closeMobileMenu">
                             Home
                         </RouterLink>
                         <RouterLink to="/forum"
-                            class="block px-3 py-2 text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                            @click="showMobileMenu = false">
+                            class="block px-3 py-2 text-base font-medium rounded-lg transition-colors duration-200"
+                            :class="$route.name?.startsWith('Forum') || $route.name === 'Topic' || $route.name === 'CreateTopic'
+                                ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+                                : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'"
+                            @click="closeMobileMenu">
                             Forum
                         </RouterLink>
+                        <RouterLink to="/bikes"
+                            class="block px-3 py-2 text-base font-medium rounded-lg transition-colors duration-200"
+                            :class="$route.name === 'BikeGallery' || $route.name === 'BikeDetail'
+                                ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+                                : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'"
+                            @click="closeMobileMenu">
+                            Bikes
+                        </RouterLink>
                         <RouterLink to="/products"
-                            class="block px-3 py-2 text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                            @click="showMobileMenu = false">
+                            class="block px-3 py-2 text-base font-medium rounded-lg transition-colors duration-200"
+                            :class="$route.name?.startsWith('Product')
+                                ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+                                : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'"
+                            @click="closeMobileMenu">
                             Products
                         </RouterLink>
 
                         <!-- User actions for mobile -->
                         <div v-if="authStore.isAuthenticated"
-                            class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                            class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
                             <div class="flex items-center px-3 pb-3">
                                 <img v-if="authStore.userAvatar" :src="authStore.userAvatar"
                                     :alt="authStore.userDisplayName" class="w-10 h-10 rounded-full" />
@@ -187,30 +215,30 @@
                                 </div>
                             </div>
                             <RouterLink to="/profile"
-                                class="block px-3 py-2 text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                                @click="showMobileMenu = false">
+                                class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                                @click="closeMobileMenu">
                                 Profile
                             </RouterLink>
                             <RouterLink to="/forum/create"
-                                class="block px-3 py-2 text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                                @click="showMobileMenu = false">
+                                class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                                @click="closeMobileMenu">
                                 Create Topic
                             </RouterLink>
                             <button @click="handleLogout"
-                                class="block w-full text-left px-3 py-2 text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                                class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                                 type="button">
                                 Sign Out
                             </button>
                         </div>
-                        <div v-else class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-1">
+                        <div v-else class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4 space-y-1">
                             <RouterLink to="/login"
-                                class="block px-3 py-2 text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                                @click="showMobileMenu = false">
+                                class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                                @click="closeMobileMenu">
                                 Login
                             </RouterLink>
                             <RouterLink to="/register"
-                                class="block px-3 py-2 text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                                @click="showMobileMenu = false">
+                                class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                                @click="closeMobileMenu">
                                 Sign Up
                             </RouterLink>
                         </div>
@@ -226,7 +254,8 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useNotification } from '@/composables/useNotification';
-import ThemeToggle from '@/components/common/ThemeToggle.vue';
+import ThemeToggle from '@/components/common/nav/ThemeToggle.vue';
+import { useNavbarStore } from '@/stores/navbar';
 import {
     MagnifyingGlassIcon,
     UserIcon,
@@ -239,6 +268,7 @@ import {
 
 const router = useRouter();
 const authStore = useAuthStore();
+const navbarStore = useNavbarStore();
 const { success, error } = useNotification();
 
 const searchQuery = ref('');
@@ -250,9 +280,19 @@ const toggleUserMenu = () => {
     showMobileMenu.value = false;
 };
 
+const closeMobileMenu = () => {
+    showMobileMenu.value = false;
+    navbarStore.setMobileMenuOpen(false);
+};
+
 const toggleMobileMenu = () => {
     showMobileMenu.value = !showMobileMenu.value;
     showUserMenu.value = false;
+    navbarStore.setMobileMenuOpen(showMobileMenu.value);
+
+    if (showMobileMenu.value) {
+        navbarStore.forceShow()
+    }
 };
 
 const handleSearch = () => {
@@ -261,7 +301,7 @@ const handleSearch = () => {
             name: 'Forum',
             query: { search: searchQuery.value.trim() }
         });
-        showMobileMenu.value = false;
+        closeMobileMenu();
     }
 };
 
@@ -274,7 +314,7 @@ const handleLogout = async () => {
         error(result.message);
     }
     showUserMenu.value = false;
-    showMobileMenu.value = false;
+    closeMobileMenu();
 };
 
 // Close menus when clicking outside
@@ -284,11 +324,37 @@ const handleClickOutside = (event) => {
     }
 };
 
+// Optimized scroll handler with RAF throttling
+let rafId = null
+const handleScroll = () => {
+    if (rafId) return
+
+    rafId = requestAnimationFrame(() => {
+        const currentScrollY = window.scrollY
+        navbarStore.updateScroll(currentScrollY)
+
+        // Close mobile menu when scrolling significantly
+        const scrollDiff = Math.abs(currentScrollY - navbarStore.lastScrollY)
+        if (showMobileMenu.value && scrollDiff > 50) {
+            showMobileMenu.value = false
+            navbarStore.setMobileMenuOpen(false)
+        }
+
+        rafId = null
+    })
+}
+
 onMounted(() => {
     document.addEventListener('click', handleClickOutside);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    navbarStore.reset()
 });
 
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside);
+    window.removeEventListener('scroll', handleScroll);
+    if (rafId) {
+        cancelAnimationFrame(rafId)
+    }
 });
 </script>

@@ -16,131 +16,46 @@
                     <form @submit.prevent="handleSubmit" class="space-y-6">
                         <!-- Basic Info -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="name"
-                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Bike Name *
-                                </label>
-                                <input id="name" v-model="form.name" type="text" required
-                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                                    placeholder="My Awesome Brommer" />
-                            </div>
+                            <FormField id="name" v-model="form.name" label="Bike Name" type="text" required
+                                placeholder="My Awesome Brommer" />
 
-                            <div>
-                                <label for="brand"
-                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Brand
-                                </label>
-                                <input id="brand" v-model="form.brand" type="text"
-                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                                    placeholder="Honda, Yamaha, etc." />
-                            </div>
+                            <FormField id="brand" v-model="form.brand" label="Brand" type="text"
+                                placeholder="Honda, Yamaha, etc." />
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="model"
-                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Model
-                                </label>
-                                <input id="model" v-model="form.model" type="text"
-                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                                    placeholder="CB125, YBR125, etc." />
-                            </div>
+                            <FormField id="model" v-model="form.model" label="Model" type="text"
+                                placeholder="CB125, YBR125, etc." />
 
-                            <div>
-                                <label for="year"
-                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Year
-                                </label>
-                                <input id="year" v-model="form.year" type="number" min="1950"
-                                    :max="new Date().getFullYear() + 1"
-                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
-                            </div>
+                            <FormField id="year" v-model="form.year" label="Year" type="number" min="1950"
+                                :max="new Date().getFullYear() + 1" />
                         </div>
 
-                        <div>
-                            <label for="engine_size"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Engine Size (cc)
-                            </label>
-                            <input id="engine_size" v-model="form.engine_size" type="number" min="50" max="1000"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                                placeholder="125" />
-                        </div>
+                        <FormField id="engine_size" v-model="form.engine_size" label="Engine Size (cc)" type="number"
+                            min="50" max="1000" placeholder="125" />
 
-                        <!-- Description -->
-                        <div>
-                            <label for="description"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Description
-                            </label>
-                            <textarea id="description" v-model="form.description" rows="3"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                                placeholder="Tell us about your bike, modifications, etc." />
+                        <!-- Description with RichTextEditor -->
+                        <div class="space-y-2">
+                            <RichTextEditor v-model="form.description" label="Description"
+                                placeholder="Tell us about your bike, modifications, etc." :disabled="loading"
+                                :min-length="0" :max-length="1000" />
                         </div>
 
                         <!-- Photo Upload -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Photos
-                            </label>
-                            <div class="space-y-4">
-                                <!-- Upload Area -->
-                                <div
-                                    class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
-                                    <input ref="fileInput" type="file" multiple accept="image/*"
-                                        @change="handleFilesSelect" class="hidden" />
-                                    <CameraIcon class="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                    <p class="text-gray-600 dark:text-gray-400 mb-2">
-                                        Drop photos here or click to browse
-                                    </p>
-                                    <Button type="button" variant="secondary" @click="$refs.fileInput.click()">
-                                        Choose Photos
-                                    </Button>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                        Max 10 photos, 5MB each
-                                    </p>
-                                </div>
-
-                                <!-- Preview Existing Photos -->
-                                <div v-if="existingPhotos.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div v-for="(photo, index) in existingPhotos" :key="photo.id || index"
-                                        class="relative group">
-                                        <img :src="photo.url || photo" :alt="`Bike photo ${index + 1}`"
-                                            class="w-full h-24 object-cover rounded-lg" />
-                                        <button type="button" @click="removeExistingPhoto(index)"
-                                            class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <XMarkIcon class="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <!-- Preview New Photos -->
-                                <div v-if="previewUrls.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div v-for="(url, index) in previewUrls" :key="index" class="relative group">
-                                        <img :src="url" :alt="`New photo ${index + 1}`"
-                                            class="w-full h-24 object-cover rounded-lg" />
-                                        <button type="button" @click="removeNewPhoto(index)"
-                                            class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <XMarkIcon class="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <ImageUpload v-model:images="allImages" label="Photos" variant="dropzone" :max-files="10"
+                            :max-file-size="5 * 1024 * 1024" @error="(err) => error = err" />
 
                         <!-- Error Message -->
-                        <ErrorMessage v-if="error" :message="error" />
+                        <ErrorSection v-if="error" :error="error" title="Form Error" />
 
                         <!-- Actions -->
                         <div class="flex justify-end space-x-3 pt-6">
-                            <Button type="button" variant="secondary" @click="$emit('close')" :disabled="loading">
+                            <ActionButton type="button" variant="secondary" @click="$emit('close')" :disabled="loading">
                                 Cancel
-                            </Button>
-                            <Button type="submit" :loading="loading" :disabled="!form.name || loading">
+                            </ActionButton>
+                            <ActionButton type="submit" :loading="loading" :disabled="!form.name || loading">
                                 {{ editingBike ? 'Update Bike' : 'Add Bike' }}
-                            </Button>
+                            </ActionButton>
                         </div>
                     </form>
                 </div>
@@ -150,14 +65,15 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useNotificationStore } from '@/stores/notification'
 import { useApi } from '@/composables/useApi'
-import { validateImageFile, createImagePreview } from '@/utils/helpers'
 import { apiService } from '@/services/api.service'
-import Button from '@/components/common/Button.vue'
-import ErrorMessage from '@/components/common/ErrorMessage.vue'
-import { CameraIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import ActionButton from '@/components/common/buttons/ActionButton.vue'
+import ErrorSection from '@/components/common/sections/ErrorSection.vue'
+import FormField from '@/components/common/forms/FormField.vue'
+import ImageUpload from '@/components/common/forms/ImageUpload.vue'
+import RichTextEditor from '@/components/common/forms/RichTextEditor.vue'
 
 const props = defineProps({
     open: {

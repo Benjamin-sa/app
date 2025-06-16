@@ -3,7 +3,7 @@
  * Handles basic answer CRUD operations with Firebase
  */
 
-const firebaseQueries = require("../../../queries/firebase.queries");
+const firebaseQueries = require("../../../queries/FirebaseQueries");
 const {
   COLLECTIONS,
   validators,
@@ -127,7 +127,7 @@ class AnswerService {
       // Validate and add content if provided
       if (updateData.hasOwnProperty("content")) {
         ValidationUtils.htmlContent(updateData.content, "ANSWER");
-        fieldsToUpdate.content = htmlSanitizerService.sanitizeHtml(
+        fieldsToUpdate.content = htmlSanitizerService.sanitizeForumContent(
           updateData.content
         );
       }

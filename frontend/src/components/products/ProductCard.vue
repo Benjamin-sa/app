@@ -1,68 +1,88 @@
 <template>
-    <div
-        class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md dark:hover:shadow-gray-900/25 transition-shadow cursor-pointer relative">
+    <div class="group bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 cursor-pointer"
+        @click="$router.push(`/products/${product.id}`)">
+
         <!-- Product Image -->
-        <div class="aspect-w-4 aspect-h-3 bg-gray-200 dark:bg-gray-700">
-            <img v-if="productImage" :src="productImage" :alt="product.title" class="w-full h-48 object-cover">
-            <div v-else class="w-full h-48 flex items-center justify-center bg-gray-100 dark:bg-gray-700">
-                <PhotoIcon class="w-12 h-12 text-gray-400 dark:text-gray-500" />
+        <div
+            class="relative aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 overflow-hidden">
+            <img v-if="productImage" :src="productImage" :alt="product.title"
+                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
+                loading="lazy">
+            <div v-else class="w-full h-full flex items-center justify-center">
+                <PhotoIcon class="w-16 h-16 text-gray-400 group-hover:scale-110 transition-transform duration-300" />
+            </div>
+
+            <!-- Gradient Overlay -->
+            <div
+                class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            </div>
+
+            <!-- Price Badge -->
+            <div
+                class="absolute top-3 right-3 bg-green-500/90 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-sm font-bold">
+                ${{ product.price }}
+            </div>
+
+            <!-- Wishlist Button Overlay -->
+            <div class="absolute top-3 left-3">
+                <ActionButton @click.stop="toggleWishlist" :icon="HeartIcon" :isActive="product.isInWishlist"
+                    :fillWhenActive="true" :activeClasses="'bg-red-500/90 text-white hover:bg-red-600/90'"
+                    :inactiveClasses="'bg-white/80 text-gray-600 hover:bg-white hover:text-red-500'" />
+            </div>
+
+            <!-- View Details Overlay -->
+            <div
+                class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div class="bg-white/20 backdrop-blur-sm rounded-full p-3">
+                    <EyeIcon class="w-6 h-6 text-white" />
+                </div>
             </div>
         </div>
 
         <!-- Product Info -->
-        <div class="p-4">
-            <!-- Brand -->
-            <p v-if="productBrand" class="text-sm text-gray-600 dark:text-gray-400 mb-1">{{ productBrand }}</p>
-
-            <!-- Name -->
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2 line-clamp-2">
-                {{ product.title }}
-            </h3>
-
-            <!-- Description -->
-            <p v-if="product.description" class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
-                {{ product.description }}
-            </p>
-
-            <!-- Price and Collections -->
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex flex-col">
-                    <span class="text-2xl font-bold text-primary-600">
-                        ${{ product.price }}
-                    </span>
-                </div>
-
-                <span v-if="primaryCollection" class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium"
-                    :class="getCategoryClass(primaryCollection.handle)">
+        <div class="p-4 sm:p-5 space-y-3">
+            <!-- Brand and Category -->
+            <div class="flex items-center justify-between">
+                <span v-if="productBrand" class="inline-flex items-center space-x-1">
+                    <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ productBrand }}</span>
+                </span>
+                <span v-if="primaryCollection"
+                    class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
                     {{ primaryCollection.title }}
                 </span>
             </div>
 
-            <!-- Quick Actions -->
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                    <!-- Wishlist Button -->
-                    <button @click.stop="toggleWishlist"
-                        class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" :class="[
-                            product.isInWishlist
-                                ? 'text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400'
-                                : 'text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-500'
-                        ]" :title="product.isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'">
-                        <HeartIcon class="w-5 h-5" :class="{ 'fill-current': product.isInWishlist }" />
-                    </button>
+            <!-- Product Name -->
+            <h3 class="font-bold text-gray-900 dark:text-white text-lg leading-tight line-clamp-2">
+                {{ product.title }}
+            </h3>
 
-                    <!-- Share Button -->
-                    <button @click.stop="shareProduct"
-                        class="p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-700 transition-colors"
-                        title="Share product">
-                        <ShareIcon class="w-5 h-5" />
-                    </button>
+            <!-- Description -->
+            <p v-if="product.description" class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed line-clamp-2">
+                {{ product.description }}
+            </p>
+
+            <!-- Price and Actions -->
+            <div class="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
+                <div class="flex flex-col">
+                    <span class="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                        ${{ product.price }}
+                    </span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">Best Price</span>
                 </div>
 
-                <!-- View Details Button -->
-                <Button size="sm" @click.stop="$router.push(`/products/${product.id}`)">
-                    View Details
-                </Button>
+                <div class="flex items-center space-x-2">
+                    <!-- Share Button -->
+                    <ActionButton @click.stop="shareProduct" :icon="ShareIcon"
+                        :activeClasses="'p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-500'"
+                        :inactiveClasses="'p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-500'" />
+
+                    <!-- View Details Button -->
+                    <ActionButton @click.stop="$router.push(`/products/${product.id}`)" :icon="EyeIcon"
+                        :activeClasses="'flex items-center space-x-1 px-3 py-1.5 bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:hover:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg text-sm font-medium'"
+                        :inactiveClasses="'flex items-center space-x-1 px-3 py-1.5 bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:hover:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg text-sm font-medium'" />
+                </div>
             </div>
         </div>
     </div>
@@ -72,12 +92,14 @@
 import { computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notification';
+import { useApi } from '@/composables/useApi';
 import { apiService } from '@/services/api.service';
-import Button from '@/components/common/Button.vue';
+import ActionButton from '@/components/common/buttons/ActionButton.vue';
 import {
     PhotoIcon,
     HeartIcon,
-    ShareIcon
+    ShareIcon,
+    EyeIcon
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -89,6 +111,9 @@ const props = defineProps({
 
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
+
+// Use the composable
+const { execute } = useApi();
 
 // Get the first image from the images array
 const productImage = computed(() => {
@@ -128,19 +153,28 @@ const toggleWishlist = async () => {
         return;
     }
 
-    try {
-        if (props.product.isInWishlist) {
-            await apiService.client.delete(`/users/wishlist/${props.product.id}`);
-            props.product.isInWishlist = false;
-            notificationStore.success('Removed from wishlist', 'Product removed from your wishlist.');
-        } else {
-            await apiService.client.post(`/users/wishlist/${props.product.id}`);
-            props.product.isInWishlist = true;
-            notificationStore.success('Added to wishlist', 'Product added to your wishlist.');
+    const isCurrentlyInWishlist = props.product.isInWishlist;
+
+    const result = await execute(
+        () => isCurrentlyInWishlist
+            ? apiService.client.delete(`/users/wishlist/${props.product.id}`)
+            : apiService.client.post(`/users/wishlist/${props.product.id}`),
+        {
+            successMessage: isCurrentlyInWishlist
+                ? 'Product removed from your wishlist.'
+                : 'Product added to your wishlist.',
+            successTitle: isCurrentlyInWishlist
+                ? 'Removed from wishlist'
+                : 'Added to wishlist',
+            showErrorNotification: true,
+            notificationStore,
+            errorTitle: 'Wishlist error',
+            errorMessage: 'Unable to update wishlist. Please try again.'
         }
-    } catch (error) {
-        console.error('Error toggling wishlist:', error);
-        notificationStore.error('Wishlist error', 'Unable to update wishlist. Please try again.');
+    );
+
+    if (result) {
+        props.product.isInWishlist = !isCurrentlyInWishlist;
     }
 };
 
@@ -175,24 +209,7 @@ const fallbackShare = (url) => {
 .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
-    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-}
-
-.aspect-w-4 {
-    position: relative;
-    padding-bottom: 75%;
-    /* 4:3 aspect ratio */
-}
-
-.aspect-w-4>* {
-    position: absolute;
-    height: 100%;
-    width: 100%;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
 }
 </style>

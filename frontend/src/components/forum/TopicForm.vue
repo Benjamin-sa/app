@@ -1,40 +1,20 @@
 <template>
-    <div class="space-y-6">
-        <!-- Loading State for Edit Mode -->
-        <div v-if="isEditMode && !formInitialized" class="flex justify-center py-8">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+    <div class="space-y-8">
+        <!-- Enhanced Loading State for Edit Mode -->
+        <div v-if="isEditMode && !formInitialized" class="flex justify-center py-12">
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
         </div>
 
-        <!-- Form -->
-        <form v-else @submit.prevent="handleSubmit" class="space-y-6">
-            <!-- Title -->
-            <div>
-                <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Topic Title
-                </label>
-                <input id="title" v-model="form.title" type="text" required
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                    placeholder="Enter a descriptive title for your topic" :disabled="loading">
-                <p v-if="form.title && form.title.length < 10"
-                    class="mt-1 text-sm text-orange-600 dark:text-orange-400">
-                    Title should be at least 10 characters long
-                </p>
-            </div>
+        <!-- Enhanced Form -->
+        <form v-else @submit.prevent="handleSubmit" class="space-y-8">
+            <!-- Enhanced Title -->
+            <FormField id="title" v-model="form.title" label="Topic Title" type="text" required variant="enhanced"
+                placeholder="Enter a descriptive title for your topic" :disabled="loading"
+                :help-text="form.title && form.title.length < 10 ? 'Title should be at least 10 characters long' : ''" />
 
-            <!-- Category -->
-            <div>
-                <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Category
-                </label>
-                <select id="category" v-model="form.category" required
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    :disabled="loading">
-                    <option value="">Select a category</option>
-                    <option v-for="category in FORUM_CATEGORIES" :key="category" :value="category">
-                        {{ getCategoryLabel(category) }}
-                    </option>
-                </select>
-            </div>
+            <!-- Enhanced Category -->
+            <FormField id="category" v-model="form.category" label="Category" type="select" required variant="enhanced"
+                placeholder="Select a category" :disabled="loading" :options="categoryOptions" />
 
             <!-- Content -->
             <div>
@@ -44,116 +24,50 @@
                     :disabled="loading" :min-length="20" :max-length="5000" />
             </div>
 
-            <!-- Tags -->
-            <div>
-                <label for="tags" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Tags (optional)
-                </label>
-                <input id="tags" v-model="tagInput" type="text"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+            <!-- Enhanced Tags -->
+            <div class="space-y-3">
+                <FormField id="tags" v-model="tagInput" label="Tags (optional)" type="text" variant="enhanced"
                     placeholder="Enter tags separated by commas (e.g., honda, maintenance, oil-change)"
-                    :disabled="loading" @keydown.enter.prevent="addTag" @keydown.comma.prevent="addTag">
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    Press Enter or comma to add tags. Use relevant keywords to help others find your topic.
-                </p>
+                    :disabled="loading"
+                    help-text="Press Enter or comma to add tags. Use relevant keywords to help others find your topic."
+                    @keydown.enter.prevent="addTag" @keydown.comma.prevent="addTag" />
 
-                <!-- Tag Display -->
-                <div v-if="form.tags.length > 0" class="mt-2 flex flex-wrap gap-2">
+                <!-- Enhanced Tag Display -->
+                <div v-if="form.tags.length > 0" class="flex flex-wrap gap-2">
                     <span v-for="(tag, index) in form.tags" :key="index"
-                        class="inline-flex items-center px-2 py-1 rounded-md text-sm bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200">
+                        class="inline-flex items-center px-3 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 text-blue-800 dark:text-blue-200 border border-blue-200/50 dark:border-blue-800/50 backdrop-blur-sm transition-all duration-200 hover:scale-105">
                         #{{ tag }}
-                        <button type="button" @click="removeTag(index)"
-                            class="ml-1 text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-100"
+                        <ActionButton @click="removeTag(index)" variant="ghost" size="xs"
+                            class="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-100 p-0.5 rounded-full"
                             :disabled="loading">
-                            <XMarkIcon class="w-4 h-4" />
-                        </button>
+                            <XMarkIcon class="w-3 h-3" />
+                        </ActionButton>
                     </span>
                 </div>
             </div>
 
-            <!-- Images -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Images (optional)
-                </label>
+            <!-- Enhanced Images -->
+            <ImageUpload v-model:images="allImages" label="Images (optional)" variant="enhanced" :max-files="5"
+                :max-file-size="isEditMode ? 10 * 1024 * 1024 : 5 * 1024 * 1024" @error="(err) => error = err" />
 
-                <!-- Existing Images (Edit Mode Only) -->
-                <div v-if="isEditMode && form.existingImages.length > 0" class="mb-4">
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Current images:</p>
-                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        <div v-for="(image, index) in form.existingImages" :key="`existing-${index}`"
-                            class="relative group aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
-                            <img :src="image.url" :alt="`Existing image ${index + 1}`"
-                                class="w-full h-full object-cover">
-                            <button type="button" @click="removeExistingImage(index)"
-                                class="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20"
-                                :disabled="loading">
-                                <XMarkIcon class="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
+            <!-- Enhanced Error Message -->
+            <div v-if="error"
+                class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                <div class="flex items-center">
+                    <ExclamationTriangleIcon class="w-5 h-5 text-red-500 mr-2" />
+                    <p class="text-sm text-red-600 dark:text-red-400 font-medium">{{ error }}</p>
                 </div>
-
-                <!-- Upload Button -->
-                <div class="mb-4">
-                    <input ref="fileInput" type="file" multiple accept="image/*" @change="handleFileSelect"
-                        class="hidden" :disabled="loading">
-                    <Button type="button" variant="outline" @click="$refs.fileInput.click()"
-                        :disabled="loading || totalImagesCount >= 5" class="w-full sm:w-auto">
-                        <PhotoIcon class="w-4 h-4 mr-2" />
-                        {{ totalImagesCount === 0 ? 'Add Images' : 'Add More Images' }}
-                    </Button>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        Upload up to 5 images (max {{ isEditMode ? '10MB' : '5MB' }} each). Supported formats: JPG, PNG,
-                        WebP
-                    </p>
-                </div>
-
-                <!-- New Images Preview -->
-                <div v-if="form.newImages.length > 0" class="mb-4">
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ isEditMode ? 'New images to upload:' :
-                        'Selected images:' }}</p>
-                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        <div v-for="(image, index) in form.newImages" :key="`new-${index}`"
-                            class="relative group aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
-                            <img :src="image.preview" :alt="`Preview ${index + 1}`" class="w-full h-full object-cover">
-
-                            <!-- Remove Button -->
-                            <button v-if="!image.uploading" type="button" @click="removeNewImage(index)"
-                                class="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20"
-                                :disabled="loading">
-                                <XMarkIcon class="w-4 h-4" />
-                            </button>
-
-                            <!-- Error State -->
-                            <div v-if="image.error"
-                                class="absolute inset-0 bg-red-500 bg-opacity-75 flex items-center justify-center z-10">
-                                <div class="text-white text-center p-2">
-                                    <ExclamationTriangleIcon class="w-6 h-6 mx-auto mb-1" />
-                                    <p class="text-xs">Upload failed</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Upload Error -->
-                <p v-if="uploadError" class="mt-2 text-sm text-red-600 dark:text-red-400">
-                    {{ uploadError }}
-                </p>
             </div>
 
-            <!-- Error Message -->
-            <ErrorMessage v-if="error" :message="error" />
-
-            <!-- Actions -->
-            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <Button type="button" variant="outline" @click="$emit('cancel')" :disabled="loading">
+            <!-- Enhanced Actions -->
+            <div class="flex justify-end space-x-4 pt-8 border-t border-gray-200/50 dark:border-gray-600/50">
+                <ActionButton @click="$emit('cancel')" variant="outline" size="lg" :disabled="loading">
                     Cancel
-                </Button>
-                <Button type="submit" :loading="loading" :disabled="!isFormValid">
-                    {{ isEditMode ? 'Update Topic' : 'Create Topic' }}
-                </Button>
+                </ActionButton>
+                <ActionButton type="submit" size="lg" :loading="loading" :disabled="!isFormValid"
+                    class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg">
+                    {{ isEditMode ? 'Save Changes' : 'Post Topic' }}
+                </ActionButton>
             </div>
         </form>
     </div>
@@ -161,15 +75,15 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { useNotificationStore } from '@/stores/notification';
 import { useApi } from '@/composables/useApi';
 import { apiService } from '@/services/api.service';
-import { getCategoryLabel, processImageFiles, cleanupImagePreviews } from '@/utils/helpers';
+import { getCategoryLabel } from '@/utils/helpers';
 import { FORUM_CATEGORIES } from '@/utils/constants.repository';
-import Button from '@/components/common/Button.vue';
-import ErrorMessage from '@/components/common/ErrorMessage.vue';
-import RichTextEditor from '@/components/common/RichTextEditor.vue';
-import { XMarkIcon, PhotoIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
+import ActionButton from '@/components/common/buttons/ActionButton.vue';
+import FormField from '@/components/common/forms/FormField.vue';
+import ImageUpload from '@/components/common/forms/ImageUpload.vue';
+import RichTextEditor from '@/components/common/forms/RichTextEditor.vue';
+import { XMarkIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     topic: {
@@ -180,7 +94,6 @@ const props = defineProps({
 
 const emit = defineEmits(['success', 'cancel']);
 
-const notificationStore = useNotificationStore();
 const { loading, error, execute } = useApi();
 
 // Determine if we're in edit mode
@@ -197,11 +110,16 @@ const form = ref({
 });
 
 const tagInput = ref('');
-const uploadError = ref('');
-const fileInput = ref(null);
 const formInitialized = ref(false);
 
 // Computed properties
+const categoryOptions = computed(() =>
+    Object.values(FORUM_CATEGORIES).map(category => ({
+        value: category,
+        label: getCategoryLabel(category)
+    }))
+);
+
 const isFormValid = computed(() => {
     const contentLength = getTextLength(form.value.content);
     return form.value.title.length >= 10 &&
@@ -221,6 +139,29 @@ const getTextLength = (htmlContent) => {
 
 const totalImagesCount = computed(() => {
     return (form.value.existingImages?.length || 0) + (form.value.newImages?.length || 0);
+});
+
+// Combined images for ImageUpload component
+const allImages = computed({
+    get() {
+        const existing = (form.value.existingImages || []).map(img => ({
+            ...img,
+            isNew: false
+        }));
+        const newImages = (form.value.newImages || []).map(img => ({
+            ...img,
+            isNew: true
+        }));
+        return [...existing, ...newImages];
+    },
+    set(newImages) {
+        // Separate existing and new images
+        const existing = newImages.filter(img => !img.isNew);
+        const newImgs = newImages.filter(img => img.isNew);
+
+        form.value.existingImages = existing;
+        form.value.newImages = newImgs;
+    }
 });
 
 // Form initialization
@@ -252,9 +193,6 @@ const initializeForm = () => {
 };
 
 const resetForm = () => {
-    // Clean up image previews
-    cleanupImagePreviews(form.value.newImages);
-
     form.value = {
         title: '',
         category: '',
@@ -265,7 +203,6 @@ const resetForm = () => {
         imagesToRemove: []
     };
     tagInput.value = '';
-    uploadError.value = '';
 };
 
 // Tag management
@@ -279,38 +216,6 @@ const addTag = () => {
 
 const removeTag = (index) => {
     form.value.tags.splice(index, 1);
-};
-
-// Image management
-const handleFileSelect = async (event) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    const maxSize = isEditMode.value ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
-    const result = processImageFiles(files, totalImagesCount.value, 5, maxSize);
-
-    if (result.error) {
-        uploadError.value = result.error;
-    } else {
-        uploadError.value = '';
-        form.value.newImages.push(...result.images);
-    }
-
-    // Clear the input
-    event.target.value = '';
-};
-
-const removeExistingImage = (index) => {
-    const removedImage = form.value.existingImages.splice(index, 1)[0];
-    form.value.imagesToRemove.push(removedImage.id);
-};
-
-const removeNewImage = (index) => {
-    const image = form.value.newImages[index];
-    if (image.preview) {
-        URL.revokeObjectURL(image.preview);
-    }
-    form.value.newImages.splice(index, 1);
 };
 
 // Form submission
@@ -359,9 +264,9 @@ const handleSubmit = async () => {
         successMessage: isEditMode.value
             ? 'Your changes have been saved successfully.'
             : 'Your topic has been posted successfully.',
-        successTitle: isEditMode.value ? 'Topic updated!' : 'Topic created!',
-        showErrorNotification: true,
-        notificationStore
+        errorMessage: isEditMode.value
+            ? 'Failed to save changes. Please try again.'
+            : 'Failed to create topic. Please try again.'
     });
 
     if (result) {

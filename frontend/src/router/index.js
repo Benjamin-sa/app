@@ -11,8 +11,9 @@ const ProfileView = () => import("@/views/user/ProfileView.vue");
 const LoginView = () => import("@/views/auth/LoginView.vue");
 const RegisterView = () => import("@/views/auth/RegisterView.vue");
 const NotFoundView = () => import("@/views/NotFoundView.vue");
-const BikeGalleryView = () => import("@/views/BikeGalleryView.vue");
-
+const BikeGalleryView = () => import("@/views/bikes/BikeGalleryView.vue");
+const BikeDetailView = () => import("@/views/bikes/BikeDetailView.vue");
+const MessagesView = () => import("@/views/messaging/MessagesView.vue");
 const routes = [
   {
     path: "/",
@@ -97,6 +98,23 @@ const routes = [
       title: "Bike Gallery",
     },
   },
+  {
+    path: "/bikes/:id",
+    name: "BikeDetail",
+    component: BikeDetailView,
+    meta: {
+      title: "Bike Details - Motordash",
+    },
+  },
+  {
+    path: "/messages",
+    name: "Messages",
+    component: MessagesView,
+    meta: {
+      title: "Messages - Motordash",
+    },
+  },
+
   {
     path: "/:pathMatch(.*)*",
     name: "NotFound",

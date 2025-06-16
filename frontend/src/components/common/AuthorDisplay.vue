@@ -1,39 +1,43 @@
 <template>
     <div class="flex items-center space-x-2">
         <!-- Loading state -->
-        <div v-if="loading" class="animate-pulse flex items-center space-x-2">
-            <div class="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
-            <div class="h-4 bg-gray-300 dark:bg-gray-600 rounded w-20"></div>
-        </div>
+        <LoadingSection v-if="loading" message="Loading author..." />
 
         <!-- Author display -->
         <template v-else-if="author">
-            <img v-if="author.avatar" :src="author.avatar" :alt="author.displayName || author.username"
-                :class="avatarClass">
-            <div v-else :class="avatarFallbackClass">
-                {{ (author.displayName || author.username)?.charAt(0).toUpperCase() }}
+            <div class="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                @click="navigateToProfile">
+                <img v-if="author.avatar" :src="author.avatar" :alt="author.displayName || author.username"
+                    :class="avatarClass">
+                <div v-else :class="avatarFallbackClass">
+                    {{ (author.displayName || author.username)?.charAt(0).toUpperCase() }}
+                </div>
+                <span :class="nameClass">
+                    {{ author.displayName || author.username }}
+                </span>
             </div>
-            <span :class="nameClass">
-                {{ author.displayName || author.username }}
-            </span>
         </template>
 
         <!-- Fallback for missing author -->
         <template v-else>
-            <div :class="avatarFallbackClass">
-                ?
+            <div class="flex items-center space-x-2">
+                <div :class="avatarFallbackClass">
+                    ?
+                </div>
+                <span :class="nameClass">
+                    Unknown User
+                </span>
             </div>
-            <span :class="nameClass">
-                Unknown User
-            </span>
         </template>
     </div>
 </template>
 
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { apiService } from '@/services/api.service';
+import LoadingSection from './sections/LoadingSection.vue';
 
 const props = defineProps({
     userId: {
@@ -51,6 +55,7 @@ const props = defineProps({
     }
 });
 
+const router = useRouter();
 const authStore = useAuthStore();
 const author = ref(null);
 const loading = ref(false);
@@ -93,6 +98,19 @@ const nameClass = computed(() => {
 const isCurrentUser = computed(() => {
     return props.userId === authStore.user?.uid;
 });
+
+const navigateToProfile = () => {
+    if (!props.userId) return;
+
+    // Navigate to user profile
+    if (isCurrentUser.value) {
+        // Navigate to own profile
+        router.push('/profile');
+    } else {
+        // Navigate to other user's profile
+        router.push(`/user/${props.userId}`);
+    }
+};
 
 const fetchAuthor = async () => {
     if (!props.userId) {

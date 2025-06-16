@@ -1,180 +1,193 @@
 <template>
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <LoadingSpinner v-if="loading" />
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8"
+        :style="{ paddingTop: `${navbarStore.navbarHeight + 16}px` }">
+        <LoadingSection v-if="loading" message="Loading topic..." />
 
-        <div v-else-if="topic" class="space-y-6">
-            <!-- Breadcrumb -->
-            <nav class="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-                <router-link to="/forum" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-                    Forum
-                </router-link>
-                <ChevronRightIcon class="w-4 h-4" />
-                <span class="text-gray-900 dark:text-gray-100 font-medium">{{ topic.title }}</span>
-            </nav>
+        <div v-else-if="topic" class="space-y-4 sm:space-y-6">
+            <!-- Back Button -->
+            <BackButton label="Back to Forum" fallback-path="/forum" />
 
-            <!-- Topic Header -->
+            <!-- Modern Breadcrumb -->
+            <BreadcrumbNav :items="[
+                { label: 'Forum', path: '/forum' },
+                { label: topic.title, path: null }
+            ]" />
+
+            <!-- Enhanced Topic Header -->
             <div
-                class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
                 <!-- Topic Status Bar -->
                 <div v-if="topic.isPinned || topic.isLocked"
-                    class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-6 py-3 border-b border-gray-200 dark:border-gray-600">
-                    <div class="flex items-center space-x-3">
+                    class="bg-gradient-to-r from-blue-50/80 to-blue-100/80 dark:from-blue-900/50 dark:to-blue-800/50 backdrop-blur-sm px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200/50 dark:border-gray-600/50">
+                    <div class="flex flex-wrap items-center gap-2 sm:gap-3">
                         <span v-if="topic.isPinned"
-                            class="inline-flex items-center px-3 py-1 text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 rounded-full border border-amber-200 dark:border-amber-800">
-                            <MapPinIcon class="w-3 h-3 mr-1.5" />
+                            class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full shadow-lg">
+                            <MapPinIcon class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                             Pinned Topic
                         </span>
                         <span v-if="topic.isLocked"
-                            class="inline-flex items-center px-3 py-1 text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 rounded-full border border-red-200 dark:border-red-800">
-                            <LockClosedIcon class="w-3 h-3 mr-1.5" />
+                            class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold bg-gradient-to-r from-blue-700 to-blue-800 text-white rounded-full shadow-lg">
+                            <LockClosedIcon class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                             Topic Locked
                         </span>
                     </div>
                 </div>
 
-                <div class="p-6">
-                    <div class="flex flex-col lg:flex-row lg:items-start space-y-6 lg:space-y-0 lg:space-x-6">
-                        <!-- Vote Section - Desktop (sidebar) -->
-                        <div class="hidden lg:flex flex-shrink-0">
-                            <VoteButton :target-id="topic.id" target-type="topic" size="lg" />
+                <div class="p-4 sm:p-6 lg:p-8">
+                    <div class="space-y-6 lg:space-y-8">
+                        <!-- Modern Category Badge -->
+                        <div>
+                            <span v-if="topic.category"
+                                class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 text-white shadow-lg">
+                                {{ getCategoryLabel(topic.category) }}
+                            </span>
                         </div>
 
-                        <!-- Main Content -->
-                        <div class="flex-1 min-w-0">
-                            <!-- Category Badge -->
-                            <div class="mb-3">
-                                <span v-if="topic.category"
-                                    class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border"
-                                    :class="getCategoryClass(topic.category)">
-                                    {{ getCategoryLabel(topic.category) }}
-                                </span>
-                            </div>
+                        <!-- Title without vote button to prevent cutoff -->
+                        <div>
+                            <h1
+                                class="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent leading-tight break-words">
+                                {{ topic.title }}
+                            </h1>
+                        </div>
 
-                            <!-- Title with Mobile Vote Button -->
-                            <div class="flex items-start justify-between mb-4">
-                                <h1
-                                    class="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 leading-tight flex-1 mr-4">
-                                    {{ topic.title }}
-                                </h1>
-                                <!-- Vote Section - Mobile (inline) -->
-                                <div class="lg:hidden flex-shrink-0">
-                                    <VoteButton :target-id="topic.id" target-type="topic" size="md" />
-                                </div>
-                            </div>
-
-                            <!-- Author Info -->
-                            <div
-                                class="flex items-center space-x-3 mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
-                                <AuthorDisplay :userId="topic.userId" size="lg" />
-                                <div class="flex-1 min-w-0">
-                                    <div class="text-sm text-gray-500 dark:text-gray-400">
-                                        Posted {{ formatDate(topic.createdAt) }}
-                                        <span v-if="topic.updatedAt !== topic.createdAt" class="ml-2">
-                                            • Updated {{ formatDate(topic.updatedAt) }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Content -->
-                            <div class="prose dark:prose-invert max-w-none mb-6 text-gray-700 dark:text-gray-300 leading-relaxed"
+                        <!-- Enhanced Content with better spacing -->
+                        <div class="space-y-6">
+                            <div class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed text-base sm:text-lg prose-sm sm:prose-base break-words overflow-wrap-anywhere"
                                 v-html="formatContent(topic.content)">
                             </div>
 
-                            <!-- Images Gallery -->
-                            <div v-if="topic.images && topic.images.length > 0" class="mb-6">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <!-- Enhanced Images Gallery -->
+                            <div v-if="topic.images && topic.images.length > 0">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                                     <div v-for="(image, index) in topic.images" :key="index"
-                                        class="relative group cursor-pointer rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200"
+                                        class="relative group cursor-pointer rounded-xl sm:rounded-2xl overflow-hidden border border-gray-200/50 dark:border-gray-700/50 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:shadow-xl"
                                         @click="openImageModal(image.url)">
                                         <img :src="image.thumbnailUrl || image.url" :alt="`Topic image ${index + 1}`"
-                                            class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200">
+                                            class="w-full h-40 sm:h-48 lg:h-56 object-cover">
                                         <div
-                                            class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center">
-                                            <MagnifyingGlassIcon
-                                                class="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                                            class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
+                                            <div class="bg-white/20 backdrop-blur-sm rounded-full p-2 sm:p-3">
+                                                <MagnifyingGlassIcon class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Tags -->
-                            <div v-if="topic.tags && topic.tags.length > 0" class="mb-6 flex flex-wrap gap-2">
+                            <!-- Enhanced Tags -->
+                            <div v-if="topic.tags && topic.tags.length > 0" class="flex flex-wrap gap-2 sm:gap-3">
                                 <span v-for="tag in topic.tags" :key="tag"
-                                    class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer">
+                                    class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 dark:from-blue-900/30 dark:to-blue-800/30 dark:text-blue-400 border border-blue-200/50 dark:border-blue-700/50 hover:from-blue-100 hover:to-blue-200 dark:hover:from-blue-900/50 dark:hover:to-blue-800/50 transition-all duration-200 cursor-pointer hover:scale-105">
                                     #{{ tag }}
                                 </span>
                             </div>
+                        </div>
 
-                            <!-- Topic Stats -->
-                            <div
-                                class="flex flex-wrap items-center gap-6 text-sm text-gray-500 dark:text-gray-400 pt-6 border-t border-gray-200 dark:border-gray-600">
-                                <div class="flex items-center space-x-1">
-                                    <EyeIcon class="w-4 h-4" />
-                                    <span class="font-medium">{{ formatNumber(topic.viewCount || 0) }}</span>
-                                    <span>{{ topic.viewCount === 1 ? 'view' : 'views' }}</span>
+                        <!-- Enhanced Author Display -->
+                        <div
+                            class="p-4 sm:p-6 bg-gradient-to-r from-blue-50/80 to-blue-100/80 dark:from-blue-900/30 dark:to-blue-800/30 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-blue-200/50 dark:border-blue-700/50">
+                            <div class="flex items-center space-x-3 sm:space-x-4">
+                                <AuthorDisplay :userId="topic.userId" size="lg" />
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                                        Posted {{ formatDate(topic.createdAt) }}
+                                        <span v-if="topic.updatedAt !== topic.createdAt"
+                                            class="block sm:inline sm:ml-2">
+                                            • Updated {{ formatDate(topic.updatedAt) }}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div class="flex items-center space-x-1">
-                                    <ChatBubbleLeftIcon class="w-4 h-4" />
-                                    <span class="font-medium">{{ formatNumber(answerCount) }}</span>
-                                    <span>{{ answerCount === 1 ? 'answer' : 'answers' }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Enhanced Topic Stats with vote button integrated -->
+                        <div
+                            class="flex flex-wrap items-center justify-between gap-4 text-sm pt-4 sm:pt-6 border-t border-gray-200/50 dark:border-gray-600/50">
+                            <div class="flex flex-wrap gap-4 sm:gap-8">
+                                <div class="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
+                                    <div class="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                        <EyeIcon class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <div>
+                                        <span
+                                            class="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">{{
+                                                formatNumber(topic.viewCount || 0) }}</span>
+                                        <span class="ml-1 text-xs sm:text-sm">{{ topic.viewCount === 1 ? 'view' :
+                                            'views' }}</span>
+                                    </div>
                                 </div>
-                                <div v-if="topic.lastActivity" class="flex items-center space-x-1">
-                                    <ClockIcon class="w-4 h-4" />
-                                    <span>Last activity {{ formatDate(topic.lastActivity) }}</span>
+                                <div class="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
+                                    <div class="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                        <ChatBubbleLeftIcon
+                                            class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <div>
+                                        <span
+                                            class="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">{{
+                                                formatNumber(answerCount) }}</span>
+                                        <span class="ml-1 text-xs sm:text-sm">{{ answerCount === 1 ? 'answer' :
+                                            'answers' }}</span>
+                                    </div>
                                 </div>
+                                <div v-if="topic.lastActivity"
+                                    class="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
+                                    <div class="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                        <ClockIcon class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <div>
+                                        <span class="text-xs sm:text-sm">Last activity {{ formatDate(topic.lastActivity)
+                                        }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Vote button positioned on the right, away from title -->
+                            <div class="flex-shrink-0">
+                                <VoteButton :target-id="topic.id" target-type="topic" size="md" variant="default" />
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Actions -->
+            <!-- Enhanced Actions -->
             <div v-if="authStore.isAuthenticated"
-                class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
-                <div class="flex flex-wrap gap-2">
-                    <Button v-if="canEditTopic" variant="outline" size="sm" @click="handleEditTopic"
-                        class="border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                class="flex flex-col space-y-3 sm:flex-row sm:justify-between sm:items-center sm:space-y-0 p-4 sm:p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50">
+                <div class="flex flex-wrap gap-2 sm:gap-3">
+                    <ActionButton v-if="canEditTopic" variant="outline" size="sm" @click="handleEditTopic"
+                        class="flex-1 sm:flex-none justify-center">
                         <PencilIcon class="w-4 h-4 mr-2" />
                         Edit Topic
-                    </Button>
-                    <Button v-if="canDeleteTopic" variant="outline" size="sm" @click="showDeleteConfirm = true"
-                        class="text-red-600 dark:text-red-400 border-red-300 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-400 dark:hover:border-red-500">
+                    </ActionButton>
+                    <ActionButton v-if="canDeleteTopic" variant="secondary" size="sm" @click="showDeleteConfirm = true"
+                        class="flex-1 sm:flex-none justify-center bg-red-600 hover:bg-red-700 text-white">
                         <TrashIcon class="w-4 h-4 mr-2" />
                         Delete
-                    </Button>
+                    </ActionButton>
                 </div>
 
-                <Button v-if="!topic.isLocked" @click="showAnswerForm = true"
-                    class="bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">
-                    <ChatBubbleLeftIcon class="w-5 h-5 mr-2" />
+                <ActionButton v-if="!topic.isLocked" @click="showAnswerModal = true" size="md"
+                    class="w-full sm:w-auto bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 hover:from-blue-700 hover:via-blue-800 hover:to-blue-900 text-white shadow-lg">
+                    <ChatBubbleLeftIcon class="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     Post Answer
-                </Button>
+                </ActionButton>
             </div>
 
-            <!-- Answers Section -->
+            <!-- Enhanced Answers Section -->
             <div
-                class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
                 <div
-                    class="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 border-b border-gray-200 dark:border-gray-600">
-                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-                        <ChatBubbleLeftIcon class="w-5 h-5 mr-2 text-primary-600 dark:text-primary-400" />
+                    class="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-gradient-to-r from-blue-50/80 to-blue-100/80 dark:from-blue-900/50 dark:to-blue-800/50 backdrop-blur-sm border-b border-gray-200/50 dark:border-gray-600/50">
+                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
+                        <div class="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg sm:rounded-xl mr-2 sm:mr-3">
+                            <ChatBubbleLeftIcon class="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
+                        </div>
                         {{ formatNumber(answerCount) }} {{ answerCount === 1 ? 'Answer' : 'Answers' }}
                     </h2>
                 </div>
 
                 <AnswerList :topic-id="topic.id" :topic-author-id="topic.author?.id"
                     @answer-count-changed="updateAnswerCount" />
-            </div>
-
-            <!-- Answer Form -->
-            <div v-if="showAnswerForm && authStore.isAuthenticated && !topic.isLocked"
-                class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6 flex items-center">
-                    <PencilIcon class="w-5 h-5 mr-2 text-primary-600 dark:text-primary-400" />
-                    Post Your Answer
-                </h3>
-                <AnswerForm :topic-id="topic.id" @success="handleAnswerSuccess" @cancel="showAnswerForm = false" />
             </div>
         </div>
 
@@ -185,9 +198,9 @@
                 The topic you're looking for doesn't exist or has been removed.
             </p>
             <div class="mt-6">
-                <Button @click="$router.push('/forum')">
+                <ActionButton @click="$router.push('/forum')" variant="primary">
                     Back to Forum
-                </Button>
+                </ActionButton>
             </div>
         </div>
 
@@ -196,24 +209,16 @@
             :initial-index="selectedImageIndex" :is-open="showImageViewer" @close="closeImageViewer"
             @change="(index) => selectedImageIndex = index" />
 
-        <div v-if="showEditTopic" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-            @click="showEditTopic = false">
-            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[95vh] overflow-y-auto"
-                @click.stop>
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Edit Topic</h2>
-                    <button @click="showEditTopic = false"
-                        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                </div>
-                <TopicForm v-if="topic" :topic="topic" @cancel="showEditTopic = false"
-                    @success="handleTopicEditSuccess" />
-            </div>
-        </div>
+        <!-- Edit Topic Modal -->
+        <Modal v-model="showEditTopic" title="Edit Topic" size="full">
+            <TopicForm v-if="topic" :topic="topic" @success="handleTopicEditSuccess" @cancel="showEditTopic = false" />
+        </Modal>
+
+        <!-- Post Answer Modal -->
+        <Modal v-model="showAnswerModal" title="Post Your Answer" size="xl">
+            <AnswerForm v-if="topic" :topic-id="topic.id" @success="handleAnswerSuccess"
+                @cancel="showAnswerModal = false" />
+        </Modal>
 
         <!-- Delete Confirmation Modal -->
         <Modal v-if="showDeleteConfirm" title="Delete Topic" @close="showDeleteConfirm = false">
@@ -222,12 +227,13 @@
                     Are you sure you want to delete this topic? This action cannot be undone.
                 </p>
                 <div class="flex justify-end space-x-3">
-                    <Button variant="outline" @click="showDeleteConfirm = false">
+                    <ActionButton variant="outline" @click="showDeleteConfirm = false">
                         Cancel
-                    </Button>
-                    <Button variant="danger" @click="handleTopicDelete" :loading="deleting">
+                    </ActionButton>
+                    <ActionButton variant="secondary" @click="handleTopicDelete" :loading="deleting"
+                        class="bg-red-600 hover:bg-red-700 text-white">
                         Delete Topic
-                    </Button>
+                    </ActionButton>
                 </div>
             </div>
         </Modal>
@@ -239,17 +245,20 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notification';
+import { useApi } from '@/composables/useApi';
 import { apiService } from '@/services/api.service';
-import { formatDate, formatContent, formatNumber, getCategoryClass, getCategoryLabel } from '@/utils/helpers';
-import Button from '@/components/common/Button.vue';
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
+import { formatDate, formatContent, formatNumber, getCategoryLabel } from '@/utils/helpers';
+import ActionButton from '@/components/common/buttons/ActionButton.vue';
+import BreadcrumbNav from '@/components/common/nav/BreadcrumbNav.vue';
+import LoadingSection from '@/components/common/sections/LoadingSection.vue';
 import Modal from '@/components/common/Modal.vue';
 import VoteButton from '@/components/forum/VoteButton.vue';
 import AnswerList from '@/components/forum/AnswerList.vue';
 import AnswerForm from '@/components/forum/AnswerForm.vue';
 import TopicForm from '@/components/forum/TopicForm.vue';
-import ImageViewer from '@/components/common/ImageViewer.vue';
+import ImageViewer from '@/components/common/images/ImageViewer.vue';
 import AuthorDisplay from '@/components/common/AuthorDisplay.vue';
+import BackButton from '@/components/common/buttons/BackButton.vue';
 import {
     ChevronRightIcon,
     LockClosedIcon,
@@ -262,16 +271,20 @@ import {
     MagnifyingGlassIcon,
     ClockIcon
 } from '@heroicons/vue/24/outline';
+import { useNavbarStore } from '@/stores/navbar';
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
+const navbarStore = useNavbarStore();
+
+// Use the composable for different operations
+const { loading, execute } = useApi();
+const { loading: deleting, execute: executeDelete } = useApi();
 
 const topic = ref(null);
-const loading = ref(false);
-const deleting = ref(false);
-const showAnswerForm = ref(false);
+const showAnswerModal = ref(false);
 const showEditTopic = ref(false);
 const showDeleteConfirm = ref(false);
 const showImageViewer = ref(false);
@@ -303,16 +316,20 @@ const canDeleteTopic = computed(() => {
 });
 
 const loadTopic = async () => {
-    try {
-        loading.value = true;
-        const response = await apiService.get(`/forum/topics/${route.params.id}`);
-        topic.value = response.data;
-        answerCount.value = response.data.answerCount || 0;
-    } catch (error) {
-        console.error('Error loading topic:', error);
+    const result = await execute(
+        () => apiService.get(`/forum/topics/${route.params.id}`),
+        {
+            showErrorNotification: true,
+            notificationStore,
+            errorTitle: 'Failed to load topic'
+        }
+    );
+
+    if (result) {
+        topic.value = result;
+        answerCount.value = result.answerCount || 0;
+    } else {
         topic.value = null;
-    } finally {
-        loading.value = false;
     }
 };
 
@@ -321,24 +338,29 @@ const updateAnswerCount = (newCount) => {
 };
 
 const handleAnswerSuccess = () => {
-    showAnswerForm.value = false;
+    showAnswerModal.value = false;
     answerCount.value += 1;
     notificationStore.success('Answer posted!', 'Your answer has been added successfully.');
 };
 
 const handleTopicDelete = async () => {
-    try {
-        deleting.value = true;
-        await apiService.delete(`/forum/topics/${topic.value.id}`);
-        notificationStore.success('Topic deleted', 'The topic has been removed.');
+    const result = await executeDelete(
+        () => apiService.delete(`/forum/topics/${topic.value.id}`),
+        {
+            successMessage: 'The topic has been removed.',
+            successTitle: 'Topic deleted',
+            showErrorNotification: true,
+            notificationStore,
+            errorTitle: 'Delete failed',
+            errorMessage: 'Unable to delete the topic. Please try again.'
+        }
+    );
+
+    if (result) {
         router.push('/forum');
-    } catch (error) {
-        console.error('Error deleting topic:', error);
-        notificationStore.error('Delete failed', 'Unable to delete the topic. Please try again.', { duration: 5000 });
-    } finally {
-        deleting.value = false;
-        showDeleteConfirm.value = false;
     }
+
+    showDeleteConfirm.value = false;
 };
 
 const handleEditTopic = () => {
@@ -351,11 +373,9 @@ const handleEditTopic = () => {
 
 const handleTopicEditSuccess = (updatedTopic) => {
     showEditTopic.value = false;
-    // Optionally update the local topic data with the response
     if (updatedTopic?.data) {
         topic.value = { ...topic.value, ...updatedTopic.data };
     }
-    // Or reload the topic to get fresh data
     loadTopic();
 };
 

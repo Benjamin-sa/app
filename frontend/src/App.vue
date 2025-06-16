@@ -18,7 +18,7 @@ import { onMounted } from 'vue';
 import { RouterView } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useThemeStore } from '@/stores/theme';
-import NavBar from '@/components/common/NavBar.vue';
+import NavBar from '@/components/common/nav/NavBar.vue';
 import NotificationContainer from '@/components/common/NotificationContainer.vue';
 
 const authStore = useAuthStore();

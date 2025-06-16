@@ -2,15 +2,13 @@ import { ref, computed } from "vue";
 
 export function useRichTextEditor(options = {}) {
   const {
-    maxLength = 5000,
-    minLength = 20,
+    maxLength = 2000,
+    minLength = 10,
     placeholder = "Start typing...",
   } = options;
 
   const content = ref("");
   const editor = ref(null);
-  const showEmojiPicker = ref(false);
-  const emojiSearch = ref("");
 
   // Character count helper
   const getTextLength = (htmlContent) => {
@@ -38,28 +36,8 @@ export function useRichTextEditor(options = {}) {
     return "";
   });
 
-  const insertText = (text) => {
-    if (editor.value && editor.value.quill) {
-      const range = editor.value.quill.getSelection() || { index: 0 };
-      editor.value.quill.insertText(range.index, text, "user");
-      editor.value.quill.setSelection(range.index + text.length);
-    }
-  };
-
-  const insertEmoji = (emoji) => {
-    insertText(emoji);
-    showEmojiPicker.value = false;
-  };
-
-  const toggleEmojiPicker = () => {
-    showEmojiPicker.value = !showEmojiPicker.value;
-    if (showEmojiPicker.value) {
-      emojiSearch.value = "";
-    }
-  };
-
   const setContent = (newContent) => {
-    content.value = newContent;
+    content.value = newContent || "";
   };
 
   const getContent = () => {
@@ -68,32 +46,27 @@ export function useRichTextEditor(options = {}) {
 
   const clear = () => {
     content.value = "";
-    if (editor.value && editor.value.quill) {
-      editor.value.quill.setText("");
-    }
   };
 
   const focus = () => {
-    if (editor.value && editor.value.quill) {
-      editor.value.quill.focus();
+    if (editor.value && editor.value.focus) {
+      editor.value.focus();
     }
   };
 
   return {
     content,
     editor,
-    showEmojiPicker,
-    emojiSearch,
     characterCount,
     isValid,
     error,
     getTextLength,
-    insertText,
-    insertEmoji,
-    toggleEmojiPicker,
     setContent,
     getContent,
     clear,
     focus,
+    maxLength,
+    minLength,
+    placeholder,
   };
 }

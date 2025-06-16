@@ -12,11 +12,11 @@ const answerController = require("./answer.controller");
 // ==================== ANSWER ROUTES ====================
 
 /**
- * POST /api/forum/answers/topics/:topicId
+ * POST /api/forum/answers/:topicId
  * Create a new answer
  */
 router.post(
-  "/topics/:topicId",
+  "/:topicId",
   authenticate,
   uploadMultiple,
   processImages(FOLDERS.ANSWERS),
@@ -44,9 +44,9 @@ router.patch(
 router.delete("/:id", authenticate, answerController.deleteAnswer);
 
 /**
- * GET /api/forum/answers/topics/:topicId
+ * GET /api/forum/answers/:topicId
  * Get answers for a specific topic
  */
-router.get("/topics/:topicId", answerController.getAnswersByTopic);
+router.get("/:topicId", answerController.getAnswersByTopic);
 
 module.exports = router;

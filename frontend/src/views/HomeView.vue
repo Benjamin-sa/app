@@ -1,25 +1,28 @@
 <template>
-    <div>
-        <!-- Hero Section -->
-        <section class="bg-gradient-to-br from-primary-600 to-primary-800 text-white">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+    <div :style="{ paddingTop: `${navbarStore.navbarHeight}px` }">
+        <!-- Enhanced Hero Section with Modern Gradient -->
+        <section
+            class="relative bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white overflow-hidden">
+            <div class="absolute inset-0 bg-black/10 backdrop-blur-sm"></div>
+            <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
                 <div class="text-center">
-                    <h1 class="text-4xl md:text-6xl font-bold mb-6">
+                    <h1
+                        class="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-white to-primary-100 bg-clip-text text-transparent">
                         Welcome to Motordash
                     </h1>
-                    <p class="text-xl md:text-2xl text-primary-100 mb-8 max-w-3xl mx-auto">
+                    <p class="text-xl md:text-2xl text-primary-100 mb-8 max-w-3xl mx-auto leading-relaxed">
                         The ultimate motorcycle community platform where enthusiasts connect, share knowledge, and
                         discover the latest gear.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button size="lg" @click="$router.push('/forum')"
-                            class="bg-white text-primary-600 hover:bg-gray-50">
+                        <ActionButton size="lg" @click="$router.push('/forum')" variant="white"
+                            class="transform hover:scale-105 transition-all duration-200">
                             Explore Forum
-                        </Button>
-                        <Button size="lg" variant="outline" @click="$router.push('/products')"
-                            class="border-white text-white hover:bg-white hover:text-primary-600">
+                        </ActionButton>
+                        <ActionButton size="lg" variant="outline" @click="$router.push('/products')"
+                            class="border-white/50 text-white hover:bg-white/10 hover:border-white backdrop-blur-sm transform hover:scale-105 transition-all duration-200">
                             Browse Products
-                        </Button>
+                        </ActionButton>
                     </div>
                 </div>
             </div>
@@ -77,35 +80,51 @@
         <!-- Recent Activity Section -->
         <section class="py-16 bg-gray-50 dark:bg-gray-800">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class=" gap-12">
+                <div class="gap-12">
                     <!-- Recent Forum Topics -->
                     <div>
                         <div class="flex items-center justify-between mb-6">
                             <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Recent Forum Activity</h2>
-                            <Button variant="outline" size="sm" @click="$router.push('/forum')">
+                            <ActionButton variant="outline" size="sm" @click="$router.push('/forum')">
                                 View All
-                            </Button>
+                            </ActionButton>
                         </div>
 
-                        <LoadingSpinner v-if="loadingTopics" />
+                        <LoadingSection v-if="loadingTopics" message="Loading recent topics..." />
                         <div v-else-if="recentTopics.length > 0" class="space-y-4">
                             <div v-for="topic in recentTopics" :key="topic.id"
-                                class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md dark:hover:shadow-gray-900/25 transition-shadow cursor-pointer"
+                                class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-4 sm:p-6 hover:shadow-xl dark:hover:shadow-gray-900/25 transition-all duration-200 cursor-pointer hover:scale-[1.02] transform"
                                 @click="$router.push(`/forum/topic/${topic.id}`)">
-                                <h3 class="font-medium text-gray-900 dark:text-white mb-1">{{ topic.title }}</h3>
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ topic.content.substring(0,
-                                    100) }}...</p>
-                                <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                                    <span>by {{ topic.authorDisplayName }}</span>
-                                    <span class="mx-2">•</span>
-                                    <span>{{ formatDate(topic.createdAt) }}</span>
-                                    <span class="mx-2">•</span>
-                                    <span>{{ topic.answerCount || 0 }} replies</span>
+                                <h3 class="font-semibold text-gray-900 dark:text-white mb-2 text-lg">{{ topic.title }}
+                                </h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">{{
+                                    topic.content.substring(0,
+                                        150) }}...</p>
+                                <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                                    <div class="flex items-center space-x-4">
+                                        <span class="flex items-center space-x-1">
+                                            <span class="font-medium">{{ topic.authorDisplayName }}</span>
+                                        </span>
+                                        <span class="flex items-center space-x-1">
+                                            <span>{{ formatDate(topic.createdAt) }}</span>
+                                        </span>
+                                        <span
+                                            class="flex items-center space-x-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">
+                                            <span>{{ topic.answerCount || 0 }} replies</span>
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400">
-                            No recent topics found
+                        <div v-else class="text-center py-12">
+                            <div
+                                class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-8">
+                                <p class="text-gray-500 dark:text-gray-400 text-lg">No recent topics found</p>
+                                <ActionButton v-if="authStore.isAuthenticated" @click="$router.push('/forum/create')"
+                                    variant="primary" size="sm" class="mt-4">
+                                    Create First Topic
+                                </ActionButton>
+                            </div>
                         </div>
                     </div>
 
@@ -120,14 +139,14 @@
                 <p class="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
                     Create your account today and become part of the most vibrant motorcycle community online.
                 </p>
-                <Button v-if="!authStore.isAuthenticated" size="lg" @click="$router.push('/register')"
+                <ActionButton v-if="!authStore.isAuthenticated" size="lg" @click="$router.push('/register')"
                     class="bg-white text-primary-600 hover:bg-gray-50">
                     Get Started
-                </Button>
-                <Button v-else size="lg" @click="$router.push('/forum')"
+                </ActionButton>
+                <ActionButton v-else size="lg" @click="$router.push('/forum')"
                     class="bg-white text-primary-600 hover:bg-gray-50">
                     Start Contributing
-                </Button>
+                </ActionButton>
             </div>
         </section>
     </div>
@@ -136,10 +155,11 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
+import { useNavbarStore } from '@/stores/navbar';
 import { apiService } from '@/services/api.service';
 import { formatDate } from '@/utils/helpers';
-import Button from '@/components/common/Button.vue';
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
+import ActionButton from '@/components/common/buttons/ActionButton.vue';
+import LoadingSection from '@/components/common/sections/LoadingSection.vue';
 import {
     ChatBubbleLeftRightIcon,
     ShoppingBagIcon,
@@ -148,6 +168,7 @@ import {
 } from '@heroicons/vue/24/outline';
 
 const authStore = useAuthStore();
+const navbarStore = useNavbarStore();
 
 const recentTopics = ref([]);
 const featuredProducts = ref([]);

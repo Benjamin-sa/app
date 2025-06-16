@@ -56,7 +56,7 @@ import { useAuthStore } from "@/stores/auth";
 import { apiService } from "@/services/api.service";
 
 // 4. Components
-import Button from "@/components/common/Button.vue";
+import Button from "@/components/common/buttons/Button.vue";
 
 // 5. Utils/helpers
 import { formatDate } from "@/utils/helpers";

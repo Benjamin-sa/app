@@ -23,9 +23,6 @@ const UserProfile = {
   bikes_count: 0, // Number of bikes in user's gallery
   isVerified: false,
   isDeleted: false, // Soft delete flag
-  isBanned: false, // Whether the user is banned from the forum
-  banReason: "", // Reason for banning, if applicable
-  banExpiresAt: null, // Timestamp when ban expires, if applicable
   isAdmin: false,
   isModerator: false,
   show_email: false, // Privacy setting - whether to show email publicly
@@ -129,6 +126,33 @@ const Bike = {
   like_count: 0, // Number of likes (for future feature)
 };
 
+// Add to existing models
+const Message = {
+  id: "", // Auto-generated document ID
+  senderId: "", // User UID who sent the message
+  receiverId: "", // User UID who receives the message
+  conversationId: "", // Reference to conversation
+  content: "", // Message content
+  messageType: "text", // 'text', 'image', 'file'
+  attachments: [], // Array of file/image objects
+  createdAt: "", // Firestore timestamp
+  readAt: null, // Timestamp when message was read
+  isDeleted: false,
+  editedAt: null, // Timestamp if message was edited
+};
+
+const Conversation = {
+  id: "", // Auto-generated document ID
+  participants: [], // Array of user UIDs
+  lastMessage: "", // Last message content preview
+  lastMessageAt: "", // Timestamp of last message
+  lastMessageBy: "", // UID of user who sent last message
+  createdAt: "", // Firestore timestamp
+  updatedAt: "", // Firestore timestamp
+  isArchived: false,
+  unreadCount: {}, // Object with userId: count for unread messages
+};
+
 // Firestore collection names
 const COLLECTIONS = {
   USERS: "forum_users",
@@ -139,6 +163,8 @@ const COLLECTIONS = {
   STATS: "forum_stats",
   BIKES: "user_bikes",
   BIKE_LIKES: "bike_likes",
+  MESSAGES: "forum_messages",
+  CONVERSATIONS: "forum_conversations",
 };
 
 module.exports = {
@@ -150,5 +176,7 @@ module.exports = {
   Category,
   ForumStats,
   Bike,
+  Message,
+  Conversation,
   COLLECTIONS,
 };
