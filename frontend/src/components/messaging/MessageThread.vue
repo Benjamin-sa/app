@@ -1,46 +1,135 @@
 <template>
     <div class="flex flex-col h-full">
-        <!-- Messages -->
-        <div ref="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
-            <div v-for="message in messages" :key="message.id"
-                :class="['flex', message.senderId === authStore.user?.uid ? 'justify-end' : 'justify-start']">
-
-                <div :class="[
-                    'max-w-xs lg:max-w-md px-4 py-2 rounded-lg',
-                    message.senderId === authStore.user?.uid
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white'
-                ]">
-                    <p class="text-sm" v-html="formatContent(message.content)"></p>
-                    <p class="text-xs opacity-75 mt-1">
-                        {{ formatDate(message.createdAt) }}
+        <!-- Conversation Header -->
+        <div class="border-b border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800/50">
+            <div class="flex items-center space-x-3">
+                <AuthorDisplay :user-id="getOtherParticipant()" size="sm" :show-name="false" />
+                <div class="flex-1">
+                    <h3 class="font-medium text-gray-900 dark:text-white">
+                        {{ otherParticipantName }}
+                    </h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        {{ participantCount }} participant{{ participantCount > 1 ? 's' : '' }}
                     </p>
+                </div>
+                <!-- Optional: Add menu for conversation actions -->
+                <div class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer">
+                    <EllipsisVerticalIcon class="w-5 h-5" />
                 </div>
             </div>
         </div>
 
-        <!-- Message Input -->
-        <div class="border-t border-gray-200 dark:border-gray-700 p-4">
-            <form @submit.prevent="sendMessage" class="flex space-x-3">
-                <input v-model="newMessage" type="text" placeholder="Type your message..."
-                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white"
-                    :disabled="loading" />
+        <!-- Messages -->
+        <div ref="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900/20">
+            <!-- Loading messages -->
+            <div v-if="loadingMessages" class="flex justify-center py-4">
+                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+            </div>
 
-                <ActionButton type="submit" :loading="loading" :disabled="!newMessage.trim()">
-                    Send
-                </ActionButton>
+            <!-- Message groups -->
+            <div v-else-if="messageGroups.length > 0">
+                <div v-for="group in messageGroups" :key="group.date" class="space-y-4">
+                    <!-- Date separator -->
+                    <div class="flex items-center justify-center py-2">
+                        <div
+                            class="bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-full text-xs text-gray-600 dark:text-gray-400">
+                            {{ group.date }}
+                        </div>
+                    </div>
+
+                    <!-- Messages in this date group -->
+                    <div v-for="message in group.messages" :key="message.id"
+                        :class="['flex', message.senderId === authStore.user?.uid ? 'justify-end' : 'justify-start']">
+
+                        <div :class="[
+                            'max-w-sm lg:max-w-md px-4 py-3 rounded-2xl relative',
+                            message.senderId === authStore.user?.uid
+                                ? 'bg-primary-600 text-white rounded-br-md'
+                                : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-md border border-gray-200 dark:border-gray-700'
+                        ]">
+                            <!-- Message content -->
+                            <div class="text-sm leading-relaxed" v-html="formatContent(message.content)"></div>
+
+                            <!-- Message metadata -->
+                            <div :class="[
+                                'text-xs mt-2 flex items-center space-x-2',
+                                message.senderId === authStore.user?.uid
+                                    ? 'text-primary-100'
+                                    : 'text-gray-500 dark:text-gray-400'
+                            ]">
+                                <span>{{ formatMessageTime(message.createdAt) }}</span>
+
+                                <!-- Read receipts for sent messages -->
+                                <div v-if="message.senderId === authStore.user?.uid" class="flex items-center">
+                                    <CheckIcon v-if="message.readAt" class="w-3 h-3" />
+                                    <div v-else class="w-3 h-3 rounded-full border border-current opacity-50"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty state -->
+            <div v-else class="flex items-center justify-center py-12">
+                <div class="text-center text-gray-500 dark:text-gray-400">
+                    <ChatBubbleLeftIcon class="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p class="font-medium">No messages yet</p>
+                    <p class="text-sm">Send a message to start the conversation</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Typing indicator -->
+        <div v-if="showTypingIndicator" class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
+            <div class="flex items-center space-x-1">
+                <div class="flex space-x-1">
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                </div>
+                <span class="ml-2">{{ otherParticipantName }} is typing...</span>
+            </div>
+        </div>
+
+        <!-- Message Input -->
+        <div class="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
+            <form @submit.prevent="sendMessage" class="flex items-end space-x-3">
+                <!-- Message input with auto-resize -->
+                <div class="flex-1">
+                    <textarea ref="messageInput" v-model="newMessage" @keydown="handleKeyDown" @input="handleInput"
+                        placeholder="Type your message..." rows="1"
+                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white resize-none max-h-32"
+                        :disabled="loading" />
+                </div>
+
+                <!-- Send button -->
+                <button type="submit" :disabled="loading || !newMessage.trim()" :class="[
+                    'p-3 rounded-full transition-colors',
+                    newMessage.trim() && !loading
+                        ? 'bg-primary-600 hover:bg-primary-700 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                ]">
+                    <PaperAirplaneIcon class="w-5 h-5 transform rotate-45" />
+                </button>
             </form>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, nextTick, watch, computed } from 'vue';
+import { ref, nextTick, watch, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useApi } from '@/composables/useApi';
 import { apiService } from '@/services/api.service';
-import { formatDate, formatContent } from '@/utils/helpers';
-import ActionButton from '@/components/common/buttons/ActionButton.vue';
+import { formatDate, formatContent, formatTimeAgo } from '@/utils/helpers';
+import AuthorDisplay from '@/components/common/AuthorDisplay.vue';
+import {
+    ChatBubbleLeftIcon,
+    PaperAirplaneIcon,
+    EllipsisVerticalIcon,
+    CheckIcon
+} from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     conversationId: {
@@ -61,8 +150,41 @@ const { loading, execute } = useApi();
 const messages = ref([]);
 const newMessage = ref('');
 const messagesContainer = ref(null);
+const messageInput = ref(null);
+const loadingMessages = ref(false);
+const showTypingIndicator = ref(false);
+const otherParticipantName = ref('User');
+
+// Group messages by date for better readability
+const messageGroups = computed(() => {
+    const groups = [];
+    let currentGroup = null;
+
+    messages.value.forEach(message => {
+        const messageDate = new Date(message.createdAt);
+        const dateKey = messageDate.toDateString();
+
+        if (!currentGroup || currentGroup.dateKey !== dateKey) {
+            currentGroup = {
+                dateKey,
+                date: formatMessageDate(messageDate),
+                messages: []
+            };
+            groups.push(currentGroup);
+        }
+
+        currentGroup.messages.push(message);
+    });
+
+    return groups;
+});
+
+const participantCount = computed(() => {
+    return props.conversation?.participants?.length || 2;
+});
 
 const loadMessages = async () => {
+    loadingMessages.value = true;
     const result = await execute(() =>
         apiService.get(`/messages/conversations/${props.conversationId}`)
     );
@@ -72,6 +194,7 @@ const loadMessages = async () => {
         await nextTick();
         scrollToBottom();
     }
+    loadingMessages.value = false;
 };
 
 const sendMessage = async () => {
@@ -79,6 +202,11 @@ const sendMessage = async () => {
 
     const messageContent = newMessage.value.trim();
     newMessage.value = '';
+
+    // Reset textarea height
+    if (messageInput.value) {
+        messageInput.value.style.height = 'auto';
+    }
 
     const result = await execute(() =>
         apiService.post('/messages', {
@@ -103,12 +231,74 @@ const getOtherParticipant = () => {
     );
 };
 
+const loadOtherParticipantName = async () => {
+    const participantId = getOtherParticipant();
+    if (!participantId) return;
+
+    try {
+        const response = await apiService.get(`/forum/users/profile/${participantId}`);
+        if (response.success) {
+            otherParticipantName.value = response.data.displayName || response.data.username || 'User';
+        }
+    } catch (error) {
+        console.error('Failed to load participant name:', error);
+    }
+};
+
+const handleKeyDown = (event) => {
+    // Send message on Enter (without Shift)
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+    }
+};
+
+const handleInput = () => {
+    // Auto-resize textarea
+    if (messageInput.value) {
+        messageInput.value.style.height = 'auto';
+        messageInput.value.style.height = Math.min(messageInput.value.scrollHeight, 128) + 'px';
+    }
+};
+
 const scrollToBottom = () => {
     if (messagesContainer.value) {
         messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
     }
 };
 
+const formatMessageTime = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
+const formatMessageDate = (date) => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+        return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+        return 'Yesterday';
+    } else {
+        return date.toLocaleDateString([], {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    }
+};
+
 // Watch for conversation changes
-watch(() => props.conversationId, loadMessages, { immediate: true });
+watch(() => props.conversationId, () => {
+    messages.value = [];
+    loadMessages();
+    loadOtherParticipantName();
+}, { immediate: true });
+
+onMounted(() => {
+    loadOtherParticipantName();
+});
 </script>

@@ -43,21 +43,42 @@ export function getCategoryLabel(category) {
 export function convertFirestoreTimestamp(timestamp) {
   if (!timestamp) return null;
 
-  // Check if it's a Firestore timestamp with _seconds
-  if (timestamp._seconds !== undefined) {
-    return new Date(
-      timestamp._seconds * 1000 + (timestamp._nanoseconds || 0) / 1000000
-    );
-  }
+  try {
+    // Check if it's a Firestore timestamp with _seconds
+    if (timestamp._seconds !== undefined) {
+      const seconds = timestamp._seconds;
+      const nanoseconds = timestamp._nanoseconds || 0;
 
-  // Check if it's already a Date object or valid date string
-  if (timestamp instanceof Date) return timestamp;
-  if (typeof timestamp === "string" || typeof timestamp === "number") {
-    const date = new Date(timestamp);
-    return isNaN(date.getTime()) ? null : date;
-  }
+      // Validate the timestamp values
+      if (!isFinite(seconds) || !isFinite(nanoseconds)) return null;
+      if (seconds < 0 || nanoseconds < 0) return null;
 
-  return null;
+      const date = new Date(seconds * 1000 + nanoseconds / 1000000);
+      return isNaN(date.getTime()) ? null : date;
+    }
+
+    // Check if it's already a Date object
+    if (timestamp instanceof Date) {
+      return isNaN(timestamp.getTime()) ? null : timestamp;
+    }
+
+    // Handle string or number timestamps
+    if (typeof timestamp === "string" || typeof timestamp === "number") {
+      const date = new Date(timestamp);
+      return isNaN(date.getTime()) ? null : date;
+    }
+
+    // Handle Firestore Timestamp objects (with toDate method)
+    if (timestamp.toDate && typeof timestamp.toDate === "function") {
+      const date = timestamp.toDate();
+      return isNaN(date.getTime()) ? null : date;
+    }
+
+    return null;
+  } catch (error) {
+    console.warn("Error converting Firestore timestamp:", error);
+    return null;
+  }
 }
 
 /**
@@ -71,7 +92,7 @@ export function formatDate(date, options = {}) {
 
   // Convert Firestore timestamp if needed
   const dateObj = convertFirestoreTimestamp(date);
-  if (!dateObj) return "";
+  if (!dateObj || isNaN(dateObj.getTime())) return "";
 
   const defaultOptions = {
     year: "numeric",
@@ -80,7 +101,61 @@ export function formatDate(date, options = {}) {
     ...options,
   };
 
-  return new Intl.DateTimeFormat("en-US", defaultOptions).format(dateObj);
+  try {
+    return new Intl.DateTimeFormat("en-US", defaultOptions).format(dateObj);
+  } catch (error) {
+    console.warn("Error formatting date:", error);
+    return "";
+  }
+}
+
+/**
+ * Format time ago in a human-readable format
+ * @param {Date|Object|string|number} timestamp - Date object, Firestore timestamp, or other date format
+ * @returns {string} Human-readable time ago string
+ */
+export function formatTimeAgo(timestamp) {
+  if (!timestamp) return "";
+
+  try {
+    // Convert Firestore timestamp if needed
+    const messageTime = convertFirestoreTimestamp(timestamp);
+    if (!messageTime || isNaN(messageTime.getTime())) {
+      return "";
+    }
+
+    const now = new Date();
+    const diffMs = now - messageTime;
+
+    // Handle edge cases: future dates or invalid calculations
+    if (diffMs < 0) return "now"; // Future dates
+    if (!isFinite(diffMs)) return ""; // Invalid calculation
+
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    // Additional validation for calculated values
+    if (!isFinite(diffMins) || !isFinite(diffHours) || !isFinite(diffDays)) {
+      return "";
+    }
+
+    if (diffMins < 1) return "now";
+    if (diffMins < 60) return `${diffMins}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    if (diffDays < 7) return `${diffDays}d`;
+
+    // Safe fallback for older dates
+    try {
+      return formatDate(messageTime, { month: "short", day: "numeric" });
+    } catch (error) {
+      console.warn("Error formatting date in formatTimeAgo:", error);
+      return "";
+    }
+  } catch (error) {
+    console.warn("Error in formatTimeAgo:", error);
+    return "";
+  }
 }
 
 // =============================================================================

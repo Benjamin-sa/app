@@ -21,6 +21,7 @@ const routes = [
     component: HomeView,
     meta: {
       title: "Motordash - Motorcycle Community",
+      guest: true, // Allows access without authentication
     },
   },
   {
@@ -29,6 +30,7 @@ const routes = [
     component: ForumView,
     meta: {
       title: "Forum - Motordash",
+      guest: true,
     },
   },
   {
@@ -96,6 +98,7 @@ const routes = [
     component: BikeGalleryView,
     meta: {
       title: "Bike Gallery",
+      guest: true,
     },
   },
   {
@@ -104,6 +107,7 @@ const routes = [
     component: BikeDetailView,
     meta: {
       title: "Bike Details - Motordash",
+      guest: true,
     },
   },
   {
@@ -112,6 +116,7 @@ const routes = [
     component: MessagesView,
     meta: {
       title: "Messages - Motordash",
+      guest: true,
     },
   },
 
@@ -151,21 +156,6 @@ router.beforeEach(async (to, from, next) => {
   // Set page title
   if (to.meta.title) {
     document.title = to.meta.title;
-  }
-
-  // Check if route requires authentication
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next({
-      name: "Login",
-      query: { redirect: to.fullPath },
-    });
-    return;
-  }
-
-  // Redirect authenticated users away from guest-only pages
-  if (to.meta.guest && authStore.isAuthenticated) {
-    next({ name: "Home" });
-    return;
   }
 
   next();

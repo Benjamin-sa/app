@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const { authenticate } = require("../../../core/middleware/auth.middleware");
+const {
+  authenticate,
+  identify,
+} = require("../../../core/middleware/auth.middleware");
 const {
   uploadMultiple,
   handleUploadError,
@@ -28,13 +31,13 @@ router.post(
  * GET /api/forum/topics
  * Get topics with pagination and filtering
  */
-router.get("/", authenticate, topicController.getTopics);
+router.get("/", identify, topicController.getTopics);
 
 /**
  * GET /api/forum/topics/:id
  * Get single topic by ID
  */
-router.get("/:id", topicController.getTopicById);
+router.get("/:id", identify, topicController.getTopicById);
 
 /**
  * PATCH /api/forum/topics/:id

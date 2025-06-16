@@ -127,7 +127,8 @@
 
                                         <!-- Message Button (if viewing another user's profile) -->
                                         <StartMessageButton v-else-if="userProfile?.allow_messages"
-                                            :user-id="userProfile.uid" :user-name="userProfile.display_name" />
+                                            :user-id="userProfile.uid || userProfile.id"
+                                            :user-name="userProfile.displayName || userProfile.username || 'User'" />
                                     </div>
                                     <ActionButton v-if="userProfile.website" @click="visitWebsite" variant="outline"
                                         size="md">
@@ -273,13 +274,22 @@ const isOwnProfile = computed(() => {
     return routeId === currentUserId
 })
 
-// In the ProfileView.vue template, update the sendMessage function:
+// Handle sending message - context-aware navigation
 const sendMessage = () => {
-    // Navigate to messages with pre-selected user
-    router.push({
-        path: '/messages',
-        query: { startConversation: userProfile.value.uid }
-    });
+    // If we're already in the messages view, just start the conversation
+    if (route.path.startsWith('/messages')) {
+        // Emit event to parent or use a different approach for in-context messaging
+        router.push({
+            path: '/messages',
+            query: { startConversation: userProfile.value.uid }
+        });
+    } else {
+        // Navigate to messages with pre-selected user
+        router.push({
+            path: '/messages',
+            query: { startConversation: userProfile.value.uid }
+        });
+    }
 };
 
 // Computed property to get the target user ID

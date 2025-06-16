@@ -86,7 +86,7 @@
                     </label>
                 </div>
 
-                <ErrorSection :error="error" @retry="fetchBike" />
+                <ErrorSection v-if="error" :error="error" />
 
                 <div>
                     <ActionButton type="submit" size="lg" class="w-full" :loading="loading" :disabled="!isFormValid">

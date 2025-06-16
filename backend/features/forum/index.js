@@ -13,7 +13,8 @@ router.use("/answers", answerRoutes);
 
 // Add search route (mounted directly since it's a special case)
 const topicController = require("../forum/topics/topic.controller");
-router.get("/search", topicController.searchTopics);
+const { identify } = require("../../core/middleware/auth.middleware");
+router.get("/search", identify, topicController.searchTopics);
 
 // ==================== ERROR HANDLING ====================
 

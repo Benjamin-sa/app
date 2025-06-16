@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const { authenticate } = require("../../../core/middleware/auth.middleware");
+const {
+  authenticate,
+  identify,
+} = require("../../../core/middleware/auth.middleware");
 const {
   uploadMultiple,
   handleUploadError,
@@ -47,6 +50,6 @@ router.delete("/:id", authenticate, answerController.deleteAnswer);
  * GET /api/forum/answers/:topicId
  * Get answers for a specific topic
  */
-router.get("/:topicId", answerController.getAnswersByTopic);
+router.get("/:topicId", identify, answerController.getAnswersByTopic);
 
 module.exports = router;

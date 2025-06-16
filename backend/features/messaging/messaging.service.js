@@ -68,11 +68,9 @@ class MessagingService {
         "send message"
       );
 
-      console.log("Sending message from", senderId, "to", receiverId);
-
       // Check if receiver allows messages
       const receiver = await this.queries.getUserById(receiverId);
-      console.log("Receiver:", receiver);
+
       if (!receiver.allow_messages) {
         throw new Error("MESSAGE_SERVICE_ERROR: User does not accept messages");
       }
