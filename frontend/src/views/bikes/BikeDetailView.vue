@@ -94,10 +94,6 @@
                                     <span>{{ bike.view_count || 0 }} views</span>
                                 </div>
                                 <div class="flex items-center space-x-1">
-                                    <HeartIcon class="w-4 h-4" />
-                                    <span>{{ bike.like_count || 0 }} likes</span>
-                                </div>
-                                <div class="flex items-center space-x-1">
                                     <CalendarIcon class="w-4 h-4" />
                                     <span>{{ formatDate(bike.createdAt) }}</span>
                                 </div>
@@ -178,16 +174,6 @@
 
                     <!-- Action Buttons -->
                     <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
-                        <ActionButton @click="handleLikeBike" :class="[
-                            'flex items-center justify-center space-x-2 flex-1',
-                            bike.liked_by_user
-                                ? 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/30 dark:text-red-400 dark:border-red-800'
-                                : ''
-                        ]" :variant="bike.liked_by_user ? 'secondary' : 'primary'">
-                            <HeartIcon :class="['w-5 h-5', bike.liked_by_user ? 'fill-current' : '']" />
-                            <span>{{ bike.liked_by_user ? 'Unlike' : 'Like' }} ({{ bike.like_count || 0 }})</span>
-                        </ActionButton>
-
                         <ActionButton @click="shareLink" variant="secondary"
                             class="flex items-center justify-center space-x-2 flex-1">
                             <ShareIcon class="w-5 h-5" />
@@ -251,6 +237,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notification'
+import { useApi } from '@/composables/useApi'
 import { apiService } from '@/services/api.service'
 import ActionButton from '@/components/common/buttons/ActionButton.vue'
 import ErrorSection from '@/components/common/sections/ErrorSection.vue'
@@ -265,7 +252,6 @@ import {
     CameraIcon,
     PhotoIcon,
     EyeIcon,
-    HeartIcon,
     CalendarIcon,
     CogIcon,
     ShareIcon,
@@ -279,9 +265,10 @@ const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
 const navbarStore = useNavbarStore()
 
+// Use the API composable
+const { loading, error, execute } = useApi()
+
 const bike = ref(null)
-const loading = ref(false)
-const error = ref(null)
 
 // Image handling state
 const showImageViewer = ref(false)
@@ -334,50 +321,31 @@ const handleImageChange = (newIndex) => {
 }
 
 const fetchBike = async () => {
-    try {
-        loading.value = true
-        error.value = null
+    const result = await execute(
+        () => apiService.get(`/bikes/${route.params.id}`),
+        {
+            showErrorNotification: true,
+            errorMessage: 'Failed to load bike details. Please try again.'
+        }
+    );
 
-        const response = await apiService.get(`/bikes/${route.params.id}`)
-        const responseData = response.data || response
+    if (result) {
+        const responseData = result.data || result;
 
         if (responseData.bike) {
-            bike.value = responseData.bike
+            bike.value = responseData.bike;
             // Initialize selected image after bike data is loaded
-            initializeSelectedImage()
+            initializeSelectedImage();
             // Set page title
-            document.title = `${bike.value.name} - Bike Gallery - Motordash`
+            document.title = `${bike.value.name} - Bike Gallery - Motordash`;
+        } else if (responseData.name) {
+            // Direct bike object response
+            bike.value = responseData;
+            initializeSelectedImage();
+            document.title = `${bike.value.name} - Bike Gallery - Motordash`;
         } else {
-            error.value = 'Bike not found'
+            notificationStore.error('Bike not found', 'The requested bike could not be found.');
         }
-    } catch (err) {
-        console.error('Error fetching bike:', err)
-        error.value = err.response?.data?.message || 'Failed to load bike details'
-    } finally {
-        loading.value = false
-    }
-}
-
-const handleLikeBike = async () => {
-    if (!authStore.user) {
-        notificationStore.error('Login Required', 'Please login to like bikes')
-        return
-    }
-
-    try {
-        await apiService.post(`/bikes/${bike.value.id}/like`)
-
-        // Update local bike data
-        bike.value.liked_by_user = !bike.value.liked_by_user
-        bike.value.like_count += bike.value.liked_by_user ? 1 : -1
-
-        notificationStore.success(
-            bike.value.liked_by_user ? 'Bike liked!' : 'Like removed',
-            bike.value.liked_by_user ? 'Added to your favorites' : 'Removed from favorites'
-        )
-    } catch (err) {
-        console.error('Error liking bike:', err)
-        notificationStore.error('Error', 'Failed to like bike')
     }
 }
 

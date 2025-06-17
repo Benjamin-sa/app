@@ -25,8 +25,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/vue/24/outline';
 import { useAuthStore } from '@/stores/auth';
-import { useApi } from '@/composables/useApi';
-import { apiService } from '@/services/api.service';
+import { useVotingStore } from '@/stores/voting';
 import { useNotificationStore } from '@/stores/notification';
 
 const props = defineProps({
@@ -56,14 +55,16 @@ const props = defineProps({
 });
 
 const authStore = useAuthStore();
-const { loading, execute } = useApi();
+const votingStore = useVotingStore();
 const notificationStore = useNotificationStore();
 
-const currentVoteCount = ref(0);
-const currentUserVote = ref(null);
-const dataLoaded = ref(false);
 
-// Computed classes for different variants and sizes
+
+// Computed properties from voting store
+const voteData = computed(() => votingStore.getVoteData(props.targetId, props.targetType));
+const currentVoteCount = computed(() => votingStore.getNetVotes(props.targetId, props.targetType));
+const currentUserVote = computed(() => votingStore.getUserVote(props.targetId, props.targetType));
+const loading = computed(() => votingStore.isLoading(props.targetId, props.targetType));
 const containerClasses = computed(() => {
     const base = 'inline-flex items-center rounded-lg border transition-all duration-200';
 
@@ -153,19 +154,12 @@ const formatVoteCount = (count) => {
 };
 
 const loadVoteData = async () => {
-    if (!props.targetId || dataLoaded.value) return;
+    if (!props.targetId) return;
 
-    const result = await execute(
-        () => apiService.get(`/votes/${props.targetId}/${props.targetType}`),
-        {
-            showErrorNotification: false
-        }
-    );
-
-    if (result) {
-        currentVoteCount.value = result.score || 0;
-        currentUserVote.value = result.userVote || null;
-        dataLoaded.value = true;
+    try {
+        await votingStore.loadVotes(props.targetId, props.targetType);
+    } catch (error) {
+        console.error('Error loading vote data:', error);
     }
 };
 
@@ -177,50 +171,39 @@ const handleVote = async (voteType) => {
         return;
     }
 
-    const newVoteType = currentUserVote.value === voteType ? null : voteType;
     const previousVote = currentUserVote.value;
     const targetName = props.targetType === 'topic' ? 'topic' :
         props.targetType === 'bike' ? 'bike' :
             props.targetType === 'profile' ? 'profile' :
                 props.targetType === 'comment' ? 'comment' : 'answer';
 
-    const result = await execute(
-        () => apiService.post("/votes", {
-            targetId: props.targetId.trim(),
-            targetType: props.targetType,
-            voteType: newVoteType,
-        }),
-        {
-            errorMessage: `Unable to record your vote on this ${targetName}. Please try again.`
-        }
-    );
+    try {
+        const result = await votingStore.toggleVote(props.targetId, props.targetType, voteType);
 
-    if (result) {
-        currentVoteCount.value = result.newVoteCount;
-        currentUserVote.value = result.userVote;
+        if (result) {
+            const newVote = currentUserVote.value;
 
-        if (newVoteType === null) {
-            notificationStore.success(`Vote removed from ${targetName}.`);
-        } else if (previousVote) {
-            notificationStore.success(`Changed to ${newVoteType}vote on ${targetName}.`);
-        } else {
-            notificationStore.success(`${newVoteType === 'up' ? 'Upvoted' : 'Downvoted'} ${targetName}.`);
+            if (newVote === null) {
+                notificationStore.success(`Vote removed from ${targetName}.`);
+            } else if (previousVote && previousVote !== newVote) {
+                notificationStore.success(`Changed to ${newVote}vote on ${targetName}.`);
+            } else if (!previousVote) {
+                notificationStore.success(`${newVote === 'up' ? 'Upvoted' : 'Downvoted'} ${targetName}.`);
+            }
         }
+    } catch (error) {
+        console.error('Error handling vote:', error);
+        notificationStore.error(`Unable to record your vote on this ${targetName}. Please try again.`);
     }
 };
 
 watch(() => authStore.isAuthenticated, (isAuth) => {
     if (isAuth && !currentUserVote.value) {
         loadVoteData();
-    } else if (!isAuth) {
-        currentUserVote.value = null;
     }
 });
 
 watch(() => props.targetId, () => {
-    dataLoaded.value = false;
-    currentVoteCount.value = 0;
-    currentUserVote.value = null;
     loadVoteData();
 });
 

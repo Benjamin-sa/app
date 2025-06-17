@@ -1,30 +1,35 @@
 <template>
     <div class="flex items-center space-x-2">
         <!-- Loading state -->
-        <LoadingSection v-if="loading" message="Loading author..." />
+        <template v-if="loading">
+            <div :class="avatarFallbackClass">
+                <div class="animate-spin rounded-full border-2 border-white border-t-transparent w-4 h-4"></div>
+            </div>
+            <span v-if="showName" :class="nameClass">Loading...</span>
+        </template>
 
         <!-- Author display -->
-        <template v-else-if="author">
+        <template v-else-if="displayData">
             <div class="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity duration-200"
                 @click="navigateToProfile">
-                <img v-if="author.avatar" :src="author.avatar" :alt="author.displayName || author.username"
+                <img v-if="displayData.avatar" :src="displayData.avatar" :alt="displayData.displayName"
                     :class="avatarClass">
                 <div v-else :class="avatarFallbackClass">
-                    {{ (author.displayName || author.username)?.charAt(0).toUpperCase() }}
+                    {{ displayData.displayName?.charAt(0).toUpperCase() }}
                 </div>
-                <span :class="nameClass">
-                    {{ author.displayName || author.username }}
+                <span v-if="showName" :class="nameClass">
+                    {{ displayData.displayName }}
                 </span>
             </div>
         </template>
 
         <!-- Fallback for missing author -->
-        <template v-else>
+        <template v-else-if="showFallback">
             <div class="flex items-center space-x-2">
                 <div :class="avatarFallbackClass">
                     ?
                 </div>
-                <span :class="nameClass">
+                <span v-if="showName" :class="nameClass">
                     Unknown User
                 </span>
             </div>
@@ -33,11 +38,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { apiService } from '@/services/api.service';
-import LoadingSection from './sections/LoadingSection.vue';
+import { useUsersStore } from '@/stores/users';
 
 const props = defineProps({
     userId: {
@@ -49,6 +53,10 @@ const props = defineProps({
         default: 'sm', // sm, md, lg
         validator: (value) => ['sm', 'md', 'lg'].includes(value)
     },
+    showName: {
+        type: Boolean,
+        default: true
+    },
     showFallback: {
         type: Boolean,
         default: true
@@ -57,12 +65,39 @@ const props = defineProps({
 
 const router = useRouter();
 const authStore = useAuthStore();
-const author = ref(null);
-const loading = ref(false);
+const usersStore = useUsersStore();
 
-// Simple in-memory cache for user data to avoid repeated API calls
-const userCache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+// Computed properties for display data
+const isCurrentUser = computed(() => {
+    return props.userId === authStore.user?.uid;
+});
+
+const loading = computed(() => {
+    return !isCurrentUser.value && usersStore.isUserLoading(props.userId);
+});
+
+const displayData = computed(() => {
+    if (!props.userId) return null;
+
+    // If this is the current user, use auth store data
+    if (isCurrentUser.value && authStore.user) {
+        return {
+            displayName: authStore.userDisplayName,
+            avatar: authStore.userAvatar
+        };
+    }
+
+    // For other users, get from users store
+    const userData = usersStore.getUserFromCache(props.userId);
+    if (userData) {
+        return {
+            displayName: usersStore.getUserDisplayName(props.userId),
+            avatar: usersStore.getUserAvatar(props.userId)
+        };
+    }
+
+    return null;
+});
 
 // Computed classes based on size prop
 const avatarClass = computed(() => {
@@ -95,10 +130,6 @@ const nameClass = computed(() => {
     return `${baseClasses} ${sizeClasses[props.size]}`;
 });
 
-const isCurrentUser = computed(() => {
-    return props.userId === authStore.user?.uid;
-});
-
 const navigateToProfile = () => {
     if (!props.userId) return;
 
@@ -112,58 +143,30 @@ const navigateToProfile = () => {
     }
 };
 
-const fetchAuthor = async () => {
-    if (!props.userId) {
-        author.value = null;
-        return;
-    }
+const fetchUserData = async () => {
+    if (!props.userId) return;
 
-    // If this is the current user, use AuthStore data
-    if (isCurrentUser.value && authStore.user) {
-        author.value = authStore.user;
-        return;
-    }
+    // Skip if this is the current user (handled by auth store)
+    if (isCurrentUser.value) return;
 
-    // Check cache first
-    const cached = userCache.get(props.userId);
-    if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
-        author.value = cached.data;
-        return;
-    }
-
-    try {
-        loading.value = true;
-        const response = await apiService.get(`/forum/users/profile/${props.userId}`);
-        const userData = response.data;
-
-        // Cache the result
-        userCache.set(props.userId, {
-            data: userData,
-            timestamp: Date.now()
-        });
-
-        author.value = userData;
-    } catch (error) {
-        console.error('Error fetching author:', error);
-        author.value = null;
-    } finally {
-        loading.value = false;
-    }
+    // Fetch user data through the users store
+    await usersStore.getUser(props.userId);
 };
 
 // Watch for userId changes
 watch(() => props.userId, () => {
-    fetchAuthor();
-});
+    fetchUserData();
+}, { immediate: true });
 
 // Watch for current user changes to update display
-watch(() => authStore.user, (newUser) => {
-    if (isCurrentUser.value && newUser) {
-        author.value = newUser;
+watch(() => authStore.user, () => {
+    if (isCurrentUser.value) {
+        // Current user data updated, no need to fetch
+        return;
     }
 }, { deep: true });
 
 onMounted(() => {
-    fetchAuthor();
+    fetchUserData();
 });
 </script>

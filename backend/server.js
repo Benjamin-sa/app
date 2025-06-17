@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const path = require("path");
 
 // Load environment variables
 dotenv.config();
@@ -18,7 +19,8 @@ const corsOptions = {
     "http://127.0.0.1:5173",
     "http://192.168.0.225:5173",
     "http://192.168.0.225:3000",
-  ],
+    process.env.FRONTEND_URL || "https://your-app-name.herokuapp.com",
+  ].filter(Boolean),
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
@@ -29,6 +31,9 @@ app.use(cors(corsOptions));
 
 // Parse JSON bodies
 app.use(express.json());
+
+// Serve static files from the frontend build (for production)
+app.use(express.static(path.join(__dirname, "public")));
 
 // API health check
 app.get("/api/health", (req, res) => {
@@ -54,28 +59,29 @@ app.use("/api/bikes", require("./features/bikes/bike.routes"));
 app.use("/api/votes", require("./features/votes/vote.routes"));
 app.use("/api/messages", require("./features/messaging/messaging.routes"));
 
-// Default route
-app.get("/", (req, res) => {
-  res.json({
-    message: "Welcome to Motordash API",
-    documentation: "/api/health",
-    testInterface: "/test-ui",
-  });
+// Serve frontend for all non-API routes (SPA routing support)
+app.get("*", (req, res) => {
+  // Don't serve the SPA for API routes
+  if (req.path.startsWith("/api/")) {
+    return res.status(404).json({
+      error: "API endpoint not found",
+      availableEndpoints: [
+        "/api/health",
+        "/api/auth",
+        "/api/products",
+        "/api/forum",
+        "/api/bikes",
+        "/api/votes",
+        "/api/messages",
+      ],
+    });
+  }
+
+  // Serve the frontend app for all other routes
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// 404 handler
-app.use("*", (req, res) => {
-  res.status(404).json({
-    error: "Endpoint not found",
-    availableEndpoints: [
-      "/api/health",
-      "/api/products",
-      "/api/forum",
-      "/api/bikes",
-      "/test-ui",
-    ],
-  });
-});
+// 404 handler for API routes is handled above
 
 // Start server
 app.listen(PORT, "0.0.0.0", () => {

@@ -3,8 +3,13 @@ import authService from "@/services/auth.service";
 
 // Automatisch detecteren van de juiste API URL
 const getApiBaseUrl = () => {
-  const hostname = window.location.hostname;
+  // In production (Heroku), gebruik same origin
+  if (import.meta.env.PROD) {
+    return "/api";
+  }
 
+  // Development mode
+  const hostname = window.location.hostname;
   console.log("Current hostname:", hostname); // Debug log
 
   if (hostname === "localhost" || hostname === "127.0.0.1") {
@@ -15,7 +20,7 @@ const getApiBaseUrl = () => {
   }
 };
 
-// Gebruik altijd de dynamische detectie, negeer de .env waarde
+// Gebruik altijd de dynamische detectie
 const API_BASE_URL = getApiBaseUrl();
 console.log("Final API_BASE_URL:", API_BASE_URL); // Debug log
 

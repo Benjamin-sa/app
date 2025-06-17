@@ -85,8 +85,8 @@
 
         <!-- Edit Answer Modal -->
         <Modal v-model="showEditModal" title="Edit Answer" size="xl">
-            <AnswerForm v-if="editingAnswer" :answer="editingAnswer" @success="handleEditSuccess"
-                @cancel="cancelEdit" />
+            <AnswerForm v-if="editingAnswer" :topic-id="props.topicId" :answer="editingAnswer"
+                @success="handleEditSuccess" @cancel="cancelEdit" />
         </Modal>
 
         <!-- Delete Confirmation Modal -->
@@ -110,10 +110,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useAuthStore } from '@/stores/auth';
+import { useForumStore } from '@/stores/forum';
 import { useNotificationStore } from '@/stores/notification';
-import { apiService } from '@/services/api.service';
 import { formatDate, formatContent } from '@/utils/helpers';
 import LoadingSection from '@/components/common/sections/LoadingSection.vue';
 import VoteButton from '@/components/forum/VoteButton.vue';
@@ -142,46 +142,39 @@ const props = defineProps({
 const emit = defineEmits(['answer-count-changed']);
 
 const authStore = useAuthStore();
+const forumStore = useForumStore();
 const notificationStore = useNotificationStore();
 
-const answers = ref([]);
-const loading = ref(false);
+// Local state
 const deleting = ref(false);
 const showDeleteConfirm = ref(false);
 const answerToDelete = ref(null);
 const showEditModal = ref(false);
 const editingAnswer = ref(null);
 
+// Computed properties from store
+const answers = computed(() => {
+    const topicAnswers = forumStore.getTopicAnswers(props.topicId);
+    return topicAnswers.map(answer => ({
+        ...answer,
+        isBestAnswer: answer.isAccepted, // Map isAccepted to isBestAnswer
+        editedAt: answer.updatedAt && answer.createdAt &&
+            answer.updatedAt._seconds !== answer.createdAt._seconds ?
+            answer.updatedAt : null
+    }));
+});
+
+const loading = computed(() => forumStore.isLoadingTopicAnswers(props.topicId));
+
 const loadAnswers = async () => {
     if (!props.topicId) return;
 
     try {
-        loading.value = true;
-        const response = await apiService.get(`/forum/answers/${props.topicId}`);
-
-        // Extract answers from nested response structure
-        const answersData = response.data?.answers || [];
-
-
-        // Map API fields to component expectations
-        answers.value = answersData.map(answer => {
-            const mappedAnswer = {
-                ...answer,
-                isBestAnswer: answer.isAccepted, // Map isAccepted to isBestAnswer
-                editedAt: answer.updatedAt && answer.createdAt &&
-                    answer.updatedAt._seconds !== answer.createdAt._seconds ?
-                    answer.updatedAt : null
-            };
-            return mappedAnswer;
-        });
-
+        await forumStore.loadAnswers(props.topicId);
         emit('answer-count-changed', answers.value.length);
     } catch (error) {
         console.error('Error loading answers:', error);
-        answers.value = [];
         emit('answer-count-changed', 0);
-    } finally {
-        loading.value = false;
     }
 };
 
@@ -209,17 +202,12 @@ const cancelEdit = () => {
     showEditModal.value = false;
 };
 
-const handleEditSuccess = (updatedAnswer) => {
-    const answerIndex = answers.value.findIndex(a => a.id === updatedAnswer.id);
-    if (answerIndex !== -1) {
-        answers.value[answerIndex] = {
-            ...answers.value[answerIndex],
-            ...updatedAnswer,
-            editedAt: new Date()
-        };
-    }
+const handleEditSuccess = async (updatedAnswer) => {
     cancelEdit();
     notificationStore.success('Answer updated', 'Your answer has been successfully updated.');
+
+    // The store should have updated automatically, but emit the count just in case
+    emit('answer-count-changed', answers.value.length);
 };
 
 const deleteAnswer = (answerId) => {
@@ -232,15 +220,17 @@ const confirmDelete = async () => {
 
     try {
         deleting.value = true;
-        await apiService.delete(`/forum/answers/${answerToDelete.value}`);
+        const success = await forumStore.deleteAnswer(answerToDelete.value, props.topicId);
 
-        answers.value = answers.value.filter(a => a.id !== answerToDelete.value);
-        emit('answer-count-changed', answers.value.length);
-
-        notificationStore.success('Answer deleted', 'The answer has been removed.');
+        if (success) {
+            emit('answer-count-changed', answers.value.length);
+            notificationStore.success('Answer deleted', 'The answer has been removed.');
+        } else {
+            notificationStore.error('Delete failed', 'Unable to delete the answer. Please try again.');
+        }
     } catch (error) {
         console.error('Error deleting answer:', error);
-        notificationStore.error('Delete failed', 'Unable to delete the answer. Please try again.', { duration: 5000 });
+        notificationStore.error('Delete failed', 'Unable to delete the answer. Please try again.');
     } finally {
         deleting.value = false;
         showDeleteConfirm.value = false;

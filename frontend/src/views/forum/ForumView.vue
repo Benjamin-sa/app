@@ -130,12 +130,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import { useApi } from '@/composables/useApi';
+import { useForumStore } from '@/stores/forum';
 import { debounce, getCategoryLabel } from '@/utils/helpers';
 import { FORUM_CATEGORIES } from '@/utils/constants.repository.js'
-import { apiService } from '@/services/api.service';
 import ActionButton from '@/components/common/buttons/ActionButton.vue';
 import LoadingSection from '@/components/common/sections/LoadingSection.vue';
 import TopicCard from '@/components/forum/TopicCard.vue';
@@ -150,12 +149,9 @@ import { useNavbarStore } from '@/stores/navbar';
 
 const authStore = useAuthStore();
 const navbarStore = useNavbarStore();
-
-// Use the composable
-const { loading, error, execute } = useApi();
+const forumStore = useForumStore();
 
 // Local state for this view
-const topics = ref([]);
 const searchQuery = ref('');
 const selectedCategory = ref('');
 const sortBy = ref('createdAt');
@@ -163,32 +159,46 @@ const currentPage = ref(1);
 const hasMore = ref(false);
 const showCreateTopic = ref(false);
 
+// Computed properties from store
+const topics = computed(() => {
+    if (searchQuery.value) {
+        return forumStore.searchResults;
+    }
+    return forumStore.getTopicsList;
+});
+
+const loading = computed(() => {
+    return forumStore.loadingTopics || forumStore.loadingSearch;
+});
+
+const error = computed(() => forumStore.error);
+
 const debouncedSearch = debounce(() => {
     currentPage.value = 1;
     loadTopics();
 }, 300);
 
 const loadTopics = async () => {
-    const result = await execute(
-        () => apiService.getTopics(
-            currentPage.value,
-            20,
-            searchQuery.value,
-            selectedCategory.value
-        ),
-        {
-            showErrorNotification: true,
-            notificationStore: { error: () => { } }, // Add notification store if available
-            errorTitle: 'Failed to load topics'
+    try {
+        if (searchQuery.value.trim()) {
+            // Search topics
+            await forumStore.searchTopics(searchQuery.value, {
+                category: selectedCategory.value,
+                limit: 20
+            });
+            hasMore.value = false; // Search doesn't support pagination yet
+        } else {
+            // Load regular topics
+            const result = await forumStore.loadTopics({
+                page: currentPage.value,
+                limit: 20,
+                category: selectedCategory.value,
+                sortBy: sortBy.value
+            });
+            hasMore.value = result.hasMore;
         }
-    );
-
-    if (result) {
-        topics.value = result.topics || [];
-        hasMore.value = result.hasMore || false;
-    } else {
-        topics.value = [];
-        hasMore.value = false;
+    } catch (error) {
+        console.error('Error loading topics:', error);
     }
 };
 

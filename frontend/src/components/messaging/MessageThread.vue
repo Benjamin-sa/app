@@ -120,9 +120,9 @@
 <script setup>
 import { ref, nextTick, watch, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import { useApi } from '@/composables/useApi';
-import { apiService } from '@/services/api.service';
-import { formatDate, formatContent, formatTimeAgo } from '@/utils/helpers';
+import { useMessagingStore } from '@/stores/messaging';
+import { useUsersStore } from '@/stores/users';
+import { formatDate, formatContent, formatTimeAgo, convertFirestoreTimestamp } from '@/utils/helpers';
 import AuthorDisplay from '@/components/common/AuthorDisplay.vue';
 import {
     ChatBubbleLeftIcon,
@@ -145,15 +145,31 @@ const props = defineProps({
 const emit = defineEmits(['message-sent']);
 
 const authStore = useAuthStore();
-const { loading, execute } = useApi();
+const messagingStore = useMessagingStore();
+const usersStore = useUsersStore();
 
-const messages = ref([]);
 const newMessage = ref('');
 const messagesContainer = ref(null);
 const messageInput = ref(null);
-const loadingMessages = ref(false);
 const showTypingIndicator = ref(false);
-const otherParticipantName = ref('User');
+
+// Get conversation and messages from store
+const conversation = computed(() => messagingStore.getConversation(props.conversationId));
+const messages = computed(() => messagingStore.getMessages(props.conversationId));
+const loadingMessages = computed(() => messagingStore.isLoadingMessages(props.conversationId));
+
+// Get other participant info
+const otherParticipantId = computed(() => {
+    if (!conversation.value?.participants) return null;
+    return conversation.value.participants.find(
+        participantId => participantId !== authStore.user?.uid
+    );
+});
+
+const otherParticipantName = computed(() => {
+    if (!otherParticipantId.value) return 'User';
+    return usersStore.getUserDisplayName(otherParticipantId.value);
+});
 
 // Group messages by date for better readability
 const messageGroups = computed(() => {
@@ -161,7 +177,9 @@ const messageGroups = computed(() => {
     let currentGroup = null;
 
     messages.value.forEach(message => {
-        const messageDate = new Date(message.createdAt);
+        const messageDate = convertFirestoreTimestamp(message.createdAt);
+        if (!messageDate) return; // Skip invalid timestamps
+
         const dateKey = messageDate.toDateString();
 
         if (!currentGroup || currentGroup.dateKey !== dateKey) {
@@ -183,18 +201,13 @@ const participantCount = computed(() => {
     return props.conversation?.participants?.length || 2;
 });
 
+// Load messages when conversation changes
 const loadMessages = async () => {
-    loadingMessages.value = true;
-    const result = await execute(() =>
-        apiService.get(`/messages/conversations/${props.conversationId}`)
-    );
+    if (!props.conversationId) return;
 
-    if (result) {
-        messages.value = result.messages.reverse(); // Reverse to show oldest first
-        await nextTick();
-        scrollToBottom();
-    }
-    loadingMessages.value = false;
+    await messagingStore.loadMessages(props.conversationId);
+    await nextTick();
+    scrollToBottom();
 };
 
 const sendMessage = async () => {
@@ -208,15 +221,9 @@ const sendMessage = async () => {
         messageInput.value.style.height = 'auto';
     }
 
-    const result = await execute(() =>
-        apiService.post('/messages', {
-            receiverId: getOtherParticipant(),
-            content: messageContent
-        })
-    );
+    const result = await messagingStore.sendMessage(getOtherParticipant(), messageContent);
 
     if (result) {
-        messages.value.push(result);
         emit('message-sent', result);
         await nextTick();
         scrollToBottom();
@@ -229,20 +236,6 @@ const getOtherParticipant = () => {
     return props.conversation.participants.find(
         participantId => participantId !== authStore.user?.uid
     );
-};
-
-const loadOtherParticipantName = async () => {
-    const participantId = getOtherParticipant();
-    if (!participantId) return;
-
-    try {
-        const response = await apiService.get(`/forum/users/profile/${participantId}`);
-        if (response.success) {
-            otherParticipantName.value = response.data.displayName || response.data.username || 'User';
-        }
-    } catch (error) {
-        console.error('Failed to load participant name:', error);
-    }
 };
 
 const handleKeyDown = (event) => {
@@ -268,7 +261,8 @@ const scrollToBottom = () => {
 };
 
 const formatMessageTime = (timestamp) => {
-    const date = new Date(timestamp);
+    const date = convertFirestoreTimestamp(timestamp);
+    if (!date) return '';
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
@@ -292,13 +286,21 @@ const formatMessageDate = (date) => {
 };
 
 // Watch for conversation changes
-watch(() => props.conversationId, () => {
-    messages.value = [];
-    loadMessages();
-    loadOtherParticipantName();
+watch(() => props.conversationId, async () => {
+    if (props.conversationId) {
+        await loadMessages();
+        // Load other participant data
+        const participantId = getOtherParticipant();
+        if (participantId) {
+            await usersStore.getUser(participantId);
+        }
+    }
 }, { immediate: true });
 
-onMounted(() => {
-    loadOtherParticipantName();
+onMounted(async () => {
+    const participantId = getOtherParticipant();
+    if (participantId) {
+        await usersStore.getUser(participantId);
+    }
 });
 </script>

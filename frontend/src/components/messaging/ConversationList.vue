@@ -70,10 +70,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
+import { useUsersStore } from '@/stores/users';
 import { formatTimeAgo } from '@/utils/helpers';
-import { apiService } from '@/services/api.service';
 import AuthorDisplay from '@/components/common/AuthorDisplay.vue';
 import { ChatBubbleLeftIcon } from '@heroicons/vue/24/outline';
 
@@ -91,7 +91,7 @@ const props = defineProps({
 const emit = defineEmits(['select-conversation']);
 
 const authStore = useAuthStore();
-const userCache = ref(new Map());
+const usersStore = useUsersStore();
 
 const getOtherParticipant = (conversation) => {
     return conversation.participants.find(p => p !== authStore.user?.uid);
@@ -99,43 +99,32 @@ const getOtherParticipant = (conversation) => {
 
 const getOtherParticipantName = (conversation) => {
     const participantId = getOtherParticipant(conversation);
-    const cachedUser = userCache.value.get(participantId);
+    if (!participantId) return 'Unknown User';
 
-    if (cachedUser) {
-        return cachedUser.displayName || cachedUser.username || 'Unknown User';
-    }
-
-    // Fetch user data if not cached
-    fetchUserData(participantId);
-    return 'Loading...';
-};
-
-const fetchUserData = async (userId) => {
-    if (!userId || userCache.value.has(userId)) return;
-
-    try {
-        const response = await apiService.get(`/forum/users/profile/${userId}`);
-        if (response.success) {
-            userCache.value.set(userId, response.data);
-        }
-    } catch (error) {
-        console.error('Failed to fetch user data:', error);
-        // Set a fallback so we don't keep trying
-        userCache.value.set(userId, { displayName: 'Unknown User' });
-    }
+    return usersStore.getUserDisplayName(participantId);
 };
 
 const getUnreadCount = (conversation) => {
     return conversation.unreadCount?.[authStore.user?.uid] || 0;
 };
 
-// Preload user data for all conversations
-onMounted(() => {
-    props.conversations.forEach(conversation => {
-        const participantId = getOtherParticipant(conversation);
-        if (participantId) {
-            fetchUserData(participantId);
-        }
-    });
+// Preload user data for all participants when conversations change
+const loadAllParticipants = () => {
+    const participantIds = props.conversations
+        .map(conversation => getOtherParticipant(conversation))
+        .filter(Boolean);
+
+    // Batch load all participants
+    if (participantIds.length > 0) {
+        usersStore.getUsers(participantIds);
+    }
+};
+
+// Watch for conversation changes and preload user data
+computed(() => {
+    if (props.conversations.length > 0) {
+        loadAllParticipants();
+    }
+    return props.conversations;
 });
 </script>

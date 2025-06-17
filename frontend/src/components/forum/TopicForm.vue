@@ -75,8 +75,8 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
+import { useForumStore } from '@/stores/forum';
 import { useApi } from '@/composables/useApi';
-import { apiService } from '@/services/api.service';
 import { getCategoryLabel } from '@/utils/helpers';
 import { FORUM_CATEGORIES } from '@/utils/constants.repository';
 import ActionButton from '@/components/common/buttons/ActionButton.vue';
@@ -94,10 +94,17 @@ const props = defineProps({
 
 const emit = defineEmits(['success', 'cancel']);
 
-const { loading, error, execute } = useApi();
+const forumStore = useForumStore();
+
+const { error, execute } = useApi();
 
 // Determine if we're in edit mode
 const isEditMode = computed(() => !!props.topic);
+
+// Loading state from store
+const loading = computed(() => {
+    return isEditMode.value ? false : forumStore.isCreatingTopic;
+});
 
 const form = ref({
     title: '',
@@ -222,58 +229,30 @@ const removeTag = (index) => {
 const handleSubmit = async () => {
     if (!isFormValid.value) return;
 
-    const result = await execute(async () => {
-        // Create FormData to handle both text data and files
-        const formData = new FormData();
+    try {
+        const topicData = {
+            title: form.value.title.trim(),
+            category: form.value.category,
+            content: form.value.content.trim(),
+            tags: form.value.tags
+        };
 
-        // Add text fields
-        formData.append('title', form.value.title.trim());
-        formData.append('category', form.value.category);
-        formData.append('content', form.value.content.trim());
-        formData.append('tags', JSON.stringify(form.value.tags));
-
+        let result;
         if (isEditMode.value) {
-            // Edit mode: handle existing images and removals
-            formData.append('existingImages', JSON.stringify(form.value.existingImages));
-
-            if (form.value.imagesToRemove.length > 0) {
-                formData.append('imagesToRemove', JSON.stringify(form.value.imagesToRemove));
-            }
-        }
-
-        // Add new image files
-        form.value.newImages.forEach((imageData) => {
-            formData.append('images', imageData.file);
-        });
-
-        // Make API call
-        if (isEditMode.value) {
-            return await apiService.patch(`/forum/topics/${props.topic.id}`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
+            result = await forumStore.updateTopic(props.topic.id, topicData);
         } else {
-            return await apiService.post('/forum/topics', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
+            result = await forumStore.createTopic(topicData);
         }
-    }, {
-        successMessage: isEditMode.value
-            ? 'Your changes have been saved successfully.'
-            : 'Your topic has been posted successfully.',
-        errorMessage: isEditMode.value
-            ? 'Failed to save changes. Please try again.'
-            : 'Failed to create topic. Please try again.'
-    });
 
-    if (result) {
-        if (!isEditMode.value) {
-            resetForm();
+        if (result) {
+            if (!isEditMode.value) {
+                resetForm();
+            }
+            emit('success', result);
         }
-        emit('success', result);
+    } catch (error) {
+        console.error('Error submitting topic:', error);
+        // Error handling is done in the store
     }
 };
 

@@ -137,7 +137,7 @@
                                     </div>
                                     <div>
                                         <span class="text-xs sm:text-sm">Last activity {{ formatDate(topic.lastActivity)
-                                        }}</span>
+                                            }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -244,9 +244,8 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { useForumStore } from '@/stores/forum';
 import { useNotificationStore } from '@/stores/notification';
-import { useApi } from '@/composables/useApi';
-import { apiService } from '@/services/api.service';
 import { formatDate, formatContent, formatNumber, getCategoryLabel } from '@/utils/helpers';
 import ActionButton from '@/components/common/buttons/ActionButton.vue';
 import BreadcrumbNav from '@/components/common/nav/BreadcrumbNav.vue';
@@ -276,20 +275,25 @@ import { useNavbarStore } from '@/stores/navbar';
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const forumStore = useForumStore();
 const notificationStore = useNotificationStore();
 const navbarStore = useNavbarStore();
 
-// Use the composable for different operations
-const { loading, execute } = useApi();
-const { loading: deleting, execute: executeDelete } = useApi();
-
-const topic = ref(null);
+// Local state
 const showAnswerModal = ref(false);
 const showEditTopic = ref(false);
 const showDeleteConfirm = ref(false);
 const showImageViewer = ref(false);
 const selectedImageIndex = ref(0);
-const answerCount = ref(0);
+const deleting = ref(false);
+
+// Computed properties from store
+const topic = computed(() => forumStore.getTopic(route.params.id));
+const loading = computed(() => forumStore.isLoadingTopic(route.params.id));
+const answerCount = computed(() => {
+    const answers = forumStore.getTopicAnswers(route.params.id);
+    return answers.length;
+});
 
 const canEditTopic = computed(() => {
     if (!authStore.user || !topic.value) return false;
@@ -316,51 +320,42 @@ const canDeleteTopic = computed(() => {
 });
 
 const loadTopic = async () => {
-    const result = await execute(
-        () => apiService.get(`/forum/topics/${route.params.id}`),
-        {
-            showErrorNotification: true,
-            notificationStore,
-            errorTitle: 'Failed to load topic'
-        }
-    );
-
-    if (result) {
-        topic.value = result;
-        answerCount.value = result.answerCount || 0;
-    } else {
-        topic.value = null;
+    try {
+        await forumStore.loadTopic(route.params.id);
+    } catch (error) {
+        console.error('Error loading topic:', error);
+        notificationStore.error('Failed to load topic', 'Please try refreshing the page.');
     }
 };
 
 const updateAnswerCount = (newCount) => {
-    answerCount.value = newCount;
+    // This is now handled automatically by the store
+    // when answers are loaded/added/removed
 };
 
 const handleAnswerSuccess = () => {
     showAnswerModal.value = false;
-    answerCount.value += 1;
+    // The store will automatically update the answer count
     notificationStore.success('Answer posted!', 'Your answer has been added successfully.');
 };
 
 const handleTopicDelete = async () => {
-    const result = await executeDelete(
-        () => apiService.delete(`/forum/topics/${topic.value.id}`),
-        {
-            successMessage: 'The topic has been removed.',
-            successTitle: 'Topic deleted',
-            showErrorNotification: true,
-            notificationStore,
-            errorTitle: 'Delete failed',
-            errorMessage: 'Unable to delete the topic. Please try again.'
+    deleting.value = true;
+    try {
+        const success = await forumStore.deleteTopic(topic.value.id);
+        if (success) {
+            notificationStore.success('Topic deleted', 'The topic has been removed.');
+            router.push('/forum');
+        } else {
+            notificationStore.error('Delete failed', 'Unable to delete the topic. Please try again.');
         }
-    );
-
-    if (result) {
-        router.push('/forum');
+    } catch (error) {
+        console.error('Error deleting topic:', error);
+        notificationStore.error('Delete failed', 'Unable to delete the topic. Please try again.');
+    } finally {
+        deleting.value = false;
+        showDeleteConfirm.value = false;
     }
-
-    showDeleteConfirm.value = false;
 };
 
 const handleEditTopic = () => {
@@ -373,10 +368,8 @@ const handleEditTopic = () => {
 
 const handleTopicEditSuccess = (updatedTopic) => {
     showEditTopic.value = false;
-    if (updatedTopic?.data) {
-        topic.value = { ...topic.value, ...updatedTopic.data };
-    }
-    loadTopic();
+    notificationStore.success('Topic updated', 'Your topic has been updated successfully.');
+    // The store will automatically have the updated topic
 };
 
 const openImageModal = (imageUrl) => {

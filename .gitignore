@@ -52,3 +52,6 @@ firebase-adminsdk-*.json
 firebase-config.js
 firebaseConfig.js
 backend/firebase-key.json
+
+# Build output voor Heroku
+backend/public/

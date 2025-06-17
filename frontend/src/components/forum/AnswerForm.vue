@@ -29,9 +29,8 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useApi } from '@/composables/useApi';
+import { useForumStore } from '@/stores/forum';
 import { useRichTextEditor } from '@/composables/useRichTextEditor';
-import { apiService } from '@/services/api.service';
 import ActionButton from '@/components/common/buttons/ActionButton.vue';
 import RichTextEditor from '@/components/common/forms/RichTextEditor.vue';
 import ErrorSection from '@/components/common/sections/ErrorSection.vue';
@@ -50,89 +49,74 @@ const props = defineProps({
 
 const emit = defineEmits(['success', 'cancel']);
 
-const isEditing = computed(() => !!props.answer);
-
-// Use the rich text editor composable
-const {
-    content,
-    getTextLength,
-    isValid: isContentValid,
-    clear: clearContent,
-    setContent
-} = useRichTextEditor({
-    maxLength: 2000,
-    minLength: 10,
-    placeholder: "Write your answer here. Be helpful and provide specific details."
-});
+const forumStore = useForumStore();
 
 const form = ref({
     content: '',
     images: []
 });
 
-// Use the composable
-const { loading, error, execute } = useApi();
+const error = ref(null);
+const submitting = ref(false);
+const isEditing = computed(() => !!props.answer);
+
+// Loading state from local state
+const loading = computed(() => {
+    return submitting.value;
+});
 
 const isFormValid = computed(() => {
     const contentLength = getTextLength(form.value.content);
     return contentLength >= 10 && contentLength <= 2000;
 });
 
+// Helper function to get text length from HTML content
+const getTextLength = (htmlContent) => {
+    if (!htmlContent) return 0;
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    return tempDiv.textContent?.length || 0;
+};
+
 const handleCancel = () => {
     emit('cancel');
 };
 
 const handleSubmit = async () => {
-    if (!isFormValid.value) return;
+    if (!isFormValid.value || submitting.value) return;
 
-    // Create FormData for multipart request
-    const formData = new FormData();
-    formData.append('content', form.value.content.trim());
+    try {
+        submitting.value = true;
+        error.value = null;
 
-    // Add new image files
-    const newImages = form.value.images.filter(img => img.isNew);
-    newImages.forEach((image) => {
-        formData.append(`images`, image.file);
-    });
+        const answerData = {
+            content: form.value.content.trim()
+        };
 
-    // Add existing image data (for editing)
-    const existingImages = form.value.images.filter(img => !img.isNew);
-    if (existingImages.length > 0) {
-        formData.append('existingImages', JSON.stringify(existingImages.map(img => ({
-            id: img.id,
-            url: img.url,
-            name: img.name
-        }))));
-    }
-
-    const apiCall = () => {
+        let result;
         if (isEditing.value) {
-            return apiService.patch(`/forum/answers/${props.answer.id}`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            result = await forumStore.updateAnswer(props.answer.id, answerData, props.topicId);
         } else {
             if (!props.topicId) {
                 throw new Error('Topic ID is required for creating answer');
             }
-            return apiService.post(`/forum/answers/${props.topicId}`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            result = await forumStore.createAnswer(props.topicId, answerData);
         }
-    };
 
-    const result = await execute(apiCall, {
-        successMessage: `Answer ${isEditing.value ? 'updated' : 'posted'} successfully!`,
-        errorMessage: `Failed to ${isEditing.value ? 'update' : 'post'} answer. Please try again.`
-    });
+        if (result) {
+            emit('success', result);
 
-    if (result) {
-        emit('success', result);
-
-        // Reset form if creating new answer
-        if (!isEditing.value) {
-            form.value.content = '';
-            form.value.images = [];
+            // Reset form if creating new answer
+            if (!isEditing.value) {
+                form.value.content = '';
+                form.value.images = [];
+            }
         }
+    } catch (err) {
+        console.error('Error submitting answer:', err);
+        error.value = `Failed to ${isEditing.value ? 'update' : 'post'} answer. Please try again.`;
+    } finally {
+        submitting.value = false;
     }
 };
 

@@ -52,7 +52,7 @@ export const useNotificationStore = defineStore("notification", () => {
       type: "error",
       title,
       message,
-      duration: 0, // Don't auto-dismiss errors
+      duration: 4000, // Don't auto-dismiss errors
       ...options,
     });
   };

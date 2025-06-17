@@ -1,8 +1,32 @@
 # Motordash - Motorcycle Community Platform
 
-Dit is een full-stack webapplicatie voor motorliefhebbers, met een communityforum, een productcatalogus en gebruikersprofielen. Het project is gebouwd met een moderne architectuur, waarbij een Vue 3 frontend wordt gescheiden van een robuuste Node.js backend.
+Een volledig functionele motorcycle community platform gebouwd met Vue.js (frontend) en Node.js/Express (backend), met Firebase voor authentication en database. **Nu volledig Heroku-ready!**
 
-## 🏗️ Architectuur
+## 🚀 Heroku Deployment
+
+Deze app is **volledig geconfigureerd voor Heroku deployment**! Zie [HEROKU_DEPLOYMENT.md](HEROKU_DEPLOYMENT.md) voor gedetailleerde instructies.
+
+### Quick Deploy naar Heroku
+
+```bash
+# 1. Maak Heroku app
+heroku create your-app-name
+
+# 2. Set environment variables
+heroku config:set FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account",...}'
+heroku config:set NODE_ENV=production
+heroku config:set FRONTEND_URL=https://your-app-name.herokuapp.com
+
+# 3. Firebase frontend config
+heroku config:set VITE_FIREBASE_API_KEY="your-api-key"
+heroku config:set VITE_FIREBASE_AUTH_DOMAIN="your-project.firebaseapp.com"
+heroku config:set VITE_FIREBASE_PROJECT_ID="your-project-id"
+
+# 4. Deploy
+git push heroku main
+```
+
+## 🛠️ Tech Stack
 
 De applicatie is verdeeld in twee hoofddelen:
 

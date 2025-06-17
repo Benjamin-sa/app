@@ -4,7 +4,7 @@
             <!-- Conversations Sidebar -->
             <div class="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col">
                 <!-- Add loading and error states for conversations -->
-                <div v-if="loading" class="flex-1 flex items-center justify-center">
+                <div v-if="messagingStore.loadingConversations" class="flex-1 flex items-center justify-center">
                     <div class="animate-pulse space-y-3 w-full p-4">
                         <div v-for="i in 5" :key="i" class="flex space-x-3">
                             <div class="rounded-full bg-gray-200 dark:bg-gray-700 h-10 w-10"></div>
@@ -46,11 +46,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useApi } from '@/composables/useApi';
 import { useNavbarStore } from '@/stores/navbar';
-import { apiService } from '@/services/api.service';
+import { useMessagingStore } from '@/stores/messaging';
 import ConversationList from '@/components/messaging/ConversationList.vue';
 import MessageThread from '@/components/messaging/MessageThread.vue';
 import { ChatBubbleLeftIcon } from '@heroicons/vue/24/outline';
@@ -58,28 +57,29 @@ import { ChatBubbleLeftIcon } from '@heroicons/vue/24/outline';
 const route = useRoute();
 const router = useRouter();
 const navbarStore = useNavbarStore();
-const { loading, execute } = useApi();
+const messagingStore = useMessagingStore();
 
-const conversations = ref([]);
 const selectedConversation = ref(null);
 
-const loadConversations = async () => {
-    const result = await execute(() => apiService.get('/messages/conversations'));
-    if (result) {
-        conversations.value = result.conversations || [];
+// Get conversations from the store
+const conversations = computed(() => messagingStore.getConversationsList);
 
+const loadConversations = async () => {
+    const result = await messagingStore.loadConversations();
+
+    if (result && result.length > 0) {
         // Auto-select conversation if coming from a profile or specific conversation
         const conversationId = route.query.conversation;
         const startConversation = route.query.startConversation;
 
         if (conversationId) {
-            const conversation = conversations.value.find(c => c.id === conversationId);
+            const conversation = result.find(c => c.id === conversationId);
             if (conversation) {
                 selectedConversation.value = conversation;
             }
         } else if (startConversation) {
             // Check if conversation already exists with this user
-            const existingConversation = conversations.value.find(c =>
+            const existingConversation = result.find(c =>
                 c.participants.includes(startConversation)
             );
 
@@ -94,42 +94,42 @@ const loadConversations = async () => {
 };
 
 const createNewConversation = async (receiverId) => {
-    const result = await execute(() =>
-        apiService.post('/messages/start', {
-            receiverId: receiverId
-        })
-    );
+    try {
+        // Send a welcome message to create the conversation
+        const result = await messagingStore.sendMessage(receiverId, "Hi! 👋");
 
-    if (result) {
-        // Reload conversations and select the new one
-        await loadConversations();
-        const newConversation = conversations.value.find(c => c.id === result.id);
-        if (newConversation) {
-            selectedConversation.value = newConversation;
+        if (result) {
+            // Reload conversations and select the new one
+            await messagingStore.loadConversations();
+            const newConversation = messagingStore.getConversation(result.conversationId);
+            if (newConversation) {
+                selectedConversation.value = newConversation;
+            }
+
+            // Clear the query parameter to avoid recreating the conversation
+            router.replace({
+                path: route.path,
+                query: { conversation: result.conversationId }
+            });
         }
-
-        // Clear the query parameter to avoid recreating the conversation
-        router.replace({
-            path: route.path,
-            query: { conversation: result.id }
-        });
+    } catch (error) {
+        console.error('Failed to create new conversation:', error);
     }
 };
 
 const selectConversation = (conversation) => {
     selectedConversation.value = conversation;
+
+    // Update URL to reflect selected conversation
+    router.replace({
+        path: route.path,
+        query: { conversation: conversation.id }
+    });
 };
 
 const handleMessageSent = (message) => {
-    // Update the selected conversation's last message
-    if (selectedConversation.value) {
-        selectedConversation.value.lastMessage = message.content;
-        selectedConversation.value.lastMessageAt = message.createdAt;
-        selectedConversation.value.lastMessageBy = message.senderId;
-    }
-
-    // Refresh conversations to update the sidebar
-    loadConversations();
+    // The messaging store handles updating conversation state
+    // No need to manually update here since it's reactive
 };
 
 // Watch for route changes to handle deep linking
