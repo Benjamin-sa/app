@@ -19,7 +19,7 @@ const corsOptions = {
     "http://127.0.0.1:5173",
     "http://192.168.0.225:5173",
     "http://192.168.0.225:3000",
-    process.env.FRONTEND_URL || "https://your-app-name.herokuapp.com",
+    process.env.FRONTEND_URL || "https://git.heroku.com/forum-beta.git",
   ].filter(Boolean),
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
