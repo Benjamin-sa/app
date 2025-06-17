@@ -4,14 +4,14 @@
   "description": "Motordash - Motorcycle Community Platform",
   "main": "backend/server.js",
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
+    "node": "18.x",
+    "npm": "8.x"
   },
   "scripts": {
     "start": "node backend/server.js",
     "build": "npm run install-deps && npm run build-frontend",
-    "install-deps": "cd backend && npm install && cd ../frontend && npm install",
-    "build-frontend": "cd frontend && npm run build && mkdir -p ../backend/public && cp -r dist/* ../backend/public/",
+    "install-deps": "cd backend && npm ci && cd ../frontend && npm ci --include=dev",
+    "build-frontend": "cd frontend && npx vite build && mkdir -p ../backend/public && cp -r dist/* ../backend/public/",
     "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
     "init-forum": "cd backend && npm run init-forum",
     "heroku-postbuild": "npm run build",
