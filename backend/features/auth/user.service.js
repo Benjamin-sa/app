@@ -5,7 +5,12 @@
 
 const firebaseQueries = require("../../queries/FirebaseQueries");
 const { UserProfile } = require("../../models/forum.models");
-const ValidationUtils = require("../../utils/validation.utils");
+const {
+  createUserProfile,
+  updateUserProfile,
+  ValidationError,
+  validateId,
+} = require("../../utils/validation.utils");
 
 class UserService {
   constructor() {
@@ -24,47 +29,46 @@ class UserService {
         authProvider,
       } = userData;
 
-      // All validation in clean, single lines that throw errors automatically
-      ValidationUtils.required(
-        { uid, email, username },
-        "USER",
-        "create user profile"
-      );
-      ValidationUtils.email(email, "USER");
-      ValidationUtils.username(username, "USER");
+      // Use new validation system - automatically validates all fields
+      const validatedProfile = createUserProfile({
+        uid,
+        email,
+        username,
+        displayName: displayName || username,
+        avatar: avatar || "",
+        isVerified: emailVerified || false,
+      });
 
       // Check if username is taken (but allow if it's the same user)
       const existingUserWithUsername = await this._checkUserExists(
         "username",
-        username
+        validatedProfile.username
       );
-      if (existingUserWithUsername && existingUserWithUsername.uid !== uid) {
+      if (
+        existingUserWithUsername &&
+        existingUserWithUsername.uid !== validatedProfile.uid
+      ) {
         throw new Error(
           "USER_SERVICE_VALIDATION_ERROR: Username is already taken"
         );
       }
 
-      const userProfile = {
-        ...UserProfile,
-        uid,
-        username,
-        email,
-        displayName: displayName || username,
-        avatar: avatar || "",
-        joinedDate: this.queries.getServerTimestamp(),
-        lastActive: this.queries.getServerTimestamp(),
-        updatedAt: this.queries.getServerTimestamp(),
-        isVerified: emailVerified || false,
-        authProvider: authProvider || "email",
-      };
+      // Add additional fields not in validation schema
+      validatedProfile.joinedDate = this.queries.getServerTimestamp();
+      validatedProfile.lastActive = this.queries.getServerTimestamp();
+      validatedProfile.updatedAt = this.queries.getServerTimestamp();
+      validatedProfile.authProvider = authProvider || "email";
 
       console.log(
-        `Creating user profile for UID: ${uid}, Username: ${username}`
+        `Creating user profile for UID: ${validatedProfile.uid}, Username: ${validatedProfile.username}`
       );
 
-      await this.queries.createUser(uid, userProfile);
-      return userProfile;
+      await this.queries.createUser(validatedProfile.uid, validatedProfile);
+      return validatedProfile;
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`USER_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       if (error.message.startsWith("USER_SERVICE_")) {
         throw error;
       }
@@ -76,16 +80,16 @@ class UserService {
 
   async getUserProfile(uid, viewerUid = null) {
     try {
-      ValidationUtils.required({ uid }, "USER", "get user profile");
+      const validatedUid = validateId(uid, "uid");
 
-      const user = await this.queries.getUserById(uid);
+      const user = await this.queries.getUserById(validatedUid);
 
       if (!user) {
         throw new Error("USER_SERVICE_NOT_FOUND_ERROR: User profile not found");
       }
 
       // If viewing own profile, return full data, otherwise sanitize
-      const isOwnProfile = viewerUid === uid;
+      const isOwnProfile = viewerUid === validatedUid;
 
       if (isOwnProfile) {
         return user; // Return complete profile for own profile
@@ -93,6 +97,9 @@ class UserService {
         return this._sanitizeUserProfile(user); // Return sanitized profile for others
       }
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`USER_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       if (error.message.startsWith("USER_SERVICE_")) {
         throw error;
       }
@@ -104,10 +111,14 @@ class UserService {
 
   async getUserByUsername(username) {
     try {
-      ValidationUtils.required({ username }, "USER", "get user by username");
-      ValidationUtils.username(username, "USER");
+      // Validate username - will throw ValidationError if invalid
+      const validatedData = createUserProfile({
+        username,
+        uid: "temp",
+        email: "temp@temp.com",
+      });
 
-      const user = await this.queries.getUserByUsername(username);
+      const user = await this.queries.getUserByUsername(validatedData.username);
 
       if (!user) {
         throw new Error("USER_SERVICE_NOT_FOUND_ERROR: User not found");
@@ -115,6 +126,9 @@ class UserService {
 
       return user;
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`USER_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       if (error.message.startsWith("USER_SERVICE_")) {
         throw error;
       }
@@ -126,10 +140,12 @@ class UserService {
 
   async updateUserActivity(uid) {
     try {
-      ValidationUtils.required({ uid }, "USER", "update user activity");
-
-      await this.queries.updateUserActivity(uid);
+      const validatedUid = validateId(uid, "uid");
+      await this.queries.updateUserActivity(validatedUid);
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`USER_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       if (error.message.startsWith("USER_SERVICE_")) {
         throw error;
       }
@@ -139,7 +155,13 @@ class UserService {
 
   async incrementUserStats(uid, field) {
     try {
-      ValidationUtils.required({ uid, field }, "USER", "increment user stats");
+      const validatedUid = validateId(uid, "uid");
+
+      if (!field || typeof field !== "string") {
+        throw new Error(
+          "USER_SERVICE_VALIDATION_ERROR: Field is required and must be a string"
+        );
+      }
 
       const validFields = [
         "topicsCount",
@@ -153,8 +175,11 @@ class UserService {
         );
       }
 
-      await this.queries.incrementUserStats(uid, field);
+      await this.queries.incrementUserStats(validatedUid, field);
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`USER_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       if (error.message.startsWith("USER_SERVICE_")) {
         throw error;
       }
@@ -167,7 +192,7 @@ class UserService {
 
   async updateUserProfile(uid, updateData) {
     try {
-      ValidationUtils.required({ uid }, "USER", "update user profile");
+      const validatedUid = validateId(uid, "uid");
 
       if (!updateData || Object.keys(updateData).length === 0) {
         throw new Error(
@@ -175,76 +200,34 @@ class UserService {
         );
       }
 
-      const allowedFields = [
-        "username",
-        "displayName",
-        "bio",
-        "location",
-        "website",
-        "avatar",
-        "avatarThumbnail",
-        "avatarMediumUrl",
-        "show_email",
-        "allow_messages",
-        "interests",
-        "social_links",
-        "email",
-        "emailVerified",
-        "authProvider",
-        "lastLogin",
-      ];
+      // Use new validation system for updates (relaxed validation)
+      const validatedData = updateUserProfile(updateData);
 
-      // Filter out non-allowed fields
-      const filteredData = {};
-      Object.keys(updateData).forEach((key) => {
-        if (allowedFields.includes(key) && updateData[key] !== undefined) {
-          filteredData[key] = updateData[key];
-        }
-      });
-
-      // Validate username if it's being updated
-      if (filteredData.username) {
-        ValidationUtils.username(filteredData.username, "USER");
-
-        // Check if username is already taken by another user
+      // Check username uniqueness if it's being updated
+      if (validatedData.username) {
         const existingUser = await this._checkUserExists(
           "username",
-          filteredData.username
+          validatedData.username
         );
-        if (existingUser && existingUser.uid !== uid) {
+        if (existingUser && existingUser.uid !== validatedUid) {
           throw new Error(
             "USER_SERVICE_VALIDATION_ERROR: Username is already taken"
           );
         }
       }
 
-      // Validate other fields
-      [
-        "email",
-        "displayName",
-        "bio",
-        "website",
-        "location",
-        "interests",
-      ].forEach((field) => {
-        if (updateData[field] !== undefined) {
-          ValidationUtils[field](updateData[field], "USER");
-        }
-      });
-
-      if (updateData.social_links !== undefined) {
-        ValidationUtils.socialLinks(updateData.social_links, "USER");
-      }
-
       // Add update timestamp
-      filteredData.updatedAt = this.queries.getServerTimestamp();
+      validatedData.updatedAt = this.queries.getServerTimestamp();
 
       // Update the user profile
-      await this.queries.updateUser(uid, filteredData);
+      await this.queries.updateUser(validatedUid, validatedData);
 
       // Return updated profile
-      return await this.getUserProfile(uid);
+      return await this.getUserProfile(validatedUid);
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`USER_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       if (error.message.startsWith("USER_SERVICE_")) {
         throw error;
       }
@@ -265,18 +248,25 @@ class UserService {
         providerData,
       } = syncData;
 
-      ValidationUtils.required({ firebaseUid, email }, "USER", "sync user");
-      ValidationUtils.email(email, "USER");
+      // Validate required fields using our validation system
+      const validatedUid = validateId(firebaseUid, "firebaseUid");
+
+      // Validate email format
+      const validatedProfile = createUserProfile({
+        uid: validatedUid,
+        email,
+        username: "temp", // temporary, will be generated
+      });
 
       // Simple check - does user exist?
-      const existingUser = await this._checkUserExists("uid", firebaseUid);
+      const existingUser = await this._checkUserExists("uid", validatedUid);
 
       if (existingUser) {
         // User exists - update their info
-        console.log(`Updating existing user: ${firebaseUid}`);
+        console.log(`Updating existing user: ${validatedUid}`);
 
         const updateData = {
-          email,
+          email: validatedProfile.email,
           emailVerified,
           authProvider: this._getAuthProvider(providerData),
           lastLogin: this.queries.getServerTimestamp(),
@@ -290,18 +280,18 @@ class UserService {
           updateData.avatar = photoURL;
         }
 
-        return await this.updateUserProfile(firebaseUid, updateData);
+        return await this.updateUserProfile(validatedUid, updateData);
       } else {
         // User doesn't exist - create new one
-        console.log(`Creating new user: ${firebaseUid}`);
+        console.log(`Creating new user: ${validatedUid}`);
 
         const username = await this._generateUniqueUsername(
-          displayName || email?.split("@")[0]
+          displayName || validatedProfile.email?.split("@")[0]
         );
 
         const newUserData = {
-          uid: firebaseUid,
-          email,
+          uid: validatedUid,
+          email: validatedProfile.email,
           username,
           displayName: displayName || username,
           avatar: photoURL || "",
@@ -312,6 +302,9 @@ class UserService {
         return await this.createUserProfile(newUserData);
       }
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`USER_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       if (error.message.startsWith("USER_SERVICE_")) {
         throw error;
       }

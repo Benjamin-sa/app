@@ -7,7 +7,7 @@
             </div>
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ title }}</h3>
             <p class="text-gray-600 dark:text-gray-400 mb-6">{{ error }}</p>
-            <ActionButton @click="$emit('retry')" variant="primary" size="lg">
+            <ActionButton type="button" @click="$emit('retry')" variant="primary" size="lg">
                 <ArrowPathIcon class="w-4 h-4 mr-2" />
                 {{ retryText }}
             </ActionButton>

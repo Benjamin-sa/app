@@ -59,15 +59,14 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notification'
-import { useApi } from '@/composables/useApi'
-import DetailPageLayout from '@/components/common/DetailPageLayout.vue'
+import { useProductStore } from '@/stores/products'
+import DetailPageLayout from '@/layouts/DetailPageLayout.vue'
 import ImageGallery from '@/components/common/images/ImageGallery.vue'
 import ActionButton from '@/components/common/buttons/ActionButton.vue'
 import InfoCard from '@/components/common/InfoCard.vue'
 import ProductHeader from '@/components/products/ProductHeader.vue'
 import ProductActions from '@/components/products/ProductActions.vue'
 import ProductCard from '@/components/products/ProductCard.vue'
-import apiService from '@/services/api.service'
 import {
     HeartIcon,
     InformationCircleIcon,
@@ -78,15 +77,19 @@ import BackButton from '@/components/common/buttons/BackButton.vue'
 const route = useRoute()
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
-const { execute } = useApi()
+const productStore = useProductStore()
 
-const product = ref(null)
-const relatedProducts = ref([])
-const loading = ref(true)
+const loading = ref(false)
 const error = ref(null)
 const imageGallery = ref(null)
 
 const productId = computed(() => route.params.id)
+
+// Get product from store
+const product = computed(() => productStore.getProduct(productId.value))
+
+// Get related products from store
+const relatedProducts = computed(() => productStore.getRelatedProducts(productId.value))
 
 const breadcrumbItems = computed(() => [
     { label: 'Home', to: '/' },
@@ -106,12 +109,17 @@ const fetchProduct = async () => {
         loading.value = true
         error.value = null
 
-        const response = await apiService.client.get(`/products/${productId.value}/with-images`)
-        product.value = response.data
+        // Load product from store
+        const loadedProduct = await productStore.loadProduct(productId.value)
+
+        if (!loadedProduct) {
+            error.value = 'Product not found'
+            return
+        }
 
         // Fetch related products from the same collection
         if (primaryCollection.value) {
-            await fetchRelatedProducts()
+            await productStore.loadRelatedProducts(productId.value, primaryCollection.value.handle)
         }
     } catch (err) {
         console.error('Error fetching product:', err)
@@ -121,45 +129,23 @@ const fetchProduct = async () => {
     }
 }
 
-const fetchRelatedProducts = async () => {
-    try {
-        const response = await apiService.client.get(`/products/collection/${primaryCollection.value.handle}`)
-        relatedProducts.value = (response.data || response)
-            .filter(p => p.id !== productId.value)
-            .slice(0, 4)
-    } catch (err) {
-        console.error('Error fetching related products:', err)
-    }
-}
-
 const toggleWishlist = async () => {
     if (!authStore.isAuthenticated) {
         notificationStore.info('Sign in required', 'Please sign in to add products to your wishlist.')
         return
     }
 
-    const isCurrentlyInWishlist = product.value.isInWishlist
+    try {
+        const newWishlistState = await productStore.toggleWishlist(productId.value)
 
-    const result = await execute(
-        () => isCurrentlyInWishlist
-            ? apiService.client.delete(`/users/wishlist/${product.value.id}`)
-            : apiService.client.post(`/users/wishlist/${product.value.id}`),
-        {
-            successMessage: isCurrentlyInWishlist
-                ? 'Product removed from your wishlist.'
-                : 'Product added to your wishlist.',
-            successTitle: isCurrentlyInWishlist
-                ? 'Removed from wishlist'
-                : 'Added to wishlist',
-            showErrorNotification: true,
-            notificationStore,
-            errorTitle: 'Wishlist error',
-            errorMessage: 'Unable to update wishlist. Please try again.'
-        }
-    )
-
-    if (result) {
-        product.value.isInWishlist = !isCurrentlyInWishlist
+        notificationStore.success(
+            newWishlistState ? 'Added to wishlist' : 'Removed from wishlist',
+            newWishlistState
+                ? 'Product added to your wishlist.'
+                : 'Product removed from your wishlist.'
+        )
+    } catch (err) {
+        notificationStore.error('Wishlist error', 'Unable to update wishlist. Please try again.')
     }
 }
 

@@ -9,6 +9,7 @@ export const useForumStore = defineStore("forum", () => {
   const loadingStates = ref(new Map()); // Map<topicId, boolean>
   const loadingTopics = ref(false);
   const loadingAnswers = ref(new Map()); // Map<topicId, boolean>
+  const isCreatingTopic = ref(false);
   const searchResults = ref([]);
   const loadingSearch = ref(false);
   const error = ref(null);
@@ -184,6 +185,7 @@ export const useForumStore = defineStore("forum", () => {
 
   // Create new topic
   const createTopic = async (topicData) => {
+    isCreatingTopic.value = true;
     clearError();
 
     try {
@@ -203,6 +205,8 @@ export const useForumStore = defineStore("forum", () => {
       console.error("Error creating topic:", error);
       setError("Failed to create topic");
       return null;
+    } finally {
+      isCreatingTopic.value = false;
     }
   };
 
@@ -484,6 +488,7 @@ export const useForumStore = defineStore("forum", () => {
   return {
     // State
     loadingTopics,
+    isCreatingTopic,
     loadingSearch,
     error,
     searchResults,

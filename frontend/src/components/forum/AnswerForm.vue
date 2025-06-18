@@ -16,7 +16,7 @@
 
         <!-- Enhanced Actions -->
         <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200/50 dark:border-gray-600/50">
-            <ActionButton @click="handleCancel" variant="outline" size="lg" :disabled="loading">
+            <ActionButton type="button" @click="handleCancel" variant="outline" size="lg" :disabled="loading">
                 Cancel
             </ActionButton>
             <ActionButton type="submit" size="lg" :loading="loading" :disabled="!isFormValid"
@@ -89,18 +89,44 @@ const handleSubmit = async () => {
         submitting.value = true;
         error.value = null;
 
-        const answerData = {
-            content: form.value.content.trim()
-        };
+        // Create FormData for multipart/form-data submission
+        const formData = new FormData();
+
+        // Add answer content
+        formData.append('content', form.value.content.trim());
+
+        // Add topic ID for create operations
+        if (!isEditing.value && props.topicId) {
+            formData.append('topicId', props.topicId);
+        }
+
+        // Handle images
+        if (form.value.images && form.value.images.length > 0) {
+            // Separate new images (files) from existing images
+            const newImages = form.value.images.filter(img => img.isNew && img.file);
+            const existingImages = form.value.images.filter(img => !img.isNew);
+
+            // Add new image files
+            newImages.forEach((imageObj) => {
+                if (imageObj.file) {
+                    formData.append('images', imageObj.file);
+                }
+            });
+
+            // For edit mode, include existing images to keep
+            if (isEditing.value && existingImages.length > 0) {
+                formData.append('existingImages', JSON.stringify(existingImages));
+            }
+        }
 
         let result;
         if (isEditing.value) {
-            result = await forumStore.updateAnswer(props.answer.id, answerData, props.topicId);
+            result = await forumStore.updateAnswer(props.answer.id, formData, props.topicId);
         } else {
             if (!props.topicId) {
                 throw new Error('Topic ID is required for creating answer');
             }
-            result = await forumStore.createAnswer(props.topicId, answerData);
+            result = await forumStore.createAnswer(props.topicId, formData);
         }
 
         if (result) {

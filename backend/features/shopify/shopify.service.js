@@ -1,7 +1,7 @@
 const axios = require("axios");
 const config = require("../../config/shopify");
 const queries = require("../../queries/shopifyQueries");
-const ValidationUtils = require("../../utils/validation.utils");
+const { ValidationError, validateId } = require("../../utils/validation.utils");
 
 // Helper function to execute Shopify GraphQL queries
 async function _executeShopifyQuery(query) {
@@ -176,13 +176,10 @@ async function getProductsWithImages(limit = 200) {
 // Get a single product with images by ID
 async function getProductByIdWithImages(productId) {
   try {
-    ValidationUtils.required(
-      { productId },
-      "SHOPIFY",
-      "get product by ID with images"
-    );
+    // Validate productId
+    const validatedProductId = validateId(productId, "productId");
 
-    const query = queries.GET_PRODUCT_BY_ID_WITH_IMAGES(productId);
+    const query = queries.GET_PRODUCT_BY_ID_WITH_IMAGES(validatedProductId);
     const data = await _executeShopifyQuery(query);
 
     if (!data.data) {
@@ -194,12 +191,15 @@ async function getProductByIdWithImages(productId) {
     const product = data.data.product;
     if (!product) {
       throw new Error(
-        `SHOPIFY_SERVICE_NOT_FOUND_ERROR: Product with ID '${productId}' not found`
+        `SHOPIFY_SERVICE_NOT_FOUND_ERROR: Product with ID '${validatedProductId}' not found`
       );
     }
 
     return _formatProduct(product, true, true);
   } catch (error) {
+    if (error instanceof ValidationError) {
+      throw new Error(`SHOPIFY_SERVICE_VALIDATION_ERROR: ${error.message}`);
+    }
     if (error.message.includes("SHOPIFY_SERVICE_")) {
       throw error;
     }
@@ -212,11 +212,12 @@ async function getProductByIdWithImages(productId) {
 // Get product variants by product ID
 async function getProductVariants(productId) {
   try {
-    ValidationUtils.required({ productId }, "SHOPIFY", "get product variants");
+    // Validate productId
+    const validatedProductId = validateId(productId, "productId");
 
     // Since we don't have a specific query for variants, we'll get the full product
     // and extract the variants. This could be optimized with a dedicated GraphQL query.
-    const query = queries.GET_PRODUCT_BY_ID_WITH_IMAGES(productId);
+    const query = queries.GET_PRODUCT_BY_ID_WITH_IMAGES(validatedProductId);
     const data = await _executeShopifyQuery(query);
 
     if (!data.data) {
@@ -228,13 +229,13 @@ async function getProductVariants(productId) {
     const product = data.data.product;
     if (!product) {
       throw new Error(
-        `SHOPIFY_SERVICE_NOT_FOUND_ERROR: Product with ID '${productId}' not found`
+        `SHOPIFY_SERVICE_NOT_FOUND_ERROR: Product with ID '${validatedProductId}' not found`
       );
     }
 
     if (!product.variants || !product.variants.edges) {
       throw new Error(
-        `SHOPIFY_SERVICE_NOT_FOUND_ERROR: No variants found for product '${productId}'`
+        `SHOPIFY_SERVICE_NOT_FOUND_ERROR: No variants found for product '${validatedProductId}'`
       );
     }
 
@@ -252,6 +253,9 @@ async function getProductVariants(productId) {
       selectedOptions: edge.node.selectedOptions || [],
     }));
   } catch (error) {
+    if (error instanceof ValidationError) {
+      throw new Error(`SHOPIFY_SERVICE_VALIDATION_ERROR: ${error.message}`);
+    }
     if (error.message.includes("SHOPIFY_SERVICE_")) {
       throw error;
     }

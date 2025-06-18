@@ -1,6 +1,7 @@
 <template>
     <div class="mb-6">
-        <ActionButton @click="handleBack" variant="secondary" size="sm" class="flex items-center space-x-2">
+        <ActionButton type="button" @click="handleBack" variant="secondary" size="sm"
+            class="flex items-center space-x-2">
             <ArrowLeftIcon class="w-4 h-4" />
             <span>{{ label }}</span>
         </ActionButton>

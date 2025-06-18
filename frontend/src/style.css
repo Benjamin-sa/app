@@ -11,6 +11,27 @@
   @apply bg-gray-600 dark:bg-gray-700 text-white hover:bg-gray-700 dark:hover:bg-gray-600 focus:ring-gray-500 dark:focus:ring-gray-400;
 }
 
+/* Layout stabilization */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply overflow-x-hidden;
+  }
+
+  /* Prevent layout shifts during transitions */
+  .main-content {
+    contain: layout style;
+  }
+
+  /* Stabilize images */
+  img {
+    @apply max-w-full h-auto;
+  }
+}
+
 /* Dark mode scrollbar styles */
 @layer utilities {
   .scrollbar-thin {
@@ -31,5 +52,50 @@
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     @apply bg-gray-400 dark:bg-gray-500;
+  }
+
+  /* Layout stability utilities */
+  .stable-layout {
+    contain: layout style;
+    will-change: auto;
+  }
+
+  .content-stabilizer {
+    min-height: 50vh;
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Container width consistency */
+  .container-narrow {
+    @apply max-w-4xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .container-default {
+    @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .container-wide {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Spacing consistency */
+  .page-spacing {
+    @apply py-6 sm:py-8;
+  }
+
+  .page-spacing-large {
+    @apply py-8 sm:py-12;
   }
 }

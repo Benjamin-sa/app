@@ -1,6 +1,5 @@
 <template>
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8"
-        :style="{ paddingTop: `${navbarStore.navbarHeight + 16}px` }">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
 
         <!-- Loading State -->
         <LoadingSection v-if="loading" message="Loading profile..." />

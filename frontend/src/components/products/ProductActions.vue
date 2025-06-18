@@ -10,13 +10,17 @@
         </a>
 
         <div class="grid grid-cols-2 gap-3">
-            <ActionButton @click="$emit('share')" :icon="ShareIcon"
-                :activeClasses="'rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white'"
-                :inactiveClasses="'rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white'" />
-            <ActionButton @click="$emit('toggle-wishlist')" :icon="HeartIcon" :isActive="isInWishlist"
-                :fillWhenActive="true"
-                :activeClasses="'rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-red-500'"
-                :inactiveClasses="'rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white'" />
+            <ActionButton @click="$emit('share')" variant="outline"
+                class="rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
+                <ShareIcon class="w-5 h-5 mr-2" />
+                Share
+            </ActionButton>
+            <ActionButton @click="$emit('toggle-wishlist')" :variant="isInWishlist ? 'secondary' : 'outline'"
+                :class="isInWishlist ? 'text-red-500 border-red-300' : ''"
+                class="rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
+                <HeartIcon :class="['w-5 h-5 mr-2', isInWishlist ? 'fill-current' : '']" />
+                {{ isInWishlist ? 'Saved' : 'Save' }}
+            </ActionButton>
         </div>
     </div>
 </template>

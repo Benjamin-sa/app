@@ -1,5 +1,5 @@
 <template>
-    <div :style="{ paddingTop: `${navbarStore.navbarHeight}px` }">
+    <div>
         <!-- Enhanced Hero Section with Modern Gradient -->
         <section
             class="relative bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white overflow-hidden">

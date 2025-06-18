@@ -5,53 +5,17 @@
 
 const firebaseQueries = require("../../../queries/FirebaseQueries");
 const { validators, Topic } = require("../../../models/forum.models");
-const ValidationUtils = require("../../../utils/validation.utils");
-const htmlSanitizerService = require("../../../core/services/htmlSanitizer.service");
+const {
+  createTopic,
+  updateTopic,
+  ValidationError,
+  validateId,
+  validatePaginationOptions,
+} = require("../../../utils/validation.utils");
 
 class TopicService {
   constructor() {
     this.queries = firebaseQueries;
-  }
-
-  // Enhanced helper method for topic validation
-  validateTopicData(topicData, isUpdate = false) {
-    const { title, content, category, userId, images = [] } = topicData;
-
-    // For creates, all required fields must be present
-    if (!isUpdate) {
-      ValidationUtils.required(
-        { title, content, category, userId },
-        "TOPIC",
-        "create topic"
-      );
-    }
-
-    // Validate individual fields if provided
-    if (ValidationUtils.exists(title)) {
-      ValidationUtils.topicTitle(title, "TOPIC");
-    }
-
-    if (ValidationUtils.exists(content)) {
-      ValidationUtils.htmlContent(content, "TOPIC");
-    }
-
-    if (ValidationUtils.exists(category)) {
-      ValidationUtils.category(category, "TOPIC");
-    }
-
-    // Validate images array
-    ValidationUtils.array(images, "images", "TOPIC", false, 5);
-  }
-
-  // Helper method for common validations
-  validateCommonParams(limit) {
-    if (ValidationUtils.exists(limit)) {
-      if (isNaN(limit) || limit < 1 || limit > 100) {
-        throw new Error(
-          "TOPIC_SERVICE_VALIDATION_ERROR: Limit must be between 1 and 100"
-        );
-      }
-    }
   }
 
   async createTopic(topicData) {
@@ -65,40 +29,28 @@ class TopicService {
         userId,
       } = topicData;
 
-      // All validation in clean, single lines
-      ValidationUtils.required(
-        { title, content, category, userId },
-        "TOPIC",
-        "create topic"
-      );
-      ValidationUtils.topicTitle(title, "TOPIC");
-      ValidationUtils.htmlContent(content, "TOPIC");
-      ValidationUtils.category(category, "TOPIC");
-      ValidationUtils.array(images, "images", "TOPIC", false, 5);
+      // Validate userId
+      const validatedUserId = validateId(userId, "userId");
 
-      // Sanitize HTML content
-      const sanitizedContent =
-        htmlSanitizerService.sanitizeForumContent(content);
-
-      const topicDoc = {
-        ...Topic,
-        title: title.trim(),
-        content: sanitizedContent,
-        userId,
+      // Create and validate topic using validation system
+      const validatedTopic = createTopic({
+        title,
+        content,
         category,
         tags,
         images,
-      };
+        userId: validatedUserId,
+      });
 
       // Create topic in Firestore (timestamps will be added by FirebaseQueries)
-      const topicRef = await this.queries.createTopic(topicDoc);
+      const topicRef = await this.queries.createTopic(validatedTopic);
 
       // Retrieve the created topic with actual server timestamps and ID
       return await this.queries.getTopicById(topicRef.id);
     } catch (error) {
       // Enhanced error handling with context
-      if (error.message.startsWith("TOPIC_SERVICE_")) {
-        throw error;
+      if (error instanceof ValidationError) {
+        throw new Error(`TOPIC_SERVICE_VALIDATION_ERROR: ${error.message}`);
       }
       throw new Error(
         `TOPIC_SERVICE_ERROR: Failed to create topic - ${error.message}`
@@ -108,19 +60,12 @@ class TopicService {
 
   async updateTopic(topicId, updateData, userId) {
     try {
-      if (!topicId) {
-        throw new Error("TOPIC_SERVICE_VALIDATION_ERROR: Topic ID is required");
-      }
-
-      if (!userId) {
-        throw new Error("TOPIC_SERVICE_VALIDATION_ERROR: User ID is required");
-      }
-
-      // Validate update data using helper method
-      this.validateTopicData(updateData, true);
+      // Validate required fields
+      const validatedTopicId = validateId(topicId, "topicId");
+      const validatedUserId = validateId(userId, "userId");
 
       // Get existing topic to verify ownership
-      const existingTopic = await this.queries.getTopicById(topicId);
+      const existingTopic = await this.queries.getTopicById(validatedTopicId);
       if (!existingTopic || existingTopic.isDeleted) {
         throw new Error(
           "TOPIC_SERVICE_NOT_FOUND_ERROR: Topic not found or has been deleted"
@@ -128,31 +73,23 @@ class TopicService {
       }
 
       // Check if user is the author
-      if (existingTopic.userId !== userId) {
+      if (existingTopic.userId !== validatedUserId) {
         throw new Error(
           "TOPIC_SERVICE_UNAUTHORIZED: Only the author can update this topic"
         );
       }
 
-      // Prepare update object with only provided fields
-      const updateObj = {};
-      if (updateData.title) updateObj.title = updateData.title.trim();
-      if (updateData.content) {
-        // Sanitize HTML content for updates
-        updateObj.content = htmlSanitizerService.sanitizeForumContent(
-          updateData.content
-        );
-      }
-      if (updateData.category) updateObj.category = updateData.category;
-      if (updateData.tags) updateObj.tags = updateData.tags;
-      if (updateData.images) updateObj.images = updateData.images;
+      // Use validation system to create update data
+      const validatedUpdateData = updateTopic(updateData);
+      validatedUpdateData.updatedAt = new Date().toISOString();
 
-      updateObj.updatedAt = new Date().toISOString();
+      await this.queries.updateTopic(validatedTopicId, validatedUpdateData);
 
-      await this.queries.updateTopic(topicId, updateObj);
-
-      return await this.queries.getTopicById(topicId);
+      return await this.queries.getTopicById(validatedTopicId);
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`TOPIC_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       if (error.message.startsWith("TOPIC_SERVICE_")) throw error;
       throw new Error(
         `TOPIC_SERVICE_ERROR: Failed to update topic - ${error.message}`
@@ -162,16 +99,12 @@ class TopicService {
 
   async deleteTopic(topicId, userId) {
     try {
-      if (!topicId) {
-        throw new Error("TOPIC_SERVICE_VALIDATION_ERROR: Topic ID is required");
-      }
-
-      if (!userId) {
-        throw new Error("TOPIC_SERVICE_VALIDATION_ERROR: User ID is required");
-      }
+      // Validate required fields
+      const validatedTopicId = validateId(topicId, "topicId");
+      const validatedUserId = validateId(userId, "userId");
 
       // Get existing topic to verify ownership
-      const existingTopic = await this.queries.getTopicById(topicId);
+      const existingTopic = await this.queries.getTopicById(validatedTopicId);
       if (!existingTopic || existingTopic.isDeleted) {
         throw new Error(
           "TOPIC_SERVICE_NOT_FOUND_ERROR: Topic not found or already deleted"
@@ -179,14 +112,14 @@ class TopicService {
       }
 
       // Check if user is the author
-      if (existingTopic.userId !== userId) {
+      if (existingTopic.userId !== validatedUserId) {
         throw new Error(
           "TOPIC_SERVICE_UNAUTHORIZED: Only the author can delete this topic"
         );
       }
 
       // Soft delete by setting isDeleted flag
-      await this.queries.updateTopic(topicId, {
+      await this.queries.updateTopic(validatedTopicId, {
         isDeleted: true,
         deletedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -194,6 +127,9 @@ class TopicService {
 
       return { success: true, message: "Topic deleted successfully" };
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`TOPIC_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       if (error.message.startsWith("TOPIC_SERVICE_")) throw error;
       throw new Error(
         `TOPIC_SERVICE_ERROR: Failed to delete topic - ${error.message}`
@@ -210,11 +146,14 @@ class TopicService {
         sortOrder = "desc",
       } = options;
 
-      // Use helper method for validation
-      this.validateCommonParams(limit);
+      // Validate pagination options
+      const validatedOptions = validatePaginationOptions(
+        { limit },
+        { maxLimit: 100 }
+      );
 
       const topics = await this.queries.getTopics({
-        limit: parseInt(limit),
+        limit: validatedOptions.limit,
         category,
         orderBy: sortBy,
         orderDirection: sortOrder,
@@ -225,9 +164,12 @@ class TopicService {
 
       return {
         topics: filteredTopics,
-        hasMore: topics.length === parseInt(limit),
+        hasMore: topics.length === validatedOptions.limit,
       };
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`TOPIC_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       if (error.message.startsWith("TOPIC_SERVICE_")) throw error;
       throw new Error(
         `TOPIC_SERVICE_ERROR: Failed to get topics - ${error.message}`
@@ -237,11 +179,10 @@ class TopicService {
 
   async getTopicById(topicId, userId = null) {
     try {
-      if (!topicId) {
-        throw new Error("TOPIC_SERVICE_VALIDATION_ERROR: Topic ID is required");
-      }
+      // Validate topicId
+      const validatedTopicId = validateId(topicId, "topicId");
 
-      const topic = await this.queries.getTopicById(topicId);
+      const topic = await this.queries.getTopicById(validatedTopicId);
 
       if (!topic || topic.isDeleted) {
         throw new Error(
@@ -251,12 +192,16 @@ class TopicService {
 
       // Increment view count if user is provided
       if (userId) {
-        await this.queries.incrementTopicViews(topicId);
+        const validatedUserId = validateId(userId, "userId");
+        await this.queries.incrementTopicViews(validatedTopicId);
         topic.viewCount = (topic.viewCount || 0) + 1;
       }
 
       return topic;
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`TOPIC_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       if (error.message.startsWith("TOPIC_SERVICE_")) throw error;
       throw new Error(
         `TOPIC_SERVICE_ERROR: Failed to get topic - ${error.message}`
@@ -280,16 +225,22 @@ class TopicService {
         );
       }
 
-      // Use helper method for validation
-      this.validateCommonParams(limit);
+      // Validate pagination options
+      const validatedOptions = validatePaginationOptions(
+        { limit },
+        { maxLimit: 100 }
+      );
 
       const topics = await this.queries.searchTopics(searchTerm, {
-        limit,
+        limit: validatedOptions.limit,
         category,
       });
 
       return topics;
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`TOPIC_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       if (error.message.startsWith("TOPIC_SERVICE_")) throw error;
       throw new Error(
         `TOPIC_SERVICE_ERROR: Failed to search topics - ${error.message}`

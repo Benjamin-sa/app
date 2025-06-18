@@ -37,11 +37,11 @@
                     <span v-for="(tag, index) in form.tags" :key="index"
                         class="inline-flex items-center px-3 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 text-blue-800 dark:text-blue-200 border border-blue-200/50 dark:border-blue-800/50 backdrop-blur-sm transition-all duration-200 hover:scale-105">
                         #{{ tag }}
-                        <ActionButton @click="removeTag(index)" variant="ghost" size="xs"
-                            class="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-100 p-0.5 rounded-full"
+                        <button type="button" @click="removeTag(index)"
+                            class="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-100 p-0.5 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
                             :disabled="loading">
                             <XMarkIcon class="w-3 h-3" />
-                        </ActionButton>
+                        </button>
                     </span>
                 </div>
             </div>
@@ -61,7 +61,7 @@
 
             <!-- Enhanced Actions -->
             <div class="flex justify-end space-x-4 pt-8 border-t border-gray-200/50 dark:border-gray-600/50">
-                <ActionButton @click="$emit('cancel')" variant="outline" size="lg" :disabled="loading">
+                <ActionButton type="button" @click="$emit('cancel')" variant="outline" size="lg" :disabled="loading">
                     Cancel
                 </ActionButton>
                 <ActionButton type="submit" size="lg" :loading="loading" :disabled="!isFormValid"
@@ -230,18 +230,43 @@ const handleSubmit = async () => {
     if (!isFormValid.value) return;
 
     try {
-        const topicData = {
-            title: form.value.title.trim(),
-            category: form.value.category,
-            content: form.value.content.trim(),
-            tags: form.value.tags
-        };
+        // Create FormData for multipart/form-data submission
+        const formData = new FormData();
+
+        // Add basic topic data
+        formData.append('title', form.value.title.trim());
+        formData.append('category', form.value.category);
+        formData.append('content', form.value.content.trim());
+        formData.append('tags', JSON.stringify(form.value.tags));
+
+        // Handle images for edit mode
+        if (isEditMode.value) {
+            // Add existing images to keep (those that weren't removed)
+            if (form.value.existingImages && form.value.existingImages.length > 0) {
+                formData.append('existingImages', JSON.stringify(form.value.existingImages));
+            }
+
+            // Add images to remove
+            if (form.value.imagesToRemove && form.value.imagesToRemove.length > 0) {
+                formData.append('imagesToRemove', JSON.stringify(form.value.imagesToRemove));
+            }
+        }
+
+        // Add new image files
+        if (form.value.newImages && form.value.newImages.length > 0) {
+            form.value.newImages.forEach((imageObj) => {
+                // Extract the actual File object from the image preview object
+                if (imageObj.file) {
+                    formData.append('images', imageObj.file);
+                }
+            });
+        }
 
         let result;
         if (isEditMode.value) {
-            result = await forumStore.updateTopic(props.topic.id, topicData);
+            result = await forumStore.updateTopic(props.topic.id, formData);
         } else {
-            result = await forumStore.createTopic(topicData);
+            result = await forumStore.createTopic(formData);
         }
 
         if (result) {

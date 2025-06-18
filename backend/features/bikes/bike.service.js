@@ -5,7 +5,13 @@
 
 const firebaseQueries = require("../../queries/FirebaseQueries");
 const { deleteImage } = require("../../core/services/image.service");
-const ValidationUtils = require("../../utils/validation.utils");
+const {
+  createBike,
+  updateBike,
+  ValidationError,
+  validateId,
+  validatePaginationOptions,
+} = require("../../utils/validation.utils");
 
 class BikeService {
   /**
@@ -14,11 +20,14 @@ class BikeService {
   async getUserBikes(userId) {
     try {
       // Validate required fields
-      ValidationUtils.required({ userId }, "BIKE", "get user bikes");
+      const validatedUserId = validateId(userId, "userId");
 
-      const bikes = await firebaseQueries.getBikesByUserId(userId);
+      const bikes = await firebaseQueries.getBikesByUserId(validatedUserId);
       return bikes;
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`BIKE_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       console.error("Error fetching user bikes:", error);
       throw new Error(`Failed to fetch user bikes: ${error.message}`);
     }
@@ -30,9 +39,9 @@ class BikeService {
   async getBikeById(bikeId, requestingUserId = null) {
     try {
       // Validate required fields
-      ValidationUtils.required({ bikeId }, "BIKE", "get bike by ID");
+      const validatedBikeId = validateId(bikeId, "bikeId");
 
-      const bike = await firebaseQueries.getBikeById(bikeId);
+      const bike = await firebaseQueries.getBikeById(validatedBikeId);
 
       if (!bike || !bike.id) {
         throw new Error("Bike not found");
@@ -40,11 +49,14 @@ class BikeService {
 
       // Increment view count if not the owner viewing
       if (requestingUserId && requestingUserId !== bike.userId) {
-        await firebaseQueries.incrementBikeViews(bikeId);
+        await firebaseQueries.incrementBikeViews(validatedBikeId);
       }
 
       return bike;
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`BIKE_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       console.error("Error fetching bike:", error);
       throw new Error(`Failed to fetch bike: ${error.message}`);
     }
@@ -55,57 +67,40 @@ class BikeService {
    */
   async createBike(userId, bikeData, images = []) {
     try {
-      // Validate required fields
-      ValidationUtils.required({ userId }, "BIKE", "create bike");
-      ValidationUtils.required({ name: bikeData.name }, "BIKE", "create bike");
+      // Validate userId
+      const validatedUserId = validateId(userId, "userId");
 
-      // Validate bike-specific fields using centralized validation
-      ValidationUtils.bikeName(bikeData.name, "BIKE");
-      ValidationUtils.bikeBrand(bikeData.brand, "BIKE");
-      ValidationUtils.bikeModel(bikeData.model, "BIKE");
-
-      // Validate and parse numeric fields
-      const year = ValidationUtils.bikeYear(bikeData.year, "BIKE");
-      const engineSize = ValidationUtils.bikeEngineSize(
-        bikeData.engine_size,
-        "BIKE"
-      );
-      const description = ValidationUtils.bikeDescription(
-        bikeData.description,
-        "BIKE"
-      );
-
-      // Validate images array
-      ValidationUtils.array(images, "photos", "BIKE", false, 10);
-
-      // Prepare bike document
-      const bikeDoc = {
-        userId,
-        name: bikeData.name.trim(),
-        brand: bikeData.brand?.trim() || "",
-        model: bikeData.model?.trim() || "",
-        year,
-        engine_size: engineSize,
-        description,
+      // Create and validate bike using validation system
+      const validatedBike = createBike({
+        userId: validatedUserId,
+        name: bikeData.name,
+        brand: bikeData.brand,
+        model: bikeData.model,
+        year: bikeData.year,
+        engine_size: bikeData.engine_size,
+        description: bikeData.description,
         photos: images || [],
         main_image: images.length > 0 ? images[0].url : "",
-        is_featured: false,
-        isDeleted: false,
-        view_count: 0,
-        like_count: 0,
-      };
+      });
+
+      // Add timestamps
+      validatedBike.createdAt = new Date().toISOString();
+      validatedBike.updatedAt = new Date().toISOString();
 
       // Create bike using firebase queries
-      const docRef = await firebaseQueries.createBike(bikeDoc);
+      const docRef = await firebaseQueries.createBike(validatedBike);
 
       // Update user's bike count
-      await this.updateUserBikeCount(userId);
+      await this.updateUserBikeCount(validatedUserId);
 
       return {
         id: docRef.id,
-        ...bikeDoc,
+        ...validatedBike,
       };
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`BIKE_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       console.error("Error creating bike:", error);
       throw new Error(`Failed to create bike: ${error.message}`);
     }
@@ -123,41 +118,19 @@ class BikeService {
   ) {
     try {
       // Validate required fields
-      ValidationUtils.required({ bikeId, userId }, "BIKE", "update bike");
-
-      // Validate arrays
-      ValidationUtils.array(newImages, "new photos", "BIKE", false, 10);
-      ValidationUtils.array(photosToDelete, "photos to delete", "BIKE", false);
+      const validatedBikeId = validateId(bikeId, "bikeId");
+      const validatedUserId = validateId(userId, "userId");
 
       // First, verify the bike exists and belongs to the user
-      const existingBike = await firebaseQueries.getBikeById(bikeId);
+      const existingBike = await firebaseQueries.getBikeById(validatedBikeId);
 
       if (!existingBike || existingBike.isDeleted) {
         throw new Error("Bike not found");
       }
 
-      if (existingBike.userId !== userId) {
+      if (existingBike.userId !== validatedUserId) {
         throw new Error("Unauthorized: You can only edit your own bikes");
       }
-
-      // Validate bike data if provided using centralized validation
-      if (bikeData.name) {
-        ValidationUtils.bikeName(bikeData.name, "BIKE");
-      }
-      ValidationUtils.bikeBrand(bikeData.brand, "BIKE");
-      ValidationUtils.bikeModel(bikeData.model, "BIKE");
-
-      // Parse and validate numeric fields
-      const year = bikeData.year
-        ? ValidationUtils.bikeYear(bikeData.year, "BIKE")
-        : existingBike.year;
-      const engineSize = bikeData.engine_size
-        ? ValidationUtils.bikeEngineSize(bikeData.engine_size, "BIKE")
-        : existingBike.engine_size;
-      const description =
-        bikeData.description !== undefined
-          ? ValidationUtils.bikeDescription(bikeData.description, "BIKE")
-          : existingBike.description;
 
       // Delete specified photos
       if (photosToDelete && photosToDelete.length > 0) {
@@ -178,30 +151,30 @@ class BikeService {
       // Combine remaining photos with new photos
       const allPhotos = [...remainingPhotos, ...newImages];
 
-      // Validate total photo count using centralized validation
-      ValidationUtils.bikePhotosLimit(remainingPhotos, newImages, "BIKE");
-
-      // Prepare update data
-      const updateData = {
-        name: bikeData.name?.trim() || existingBike.name,
-        brand: bikeData.brand?.trim() || existingBike.brand,
-        model: bikeData.model?.trim() || existingBike.model,
-        year,
-        engine_size: engineSize,
-        description,
+      // Use validation system to create update data
+      const updateData = updateBike({
+        name: bikeData.name,
+        brand: bikeData.brand,
+        model: bikeData.model,
+        year: bikeData.year,
+        engine_size: bikeData.engine_size,
+        description: bikeData.description,
         photos: allPhotos,
         main_image: allPhotos.length > 0 ? allPhotos[0].url : "",
-      };
+      });
 
       // Update bike using firebase queries
-      await firebaseQueries.updateBike(bikeId, updateData);
+      await firebaseQueries.updateBike(validatedBikeId, updateData);
 
       return {
-        id: bikeId,
+        id: validatedBikeId,
         ...existingBike,
         ...updateData,
       };
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`BIKE_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       console.error("Error updating bike:", error);
       throw new Error(`Failed to update bike: ${error.message}`);
     }
@@ -213,16 +186,17 @@ class BikeService {
   async deleteBike(bikeId, userId) {
     try {
       // Validate required fields
-      ValidationUtils.required({ bikeId, userId }, "BIKE", "delete bike");
+      const validatedBikeId = validateId(bikeId, "bikeId");
+      const validatedUserId = validateId(userId, "userId");
 
       // First, verify the bike exists and belongs to the user
-      const bike = await firebaseQueries.getBikeById(bikeId);
+      const bike = await firebaseQueries.getBikeById(validatedBikeId);
 
       if (!bike) {
         throw new Error("Bike not found");
       }
 
-      if (bike.userId !== userId) {
+      if (bike.userId !== validatedUserId) {
         throw new Error("Unauthorized: You can only delete your own bikes");
       }
 
@@ -230,13 +204,16 @@ class BikeService {
         throw new Error("Bike already deleted");
       }
       // Soft delete the bike using firebase queries
-      await firebaseQueries.deleteBike(bikeId);
+      await firebaseQueries.deleteBike(validatedBikeId);
 
       // Update user's bike count
-      await this.updateUserBikeCount(userId);
+      await this.updateUserBikeCount(validatedUserId);
 
       return true;
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`BIKE_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       console.error("Error deleting bike:", error);
       throw new Error(`Failed to delete bike: ${error.message}`);
     }
@@ -248,15 +225,24 @@ class BikeService {
   async updateUserBikeCount(userId) {
     try {
       // Validate required fields
-      ValidationUtils.required({ userId }, "BIKE", "update user bike count");
+      const validatedUserId = validateId(userId, "userId");
 
       // Count user's bikes using firebase queries
-      const bikeCount = await firebaseQueries.countBikesByUserId(userId);
+      const bikeCount = await firebaseQueries.countBikesByUserId(
+        validatedUserId
+      );
 
       // Update user's bike count using firebase queries
-      await firebaseQueries.updateUserBikeCount(userId, bikeCount);
+      await firebaseQueries.updateUserBikeCount(validatedUserId, bikeCount);
     } catch (error) {
-      console.error("Error updating user bike count:", error);
+      if (error instanceof ValidationError) {
+        console.error(
+          "Validation error updating user bike count:",
+          error.message
+        );
+      } else {
+        console.error("Error updating user bike count:", error);
+      }
       // Don't throw error here as it's not critical
     }
   }
@@ -266,12 +252,17 @@ class BikeService {
    */
   async getFeaturedBikes(limit = 10) {
     try {
-      // Validate limit parameter using centralized validation
-      ValidationUtils.queryLimit(limit, "BIKE", 1, 50);
+      // Validate limit parameter using pagination options
+      const options = validatePaginationOptions({ limit }, { maxLimit: 50 });
 
-      const bikes = await firebaseQueries.getFeaturedBikes({ limit });
+      const bikes = await firebaseQueries.getFeaturedBikes({
+        limit: options.limit,
+      });
       return bikes;
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`BIKE_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       console.error("Error fetching featured bikes:", error);
       throw new Error(`Failed to fetch featured bikes: ${error.message}`);
     }
@@ -283,29 +274,32 @@ class BikeService {
   async toggleFeaturedStatus(bikeId, userId) {
     try {
       // Validate required fields
-      ValidationUtils.required(
-        { bikeId, userId },
-        "BIKE",
-        "toggle featured status"
-      );
+      const validatedBikeId = validateId(bikeId, "bikeId");
+      const validatedUserId = validateId(userId, "userId");
 
-      const bike = await firebaseQueries.getBikeById(bikeId);
+      const bike = await firebaseQueries.getBikeById(validatedBikeId);
 
       if (!bike) {
         throw new Error("Bike not found");
       }
 
-      if (bike.userId !== userId) {
+      if (bike.userId !== validatedUserId) {
         throw new Error("Unauthorized: You can only modify your own bikes");
       }
 
       const newFeaturedStatus = !bike.is_featured;
 
       // Update featured status using firebase queries
-      await firebaseQueries.toggleBikeFeaturedStatus(bikeId, newFeaturedStatus);
+      await firebaseQueries.toggleBikeFeaturedStatus(
+        validatedBikeId,
+        newFeaturedStatus
+      );
 
       return newFeaturedStatus;
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`BIKE_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       console.error("Error toggling featured status:", error);
       throw new Error(`Failed to toggle featured status: ${error.message}`);
     }
@@ -324,13 +318,15 @@ class BikeService {
         engineSize = "",
       } = options;
 
-      // Validate parameters
-      ValidationUtils.queryLimit(limit, "BIKE", 1, 50);
-      ValidationUtils.queryPage(page, "BIKE");
+      // Validate parameters using pagination options
+      const validatedOptions = validatePaginationOptions(
+        { page, limit },
+        { maxLimit: 50 }
+      );
 
       const result = await firebaseQueries.getAllBikes({
-        page,
-        limit,
+        page: validatedOptions.page,
+        limit: validatedOptions.limit,
         sort,
         search,
         engineSize,
@@ -343,6 +339,9 @@ class BikeService {
 
       return result;
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`BIKE_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       console.error("Error fetching all bikes:", error);
       throw new Error(`Failed to fetch bikes: ${error.message}`);
     }

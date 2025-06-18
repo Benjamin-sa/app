@@ -9,8 +9,13 @@ const {
   validators,
   Answer,
 } = require("../../../models/forum.models");
-const ValidationUtils = require("../../../utils/validation.utils");
-const htmlSanitizerService = require("../../../core/services/htmlSanitizer.service");
+const {
+  createAnswer,
+  updateAnswer,
+  ValidationError,
+  validateId,
+  validatePaginationOptions,
+} = require("../../../utils/validation.utils");
 
 class AnswerService {
   constructor() {
@@ -19,51 +24,19 @@ class AnswerService {
 
   async createAnswer(answerData) {
     try {
-      const {
-        topicId,
-        content,
-        userId,
-        parentAnswerId = null,
-        images = [],
-      } = answerData;
+      // Use new validation system - automatically validates and sanitizes
+      const validatedAnswer = createAnswer(answerData);
 
-      // Validate required fields using ValidationUtils
-      ValidationUtils.required(
-        { topicId, content, userId },
-        "ANSWER",
-        "create answer"
-      );
+      // Add timestamps (Firebase responsibility as discussed)
+      validatedAnswer.createdAt = new Date().toISOString();
+      validatedAnswer.updatedAt = new Date().toISOString();
 
-      // Validate content
-      ValidationUtils.htmlContent(content, "ANSWER");
-
-      // Validate images array
-      ValidationUtils.array(images, "images", "ANSWER", false, 5);
-
-      // Validate parentAnswerId if provided
-      if (
-        ValidationUtils.exists(parentAnswerId) &&
-        typeof parentAnswerId !== "string"
-      ) {
-        throw new Error(
-          "ANSWER_SERVICE_VALIDATION_ERROR: Parent answer ID must be a string"
-        );
-      }
-
-      const answer = {
-        ...Answer,
-        topicId,
-        content: htmlSanitizerService.sanitizeForumContent(content),
-        userId,
-        images,
-        parentAnswerId,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      const docRef = await this.queries.createAnswer(answer);
-      return { id: docRef.id, ...answer };
+      const docRef = await this.queries.createAnswer(validatedAnswer);
+      return { id: docRef.id, ...validatedAnswer };
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`ANSWER_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       if (error.message.startsWith("ANSWER_SERVICE_")) {
         throw error;
       }
@@ -75,21 +48,16 @@ class AnswerService {
 
   async getAnswersByTopic(topicId, options = {}) {
     try {
-      const { limit = 20 } = options;
+      // Validate topicId using new validation utility
+      const validatedTopicId = validateId(topicId, "topicId");
 
-      // Validate required fields
-      ValidationUtils.required({ topicId }, "ANSWER", "get answers");
+      // Validate pagination options
+      const validatedOptions = validatePaginationOptions(options);
+      const limit = validatedOptions.limit || 20;
 
-      // Validate limit
-      if (ValidationUtils.exists(limit)) {
-        if (typeof limit !== "number" || limit < 1 || limit > 100) {
-          throw new Error(
-            "ANSWER_SERVICE_VALIDATION_ERROR: Limit must be a number between 1 and 100"
-          );
-        }
-      }
-
-      const answers = await this.queries.getAnswersByTopic(topicId, { limit });
+      const answers = await this.queries.getAnswersByTopic(validatedTopicId, {
+        limit,
+      });
 
       return {
         answers: Array.isArray(answers) ? answers : [answers],
@@ -97,6 +65,9 @@ class AnswerService {
         hasMore: false,
       };
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`ANSWER_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       if (error.message.startsWith("ANSWER_SERVICE_")) {
         throw error;
       }
@@ -108,8 +79,8 @@ class AnswerService {
 
   async updateAnswer(answerId, updateData) {
     try {
-      // Validate required parameters
-      ValidationUtils.required({ answerId }, "ANSWER", "update answer");
+      // Validate answerId using new validation utility
+      const validatedAnswerId = validateId(answerId, "answerId");
 
       // Ensure updateData is an object and has properties
       if (
@@ -122,44 +93,31 @@ class AnswerService {
         );
       }
 
-      const fieldsToUpdate = {};
-
-      // Validate and add content if provided
-      if (updateData.hasOwnProperty("content")) {
-        ValidationUtils.htmlContent(updateData.content, "ANSWER");
-        fieldsToUpdate.content = htmlSanitizerService.sanitizeForumContent(
-          updateData.content
-        );
-      }
-
-      // Validate and add images if provided
-      if (updateData.hasOwnProperty("images")) {
-        ValidationUtils.array(updateData.images, "images", "ANSWER", false, 5);
-        fieldsToUpdate.images = updateData.images;
-      }
+      // Use new validation system for updates (relaxed validation)
+      const validatedData = updateAnswer(updateData);
 
       // Ensure at least one valid field is being updated
-      if (Object.keys(fieldsToUpdate).length === 0) {
+      if (Object.keys(validatedData).length === 0) {
         throw new Error(
-          "ANSWER_SERVICE_VALIDATION_ERROR: No valid fields provided for update. Allowed fields are 'content' and 'images'."
+          "ANSWER_SERVICE_VALIDATION_ERROR: No valid fields provided for update."
         );
       }
 
-      fieldsToUpdate.updatedAt = new Date().toISOString();
+      // Add update timestamp
+      validatedData.updatedAt = new Date().toISOString();
 
-      // Assumes this.queries.updateAnswer updates and returns the full updated document.
-      // This is key for "without loss of functionality" and "least lines" in this file.
-      // If this.queries.updateAnswer doesn't return the updated doc, it (or this service) needs adjustment.
       const updatedAnswer = await this.queries.updateAnswer(
-        answerId,
-        fieldsToUpdate
+        validatedAnswerId,
+        validatedData
       );
       return updatedAnswer;
     } catch (error) {
-      if (error.message.startsWith("ANSWER_SERVICE_")) {
-        throw error; // Re-throw custom service errors
+      if (error instanceof ValidationError) {
+        throw new Error(`ANSWER_SERVICE_VALIDATION_ERROR: ${error.message}`);
       }
-      // Wrap other errors
+      if (error.message.startsWith("ANSWER_SERVICE_")) {
+        throw error;
+      }
       throw new Error(
         `ANSWER_SERVICE_ERROR: Failed to update answer - ${error.message}`
       );
@@ -168,20 +126,18 @@ class AnswerService {
 
   async deleteAnswer(answerId) {
     try {
-      if (!answerId || typeof answerId !== "string") {
-        throw new Error(
-          "ANSWER_SERVICE_VALIDATION_ERROR: Answer ID is required and must be a string"
-        );
-      }
+      // Validate answerId using new validation utility
+      const validatedAnswerId = validateId(answerId, "answerId");
 
-      await this.queries.deleteAnswer(answerId);
-      // Standard practice for delete operations is to return a success status or the ID.
-      return { id: answerId, message: "Answer deleted successfully" };
+      await this.queries.deleteAnswer(validatedAnswerId);
+      return { id: validatedAnswerId, message: "Answer deleted successfully" };
     } catch (error) {
-      if (error.message.startsWith("ANSWER_SERVICE_")) {
-        throw error; // Re-throw custom service errors (e.g., if query layer throws one, or validation error from above)
+      if (error instanceof ValidationError) {
+        throw new Error(`ANSWER_SERVICE_VALIDATION_ERROR: ${error.message}`);
       }
-      // Wrap other errors
+      if (error.message.startsWith("ANSWER_SERVICE_")) {
+        throw error;
+      }
       throw new Error(
         `ANSWER_SERVICE_ERROR: Failed to delete answer - ${error.message}`
       );

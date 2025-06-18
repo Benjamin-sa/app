@@ -53,7 +53,7 @@
                             <ActionButton type="button" variant="secondary" @click="$emit('close')" :disabled="loading">
                                 Cancel
                             </ActionButton>
-                            <ActionButton type="submit" :loading="loading" :disabled="!form.name || loading">
+                            <ActionButton type="submit" :loading="loading" :disabled="!form.name">
                                 {{ editingBike ? 'Update Bike' : 'Add Bike' }}
                             </ActionButton>
                         </div>

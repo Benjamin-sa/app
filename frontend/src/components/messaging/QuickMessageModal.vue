@@ -17,7 +17,7 @@
             </div>
 
             <div class="flex justify-end space-x-3">
-                <ActionButton @click="$emit('close')" variant="ghost">
+                <ActionButton type="button" @click="$emit('close')" variant="ghost">
                     Cancel
                 </ActionButton>
                 <ActionButton type="submit" :loading="loading" :disabled="!message.trim()">

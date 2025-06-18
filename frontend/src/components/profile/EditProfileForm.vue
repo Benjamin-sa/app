@@ -77,7 +77,7 @@
 
         <!-- Form Actions -->
         <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200/50 dark:border-gray-600/50">
-            <ActionButton @click="$emit('cancel')" variant="outline" size="lg" :disabled="loading">
+            <ActionButton type="button" @click="$emit('cancel')" variant="outline" size="lg" :disabled="loading">
                 Cancel
             </ActionButton>
             <ActionButton type="submit" size="lg" :loading="loading" :disabled="!isFormValid"

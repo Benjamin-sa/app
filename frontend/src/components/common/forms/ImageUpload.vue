@@ -25,7 +25,7 @@
             </div>
 
             <!-- Enhanced Button Style -->
-            <ActionButton v-else @click="$refs.fileInput.click()" variant="outline" :size="buttonSize"
+            <ActionButton v-else type="button" @click="$refs.fileInput.click()" variant="outline" :size="buttonSize"
                 :disabled="disabled || (images && images.length >= maxFiles)" :class="buttonClass">
                 <component :is="iconComponent" class="w-4 h-4 mr-2" />
                 {{ buttonText }}
@@ -43,11 +43,9 @@
                 <img :src="getImageUrl(image)" :alt="getImageName(image)" class="w-full h-full object-cover" />
 
                 <!-- Remove Button -->
-                <ActionButton @click="removeImage(index)" variant="danger" size="sm"
+                <IconButton @click="removeImage(index)" :icon="XMarkIcon" variant="danger" size="sm"
                     class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg"
-                    :disabled="disabled">
-                    <XMarkIcon class="w-4 h-4" />
-                </ActionButton>
+                    :disabled="disabled" title="Remove image" />
 
                 <!-- Image Info -->
                 <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
@@ -75,6 +73,7 @@
 import { ref, computed } from 'vue'
 import { processImageFiles, cleanupImagePreviews } from '@/utils/helpers'
 import ActionButton from '@/components/common/buttons/ActionButton.vue'
+import IconButton from '@/components/common/buttons/IconButton.vue'
 import { XMarkIcon, ExclamationTriangleIcon, CameraIcon, PhotoIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps({

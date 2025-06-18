@@ -25,9 +25,10 @@
 
             <!-- Wishlist Button Overlay -->
             <div class="absolute top-3 left-3">
-                <ActionButton @click.stop="toggleWishlist" :icon="HeartIcon" :isActive="product.isInWishlist"
-                    :fillWhenActive="true" :activeClasses="'bg-red-500/90 text-white hover:bg-red-600/90'"
-                    :inactiveClasses="'bg-white/80 text-gray-600 hover:bg-white hover:text-red-500'" />
+                <IconButton @click.stop="toggleWishlist" :icon="HeartIcon"
+                    :variant="product.isInWishlist ? 'danger' : 'default'" :is-active="product.isInWishlist"
+                    class="bg-white/80 hover:bg-white backdrop-blur-sm shadow-lg"
+                    :class="product.isInWishlist ? 'text-red-500' : 'text-gray-600 hover:text-red-500'" />
             </div>
 
             <!-- View Details Overlay -->
@@ -74,14 +75,15 @@
 
                 <div class="flex items-center space-x-2">
                     <!-- Share Button -->
-                    <ActionButton @click.stop="shareProduct" :icon="ShareIcon"
-                        :activeClasses="'p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-500'"
-                        :inactiveClasses="'p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-500'" />
+                    <IconButton @click.stop="shareProduct" :icon="ShareIcon" variant="ghost"
+                        class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" title="Share product" />
 
                     <!-- View Details Button -->
-                    <ActionButton @click.stop="$router.push(`/products/${product.id}`)" :icon="EyeIcon"
-                        :activeClasses="'flex items-center space-x-1 px-3 py-1.5 bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:hover:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg text-sm font-medium'"
-                        :inactiveClasses="'flex items-center space-x-1 px-3 py-1.5 bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:hover:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg text-sm font-medium'" />
+                    <ActionButton @click.stop="$router.push(`/products/${product.id}`)" variant="outline" size="sm"
+                        class="bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:hover:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+                        <EyeIcon class="w-4 h-4 mr-1" />
+                        View
+                    </ActionButton>
                 </div>
             </div>
         </div>
@@ -92,9 +94,9 @@
 import { computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notification';
-import { useApi } from '@/composables/useApi';
-import { apiService } from '@/services/api.service';
+import { useProductStore } from '@/stores/products';
 import ActionButton from '@/components/common/buttons/ActionButton.vue';
+import IconButton from '@/components/common/buttons/IconButton.vue';
 import {
     PhotoIcon,
     HeartIcon,
@@ -111,9 +113,7 @@ const props = defineProps({
 
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
-
-// Use the composable
-const { execute } = useApi();
+const productStore = useProductStore();
 
 // Get the first image from the images array
 const productImage = computed(() => {
@@ -142,39 +142,23 @@ const primaryCollection = computed(() => {
     return null;
 });
 
-const getCategoryClass = () => {
-    // Use a consistent style for all categories
-    return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400';
-};
-
 const toggleWishlist = async () => {
     if (!authStore.isAuthenticated) {
         notificationStore.info('Sign in required', 'Please sign in to add products to your wishlist.');
         return;
     }
 
-    const isCurrentlyInWishlist = props.product.isInWishlist;
+    try {
+        const newWishlistState = await productStore.toggleWishlist(props.product.id);
 
-    const result = await execute(
-        () => isCurrentlyInWishlist
-            ? apiService.client.delete(`/users/wishlist/${props.product.id}`)
-            : apiService.client.post(`/users/wishlist/${props.product.id}`),
-        {
-            successMessage: isCurrentlyInWishlist
-                ? 'Product removed from your wishlist.'
-                : 'Product added to your wishlist.',
-            successTitle: isCurrentlyInWishlist
-                ? 'Removed from wishlist'
-                : 'Added to wishlist',
-            showErrorNotification: true,
-            notificationStore,
-            errorTitle: 'Wishlist error',
-            errorMessage: 'Unable to update wishlist. Please try again.'
-        }
-    );
-
-    if (result) {
-        props.product.isInWishlist = !isCurrentlyInWishlist;
+        notificationStore.success(
+            newWishlistState ? 'Added to wishlist' : 'Removed from wishlist',
+            newWishlistState
+                ? 'Product added to your wishlist.'
+                : 'Product removed from your wishlist.'
+        );
+    } catch (error) {
+        notificationStore.error('Wishlist error', 'Unable to update wishlist. Please try again.');
     }
 };
 
@@ -209,6 +193,7 @@ const fallbackShare = (url) => {
 .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }

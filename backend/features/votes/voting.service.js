@@ -5,7 +5,11 @@
 
 const firebaseQueries = require("../../queries/FirebaseQueries");
 const { COLLECTIONS } = require("../../models/forum.models");
-const ValidationUtils = require("../../utils/validation.utils");
+const {
+  createVote,
+  ValidationError,
+  validateId,
+} = require("../../utils/validation.utils");
 
 class VotingService {
   constructor() {
@@ -14,26 +18,13 @@ class VotingService {
 
   async vote(userId, targetId, targetType, voteType) {
     try {
-      // Validate required parameters
-      ValidationUtils.required(
-        { userId, targetId, targetType },
-        "VOTING",
-        "vote"
-      );
-
-      // Handle null voteType for vote removal
-      if (
-        ValidationUtils.exists(voteType) &&
-        !["up", "down"].includes(voteType)
-      ) {
-        throw new Error(
-          "VOTING_SERVICE_VALIDATION_ERROR: Invalid vote type. Must be 'up', 'down', or null"
-        );
-      }
-
-      if (!["topic", "answer", "bike", "profile"].includes(targetType)) {
-        throw new Error("VOTING_SERVICE_VALIDATION_ERROR: Invalid target type");
-      }
+      // Create and validate vote using validation system
+      const validatedVote = createVote({
+        userId,
+        targetId,
+        targetType,
+        voteType,
+      });
 
       // Verify target exists
       const target =
@@ -53,15 +44,21 @@ class VotingService {
 
       // Create or update vote using queries
       await this.queries.createOrUpdateVote(
-        userId,
-        targetId,
-        targetType,
-        voteType
+        validatedVote.userId,
+        validatedVote.targetId,
+        validatedVote.targetType,
+        validatedVote.voteType
       );
 
       // Get current vote counts
-      const currentVotes = await this.getVotes(targetId, targetType);
-      const userVote = await this.getUserVote(userId, targetId);
+      const currentVotes = await this.getVotes(
+        validatedVote.targetId,
+        validatedVote.targetType
+      );
+      const userVote = await this.getUserVote(
+        validatedVote.userId,
+        validatedVote.targetId
+      );
 
       return {
         success: true,
@@ -71,6 +68,9 @@ class VotingService {
         downvotes: currentVotes.downvotes,
       };
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`VOTING_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       if (error.message.startsWith("VOTING_SERVICE_")) {
         throw error;
       }
@@ -82,11 +82,19 @@ class VotingService {
 
   async getUserVote(userId, targetId) {
     try {
-      ValidationUtils.required({ userId, targetId }, "VOTING", "get user vote");
+      // Validate required parameters
+      const validatedUserId = validateId(userId, "userId");
+      const validatedTargetId = validateId(targetId, "targetId");
 
-      const vote = await this.queries.getUserVote(userId, targetId);
+      const vote = await this.queries.getUserVote(
+        validatedUserId,
+        validatedTargetId
+      );
       return vote ? vote.voteType : null;
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`VOTING_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       if (error.message.startsWith("VOTING_SERVICE_")) {
         throw error;
       }
@@ -98,13 +106,18 @@ class VotingService {
 
   async getVotes(targetId, targetType) {
     try {
-      ValidationUtils.required({ targetId }, "VOTING", "get votes");
+      // Validate required parameters
+      const validatedTargetId = validateId(targetId, "targetId");
 
+      // Validate targetType using enum validation
       if (!["topic", "answer", "bike", "profile"].includes(targetType)) {
         throw new Error("VOTING_SERVICE_VALIDATION_ERROR: Invalid target type");
       }
 
-      const votes = await this.queries.getVotesByTarget(targetId, targetType);
+      const votes = await this.queries.getVotesByTarget(
+        validatedTargetId,
+        targetType
+      );
 
       const voteCounts = {
         upvotes: 0,
@@ -124,6 +137,9 @@ class VotingService {
 
       return voteCounts;
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new Error(`VOTING_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      }
       if (error.message.startsWith("VOTING_SERVICE_")) {
         throw error;
       }

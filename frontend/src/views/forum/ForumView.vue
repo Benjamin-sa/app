@@ -1,6 +1,5 @@
 <template>
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
-        :style="{ paddingTop: `${navbarStore.navbarHeight + 32}px` }">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Modern Header with Professional Gradient Background -->
         <div class="relative mb-8 p-8 rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-gray-800 shadow-xl">
             <div class="absolute inset-0 bg-black/10 rounded-2xl backdrop-blur-sm"></div>
@@ -117,10 +116,9 @@
                     class="inline-block w-full max-w-2xl p-8 my-8 overflow-hidden text-left align-middle transition-all transform bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl shadow-2xl rounded-2xl relative z-60 border border-gray-200/50 dark:border-gray-700/50">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Create New Topic</h3>
-                        <ActionButton @click="showCreateTopic = false" variant="ghost" size="sm"
-                            class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded-xl">
-                            <XMarkIcon class="w-6 h-6" />
-                        </ActionButton>
+                        <IconButton @click="showCreateTopic = false" :icon="XMarkIcon" variant="ghost"
+                            class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                            title="Close modal" />
                     </div>
                     <TopicForm @success="handleTopicCreated" @cancel="showCreateTopic = false" />
                 </div>
@@ -136,6 +134,7 @@ import { useForumStore } from '@/stores/forum';
 import { debounce, getCategoryLabel } from '@/utils/helpers';
 import { FORUM_CATEGORIES } from '@/utils/constants.repository.js'
 import ActionButton from '@/components/common/buttons/ActionButton.vue';
+import IconButton from '@/components/common/buttons/IconButton.vue';
 import LoadingSection from '@/components/common/sections/LoadingSection.vue';
 import TopicCard from '@/components/forum/TopicCard.vue';
 import TopicForm from '@/components/forum/TopicForm.vue';
