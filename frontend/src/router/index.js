@@ -3,6 +3,8 @@ import { useAuthStore } from "@/stores/auth";
 
 // Lazy load components for better performance
 const HomeView = () => import("@/views/HomeView.vue");
+const CategorySelectionView = () =>
+  import("@/views/forum/CategorySelectionView.vue");
 const ForumView = () => import("@/views/forum/ForumView.vue");
 const TopicView = () => import("@/views/forum/TopicView.vue");
 const ProductsView = () => import("@/views/products/ProductsView.vue");
@@ -26,6 +28,15 @@ const routes = [
   },
   {
     path: "/forum",
+    name: "ForumCategories",
+    component: CategorySelectionView,
+    meta: {
+      title: "Forum Categories - Motordash",
+      guest: true,
+    },
+  },
+  {
+    path: "/forum/category/:categoryId",
     name: "Forum",
     component: ForumView,
     meta: {

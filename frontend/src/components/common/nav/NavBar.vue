@@ -30,7 +30,7 @@
                         </RouterLink>
                         <RouterLink to="/forum"
                             class="inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2 transition-colors duration-200"
-                            :class="$route.name?.startsWith('Forum') || $route.name === 'Topic' || $route.name === 'CreateTopic'
+                            :class="$route.name?.startsWith('Forum') || $route.name === 'Topic' || $route.name === 'ForumCategories'
                                 ? 'text-primary-600 dark:text-primary-400 border-primary-500'
                                 : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'">
                             Forum
@@ -104,11 +104,6 @@
                                     <UserIcon class="w-4 h-4" />
                                     Profile
                                 </RouterLink>
-                                <RouterLink to="/forum/create"
-                                    class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                    <PlusIcon class="w-4 h-4" />
-                                    Create Topic
-                                </RouterLink>
                                 <hr class="my-1 border-gray-100 dark:border-gray-700" />
                                 <button @click="handleLogout"
                                     class="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
@@ -171,7 +166,7 @@
                         </RouterLink>
                         <RouterLink to="/forum"
                             class="block px-3 py-2 text-base font-medium rounded-lg transition-colors duration-200"
-                            :class="$route.name?.startsWith('Forum') || $route.name === 'Topic' || $route.name === 'CreateTopic'
+                            :class="$route.name?.startsWith('Forum') || $route.name === 'Topic' || $route.name === 'ForumCategories'
                                 ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
                                 : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'"
                             @click="closeMobileMenu">
@@ -218,11 +213,6 @@
                                 class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                                 @click="closeMobileMenu">
                                 Profile
-                            </RouterLink>
-                            <RouterLink to="/forum/create"
-                                class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
-                                @click="closeMobileMenu">
-                                Create Topic
                             </RouterLink>
                             <button @click="handleLogout"
                                 class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
@@ -298,7 +288,7 @@ const toggleMobileMenu = () => {
 const handleSearch = () => {
     if (searchQuery.value.trim()) {
         router.push({
-            name: 'Forum',
+            name: 'ForumCategories',
             query: { search: searchQuery.value.trim() }
         });
         closeMobileMenu();

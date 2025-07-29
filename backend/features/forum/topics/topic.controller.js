@@ -190,6 +190,13 @@ class TopicController extends BaseController {
           () => topicService.getTopicById(id, userId),
           180
         );
+
+        // Track view asynchronously (don't wait for it)
+        if (result) {
+          topicService.trackTopicView(id, userId).catch(err => 
+            console.warn(`Failed to track view for topic ${id}:`, err.message)
+          );
+        }
       } else if (mode === "search") {
         const { q: searchTerm, category, limit = 20 } = req.query;
         cacheKey = `search:${searchTerm}:${category || "all"}:${limit}`;

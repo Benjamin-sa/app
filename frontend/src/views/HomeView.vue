@@ -120,9 +120,9 @@
                             <div
                                 class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-8">
                                 <p class="text-gray-500 dark:text-gray-400 text-lg">No recent topics found</p>
-                                <ActionButton v-if="authStore.isAuthenticated" @click="$router.push('/forum/create')"
+                                <ActionButton v-if="authStore.isAuthenticated" @click="$router.push('/forum')"
                                     variant="primary" size="sm" class="mt-4">
-                                    Create First Topic
+                                    Explore Categories
                                 </ActionButton>
                             </div>
                         </div>

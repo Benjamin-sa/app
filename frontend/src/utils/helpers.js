@@ -158,6 +158,57 @@ export function formatTimeAgo(timestamp) {
   }
 }
 
+/**
+ * Format time ago in a human-readable format with more detailed text
+ * @param {Date|Object|string|number} timestamp - Date object, Firestore timestamp, or other date format
+ * @returns {string} Human-readable time ago string
+ */
+export function formatRelativeTime(timestamp) {
+  if (!timestamp) return "";
+
+  try {
+    // Convert Firestore timestamp if needed
+    const date = convertFirestoreTimestamp(timestamp);
+    if (!date || isNaN(date.getTime())) {
+      return "";
+    }
+
+    const now = new Date();
+    const diffMs = now - date;
+
+    // Handle edge cases: future dates or invalid calculations
+    if (diffMs < 0) return "just now"; // Future dates
+    if (!isFinite(diffMs)) return ""; // Invalid calculation
+
+    const diffSeconds = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffWeeks = Math.floor(diffDays / 7);
+    const diffMonths = Math.floor(diffDays / 30);
+    const diffYears = Math.floor(diffDays / 365);
+
+    // Additional validation for calculated values
+    if (!isFinite(diffSeconds)) return "";
+
+    if (diffSeconds < 60) return "just now";
+    if (diffMins < 60)
+      return `${diffMins} minute${diffMins !== 1 ? "s" : ""} ago`;
+    if (diffHours < 24)
+      return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
+    if (diffWeeks < 4)
+      return `${diffWeeks} week${diffWeeks !== 1 ? "s" : ""} ago`;
+    if (diffMonths < 12)
+      return `${diffMonths} month${diffMonths !== 1 ? "s" : ""} ago`;
+
+    return `${diffYears} year${diffYears !== 1 ? "s" : ""} ago`;
+  } catch (error) {
+    console.warn("Error in formatRelativeTime:", error);
+    return "";
+  }
+}
+
 // =============================================================================
 // FORMATTING UTILITIES
 // =============================================================================

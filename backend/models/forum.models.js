@@ -95,6 +95,19 @@ const Category = {
   icon: "", // Icon name/class
   isActive: true,
   sortOrder: 0,
+  // Statistics fields
+  topicCount: 0,
+  totalViews: 0,
+  lastActivity: {
+    topicId: "",
+    topicTitle: "",
+    userId: "",
+    userName: "",
+    userAvatar: "",
+    timestamp: "", // Firestore timestamp
+  },
+  createdAt: "",
+  updatedAt: "",
 };
 
 // Forum Statistics Model

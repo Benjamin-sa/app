@@ -83,12 +83,12 @@
                     <div class="flex justify-between">
                         <span class="text-gray-600 dark:text-gray-400">Reputation:</span>
                         <span class="text-gray-900 dark:text-gray-100 font-semibold">{{ userProfile.reputation || 0
-                            }}</span>
+                        }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600 dark:text-gray-400">Last Active:</span>
                         <span class="text-gray-900 dark:text-gray-100">{{ formatLastActive(userProfile.lastActive)
-                            }}</span>
+                        }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600 dark:text-gray-400">Verified:</span>
@@ -100,7 +100,7 @@
                     <div class="flex justify-between">
                         <span class="text-gray-600 dark:text-gray-400">Moderator:</span>
                         <span
-                            :class="userProfile.isModerator ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'">
+                            :class="userProfile.isModerator ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'">
                             {{ userProfile.isModerator ? 'Yes' : 'No' }}
                         </span>
                     </div>
@@ -121,22 +121,22 @@
                     <div class="flex justify-between">
                         <span class="text-gray-600 dark:text-gray-400">Topics Created:</span>
                         <span class="text-gray-900 dark:text-gray-100 font-semibold">{{ userProfile.topics_created || 0
-                            }}</span>
+                        }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600 dark:text-gray-400">Answers Posted:</span>
                         <span class="text-gray-900 dark:text-gray-100 font-semibold">{{ userProfile.answers_posted || 0
-                            }}</span>
+                        }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600 dark:text-gray-400">Products Listed:</span>
                         <span class="text-gray-900 dark:text-gray-100 font-semibold">{{ userProfile.products_count || 0
-                            }}</span>
+                        }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600 dark:text-gray-400">Total Reputation:</span>
                         <span class="text-gray-900 dark:text-gray-100 font-semibold">{{ userProfile.reputation || 0
-                            }}</span>
+                        }}</span>
                     </div>
                 </div>
             </div>

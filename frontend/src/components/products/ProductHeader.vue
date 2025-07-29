@@ -14,7 +14,7 @@
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
             <div class="flex flex-col">
                 <span class="text-3xl sm:text-4xl font-bold text-primary-600 dark:text-primary-400">
-                    ${{ price }}
+                    €{{ price }}
                 </span>
                 <span class="text-sm text-gray-500 dark:text-gray-400">Best Price Guaranteed</span>
             </div>

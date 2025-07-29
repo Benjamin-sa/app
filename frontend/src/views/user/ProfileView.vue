@@ -33,7 +33,7 @@
 
                 <!-- User Status Bar (if verified, admin, etc.) -->
                 <div v-if="userProfile.isVerified || userProfile.isAdmin || userProfile.isModerator"
-                    class="bg-gradient-to-r from-blue-50/80 to-blue-100/80 dark:from-blue-900/50 dark:to-blue-800/50 backdrop-blur-sm px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200/50 dark:border-gray-600/50">
+                    class="bg-gradient-to-r from-primary-50/80 to-primary-100/80 dark:from-primary-900/50 dark:to-primary-800/50 backdrop-blur-sm px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200/50 dark:border-gray-600/50">
                     <div class="flex flex-wrap items-center gap-2 sm:gap-3">
                         <span v-if="userProfile.isVerified"
                             class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full shadow-lg">
@@ -46,7 +46,7 @@
                             Admin
                         </span>
                         <span v-if="userProfile.isModerator"
-                            class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full shadow-lg">
+                            class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-full shadow-lg">
                             <StarIcon class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                             Moderator
                         </span>
@@ -62,12 +62,12 @@
                                 <!-- Avatar -->
                                 <div class="relative">
                                     <div
-                                        class="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 rounded-full flex items-center justify-center overflow-hidden shadow-xl border-4 border-white dark:border-gray-700">
+                                        class="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/30 dark:to-primary-800/30 rounded-full flex items-center justify-center overflow-hidden shadow-xl border-4 border-white dark:border-gray-700">
                                         <img v-if="userProfile.avatar || userProfile.avatar_url"
                                             :src="userProfile.avatar || userProfile.avatar_url"
                                             :alt="userProfile.username" class="w-full h-full object-cover" />
                                         <UserIcon v-else
-                                            class="w-12 h-12 sm:w-16 sm:h-16 text-blue-600 dark:text-blue-400" />
+                                            class="w-12 h-12 sm:w-16 sm:h-16 text-primary-600 dark:text-primary-400" />
                                     </div>
                                     <!-- Online Status Indicator -->
                                     <div v-if="isOnline"
@@ -142,8 +142,8 @@
                         <div
                             class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6 border-t border-gray-200/50 dark:border-gray-600/50">
                             <div
-                                class="text-center p-4 bg-gradient-to-br from-blue-50/50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl border border-blue-200/30 dark:border-blue-700/30">
-                                <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{
+                                class="text-center p-4 bg-gradient-to-br from-primary-50/50 to-primary-100/50 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl border border-primary-200/30 dark:border-primary-700/30">
+                                <div class="text-2xl font-bold text-primary-600 dark:text-primary-400">{{
                                     userProfile.topics_created || 0 }}</div>
                                 <div class="text-sm text-gray-600 dark:text-gray-400">Topics</div>
                             </div>

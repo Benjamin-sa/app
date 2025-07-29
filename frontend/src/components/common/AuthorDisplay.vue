@@ -1,12 +1,7 @@
 <template>
     <div class="flex items-center space-x-2">
         <!-- Loading state -->
-        <template v-if="loading">
-            <div :class="avatarFallbackClass">
-                <div class="animate-spin rounded-full border-2 border-white border-t-transparent w-4 h-4"></div>
-            </div>
-            <span v-if="showName" :class="nameClass">Loading...</span>
-        </template>
+        <LoadingSection v-if="loading" message="Loading Author..." />
 
         <!-- Author display -->
         <template v-else-if="displayData">
@@ -42,6 +37,7 @@ import { computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useUsersStore } from '@/stores/users';
+import LoadingSection from './sections/LoadingSection.vue';
 
 const props = defineProps({
     userId: {

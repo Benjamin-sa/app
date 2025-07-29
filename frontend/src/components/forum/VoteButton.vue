@@ -102,8 +102,8 @@ const buttonBaseClasses = computed(() => {
 const upvoteClasses = computed(() => {
     const voted = currentUserVote.value === 'up';
     const colors = voted ?
-        'text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 ring-1 ring-blue-300 dark:ring-blue-600' :
-        'text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20';
+        'text-primary-700 dark:text-primary-400 bg-primary-100 dark:bg-primary-900/40 ring-1 ring-primary-300 dark:ring-primary-600' :
+        'text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20';
 
     return `${buttonBaseClasses.value} ${colors}`;
 });
@@ -127,7 +127,7 @@ const countClasses = computed(() => {
     };
 
     const colors = currentVoteCount.value > 0 ?
-        'text-blue-700 dark:text-blue-400' :
+        'text-primary-700 dark:text-primary-400' :
         currentVoteCount.value < 0 ?
             'text-red-700 dark:text-red-400' :
             'text-gray-700 dark:text-gray-300';

@@ -54,11 +54,11 @@ const buttonClasses = computed(() => {
     }
 
     const variantClasses = {
-        primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 shadow-sm dark:bg-blue-500 dark:hover:bg-blue-600',
+        primary: 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-sm dark:bg-primary-500 dark:hover:bg-primary-600',
         secondary: 'bg-slate-600 text-white hover:bg-slate-700 focus:ring-slate-500 shadow-sm dark:bg-slate-500 dark:hover:bg-slate-600',
-        outline: 'border border-blue-300 dark:border-blue-600 bg-transparent text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 focus:ring-blue-500',
-        ghost: 'bg-transparent text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/20 focus:ring-blue-500',
-        white: 'bg-white text-blue-900 hover:bg-blue-50 focus:ring-blue-500 shadow-sm border border-blue-200',
+        outline: 'border border-primary-300 dark:border-primary-600 bg-transparent text-primary-700 dark:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 focus:ring-primary-500',
+        ghost: 'bg-transparent text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-900/20 focus:ring-primary-500',
+        white: 'bg-white text-primary-900 hover:bg-primary-50 focus:ring-primary-500 shadow-sm border border-primary-200',
         danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-sm dark:bg-red-500 dark:hover:bg-red-600'
     }
 

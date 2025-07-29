@@ -112,11 +112,11 @@ const props = defineProps({
     },
     filterIconClasses: {
         type: String,
-        default: 'p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg'
+        default: 'p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg'
     },
     filterIconColorClasses: {
         type: String,
-        default: 'text-blue-600 dark:text-blue-400'
+        default: 'text-primary-600 dark:text-primary-400'
     },
     emptyTitle: {
         type: String,

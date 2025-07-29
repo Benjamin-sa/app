@@ -8,11 +8,11 @@
 
         <template #page-header>
             <div
-                class="inline-flex items-center justify-center p-3 bg-gradient-to-r from-green-100 to-blue-100 dark:from-green-900/30 dark:to-blue-900/30 rounded-2xl mb-4">
+                class="inline-flex items-center justify-center p-3 bg-gradient-to-r from-green-100 to-primary-100 dark:from-green-900/30 dark:to-primary-900/30 rounded-2xl mb-4">
                 <ShoppingBagIcon class="w-8 h-8 text-green-600 dark:text-green-400" />
             </div>
             <h1
-                class="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-green-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+                class="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-green-600 via-primary-600 to-accent-600 bg-clip-text text-transparent">
                 🛒 Product Gallery
             </h1>
             <p class="text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">

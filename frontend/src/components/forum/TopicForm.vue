@@ -2,7 +2,7 @@
     <div class="space-y-8">
         <!-- Enhanced Loading State for Edit Mode -->
         <div v-if="isEditMode && !formInitialized" class="flex justify-center py-12">
-            <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-primary-200 border-t-primary-600"></div>
         </div>
 
         <!-- Enhanced Form -->
@@ -12,9 +12,21 @@
                 placeholder="Enter a descriptive title for your topic" :disabled="loading"
                 :help-text="form.title && form.title.length < 10 ? 'Title should be at least 10 characters long' : ''" />
 
-            <!-- Enhanced Category -->
-            <FormField id="category" v-model="form.category" label="Category" type="select" required variant="enhanced"
-                placeholder="Select a category" :disabled="loading" :options="categoryOptions" />
+            <!-- Category Display (read-only when category is provided) -->
+            <div v-if="props.category" class="space-y-3">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Category
+                </label>
+                <div
+                    class="px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl">
+                    <span class="text-gray-900 dark:text-white font-medium">{{ getCategoryLabel(props.category)
+                    }}</span>
+                </div>
+            </div>
+
+            <!-- Enhanced Category (only show when no category is provided) -->
+            <FormField v-else id="category" v-model="form.category" label="Category" type="select" required
+                variant="enhanced" placeholder="Select a category" :disabled="loading" :options="categoryOptions" />
 
             <!-- Content -->
             <div>
@@ -35,10 +47,10 @@
                 <!-- Enhanced Tag Display -->
                 <div v-if="form.tags.length > 0" class="flex flex-wrap gap-2">
                     <span v-for="(tag, index) in form.tags" :key="index"
-                        class="inline-flex items-center px-3 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 text-blue-800 dark:text-blue-200 border border-blue-200/50 dark:border-blue-800/50 backdrop-blur-sm transition-all duration-200 hover:scale-105">
+                        class="inline-flex items-center px-3 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-primary-100 to-accent-100 dark:from-primary-900/30 dark:to-accent-900/30 text-primary-800 dark:text-primary-200 border border-primary-200/50 dark:border-primary-800/50 backdrop-blur-sm transition-all duration-200 hover:scale-105">
                         #{{ tag }}
                         <button type="button" @click="removeTag(index)"
-                            class="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-100 p-0.5 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+                            class="ml-2 text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-100 p-0.5 rounded-full hover:bg-primary-200 dark:hover:bg-primary-800 transition-colors"
                             :disabled="loading">
                             <XMarkIcon class="w-3 h-3" />
                         </button>
@@ -65,7 +77,7 @@
                     Cancel
                 </ActionButton>
                 <ActionButton type="submit" size="lg" :loading="loading" :disabled="!isFormValid"
-                    class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg">
+                    class="bg-gradient-to-r from-primary-600 to-accent-600 hover:from-primary-700 hover:to-accent-700 text-white shadow-lg">
                     {{ isEditMode ? 'Save Changes' : 'Post Topic' }}
                 </ActionButton>
             </div>
@@ -88,6 +100,10 @@ import { XMarkIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
 const props = defineProps({
     topic: {
         type: Object,
+        default: null
+    },
+    category: {
+        type: String,
         default: null
     }
 });
@@ -129,8 +145,9 @@ const categoryOptions = computed(() =>
 
 const isFormValid = computed(() => {
     const contentLength = getTextLength(form.value.content);
+    const categoryValue = props.category || form.value.category;
     return form.value.title.length >= 10 &&
-        form.value.category &&
+        categoryValue &&
         contentLength >= 20 &&
         contentLength <= 5000;
 });
@@ -190,12 +207,15 @@ const initializeForm = () => {
         }, 100);
         console.log('Form initialized for edit:', form.value);
     } else {
-        // Create mode - reset form
+        // Create mode - reset form and use provided category
         resetForm();
+        if (props.category) {
+            form.value.category = props.category;
+        }
         setTimeout(() => {
             formInitialized.value = true;
         }, 100);
-        console.log('Form initialized for create');
+        console.log('Form initialized for create with category:', props.category);
     }
 };
 
@@ -235,7 +255,7 @@ const handleSubmit = async () => {
 
         // Add basic topic data
         formData.append('title', form.value.title.trim());
-        formData.append('category', form.value.category);
+        formData.append('category', props.category || form.value.category);
         formData.append('content', form.value.content.trim());
         formData.append('tags', JSON.stringify(form.value.tags));
 

@@ -20,7 +20,7 @@
                 Cancel
             </ActionButton>
             <ActionButton type="submit" size="lg" :loading="loading" :disabled="!isFormValid"
-                class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg">
+                class="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white shadow-lg">
                 {{ isEditing ? 'Update Answer' : 'Post Answer' }}
             </ActionButton>
         </div>

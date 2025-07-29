@@ -32,8 +32,10 @@ app.use(cors(corsOptions));
 // Parse JSON bodies
 app.use(express.json());
 
-// Serve static files from the frontend build (for production)
-app.use(express.static(path.join(__dirname, "public")));
+// Serve static files from the frontend build (only in production)
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, "public")));
+}
 
 // API health check
 app.get("/api/health", (req, res) => {
@@ -59,7 +61,7 @@ app.use("/api/bikes", require("./features/bikes/bike.routes"));
 app.use("/api/votes", require("./features/votes/vote.routes"));
 app.use("/api/messages", require("./features/messaging/messaging.routes"));
 
-// Serve frontend for all non-API routes (SPA routing support)
+// Serve frontend for all non-API routes (SPA routing support - only in production)
 app.get("*", (req, res) => {
   // Don't serve the SPA for API routes
   if (req.path.startsWith("/api/")) {
@@ -77,8 +79,17 @@ app.get("*", (req, res) => {
     });
   }
 
-  // Serve the frontend app for all other routes
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  // Only serve the frontend app in production
+  if (process.env.NODE_ENV === 'production') {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+  } else {
+    // In development, return a helpful message
+    res.status(404).json({
+      error: "Frontend not served in development",
+      message: "Run the frontend development server separately (e.g., npm run dev in frontend folder)",
+      api_available: true
+    });
+  }
 });
 
 // 404 handler for API routes is handled above
@@ -87,4 +98,12 @@ app.get("*", (req, res) => {
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
   console.log(`🌐 Network access: http://192.168.0.225:${PORT}`);
+  
+  // Initialize category statistics service
+  const categoryStatsService = require("./services/categoryStats.service");
+  
+  // Start periodic updates every 30 minutes
+  categoryStatsService.startPeriodicUpdates(30);
+  
+  console.log("📊 Category statistics service started");
 });

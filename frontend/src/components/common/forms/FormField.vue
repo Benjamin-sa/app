@@ -119,8 +119,8 @@ const inputClasses = computed(() => {
             'dark:border-gray-600/50',
             'rounded-xl',
             'focus:ring-2',
-            'focus:ring-blue-500/20',
-            'focus:border-blue-500',
+            'focus:ring-primary-500/20',
+            'focus:border-primary-500',
             'bg-white/50',
             'dark:bg-gray-700/50',
             'backdrop-blur-sm'

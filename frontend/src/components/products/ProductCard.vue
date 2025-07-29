@@ -20,7 +20,7 @@
             <!-- Price Badge -->
             <div
                 class="absolute top-3 right-3 bg-green-500/90 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-sm font-bold">
-                ${{ product.price }}
+                €{{ product.price }}
             </div>
 
             <!-- Wishlist Button Overlay -->
@@ -45,7 +45,7 @@
             <!-- Brand and Category -->
             <div class="flex items-center justify-between">
                 <span v-if="productBrand" class="inline-flex items-center space-x-1">
-                    <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div class="w-2 h-2 bg-primary-500 rounded-full"></div>
                     <span class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ productBrand }}</span>
                 </span>
                 <span v-if="primaryCollection"
@@ -68,7 +68,7 @@
             <div class="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
                 <div class="flex flex-col">
                     <span class="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                        ${{ product.price }}
+                        €{{ product.price }}
                     </span>
                     <span class="text-xs text-gray-500 dark:text-gray-400">Best Price</span>
                 </div>

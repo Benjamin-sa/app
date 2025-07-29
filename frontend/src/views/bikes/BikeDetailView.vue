@@ -110,7 +110,7 @@
                         <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Specifications</h2>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div v-if="bike.brand" class="flex items-center space-x-3">
-                                <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                <div class="w-3 h-3 bg-primary-500 rounded-full"></div>
                                 <div>
                                     <span class="text-sm text-gray-500 dark:text-gray-400">Brand</span>
                                     <p class="font-semibold text-gray-900 dark:text-white">{{ bike.brand }}</p>
@@ -194,11 +194,12 @@
                 <div
                     class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
                     <div
-                        class="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-gradient-to-r from-blue-50/80 to-blue-100/80 dark:from-blue-900/50 dark:to-blue-800/50 backdrop-blur-sm border-b border-gray-200/50 dark:border-gray-600/50">
+                        class="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-gradient-to-r from-primary-50/80 to-primary-100/80 dark:from-primary-900/50 dark:to-primary-800/50 backdrop-blur-sm border-b border-gray-200/50 dark:border-gray-600/50">
                         <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
                             <div
-                                class="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg sm:rounded-xl mr-2 sm:mr-3">
-                                <ChatBubbleLeftIcon class="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
+                                class="p-1.5 sm:p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg sm:rounded-xl mr-2 sm:mr-3">
+                                <ChatBubbleLeftIcon
+                                    class="w-5 h-5 sm:w-6 sm:h-6 text-primary-600 dark:text-primary-400" />
                             </div>
                             {{ formatNumber(commentCount) }} {{ commentCount === 1 ? 'Comment' : 'Comments' }}
                         </h2>

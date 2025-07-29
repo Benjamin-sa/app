@@ -57,8 +57,8 @@ const buttonClasses = computed(() => {
             ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
             : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300',
         primary: props.isActive
-            ? 'bg-blue-600 text-white shadow-lg'
-            : 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20',
+            ? 'bg-primary-600 text-white shadow-lg'
+            : 'text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20',
         secondary: props.isActive
             ? 'bg-gray-600 text-white shadow-lg'
             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/20',

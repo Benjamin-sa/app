@@ -6,12 +6,12 @@
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
                 <div class="flex items-center space-x-4">
                     <div
-                        class="p-3 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-xl">
-                        <CameraIcon class="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                        class="p-3 bg-gradient-to-r from-primary-100 to-accent-100 dark:from-primary-900/30 dark:to-accent-900/30 rounded-xl">
+                        <CameraIcon class="w-6 h-6 text-primary-600 dark:text-primary-400" />
                     </div>
                     <div>
                         <h2
-                            class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                            class="text-2xl font-bold bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
                             {{ isOwnProfile ? '🏍️ My Bike Collection' : `🏍️ ${userProfile?.username || 'User'}'s
                             Bikes` }}
                         </h2>
@@ -33,7 +33,7 @@
                 </div>
 
                 <ActionButton v-if="isOwnProfile" @click="$emit('add-bike')"
-                    class="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl px-6 py-3 shadow-lg hover:shadow-xl transition-all duration-300">
+                    class="flex items-center space-x-2 bg-gradient-to-r from-primary-600 to-accent-600 hover:from-primary-700 hover:to-accent-700 text-white rounded-xl px-6 py-3 shadow-lg hover:shadow-xl transition-all duration-300">
                     <PlusIcon class="w-5 h-5" />
                     <span class="font-semibold">Add New Bike</span>
                 </ActionButton>
@@ -44,16 +44,7 @@
         <LoadingSection v-if="loading" message="Loading bikes..." />
 
         <!-- Error State -->
-        <div v-else-if="error" class="text-center py-12 bg-red-50 dark:bg-red-900/20 rounded-xl">
-            <div
-                class="bg-red-100 dark:bg-red-900/40 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <ExclamationTriangleIcon class="w-8 h-8 text-red-600 dark:text-red-400" />
-            </div>
-            <p class="text-red-600 dark:text-red-400 font-medium mb-4">{{ error }}</p>
-            <ActionButton @click="fetchBikes" variant="secondary" size="sm" class="rounded-lg">
-                Try Again
-            </ActionButton>
-        </div>
+        <ErrorSection v-if="error" :error="error" title="Gallery Error" @retry="() => error = ''" />
 
         <!-- Bikes Grid -->
         <div v-else-if="bikes.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -109,7 +100,7 @@
                     <!-- Details Grid -->
                     <div class="grid grid-cols-2 gap-2 mb-3 text-sm">
                         <div v-if="bike.brand" class="flex items-center space-x-1">
-                            <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <div class="w-2 h-2 bg-primary-500 rounded-full"></div>
                             <span class="text-gray-600 dark:text-gray-400 truncate">{{ bike.brand }}</span>
                         </div>
                         <div v-if="bike.model" class="flex items-center space-x-1">

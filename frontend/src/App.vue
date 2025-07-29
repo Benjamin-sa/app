@@ -54,11 +54,11 @@ const getTransitionName = (to, from) => {
 
   // Vertical slide for detail pages
   if (to.name?.includes('Detail') || to.name?.includes('View') || to.name === 'Topic') {
-    return 'page-slide-up'
+    return 'page-fade-scale-in'
   }
 
   if (from.name?.includes('Detail') || from.name?.includes('View') || from.name === 'Topic') {
-    return 'page-slide-down'
+    return 'page-fade-scale-out'
   }
 
   return 'page-fade'
@@ -152,31 +152,35 @@ onMounted(async () => {
   transform: translateX(20px);
 }
 
-/* Vertical Slide Transitions */
-.page-slide-up-enter-active,
-.page-slide-up-leave-active,
-.page-slide-down-enter-active,
-.page-slide-down-leave-active {
-  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+/* Fade Scale Transitions for Detail Pages */
+.page-fade-scale-in-enter-active,
+.page-fade-scale-in-leave-active,
+.page-fade-scale-out-enter-active,
+.page-fade-scale-out-leave-active {
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-.page-slide-up-enter-from {
+.page-fade-scale-in-enter-from {
   opacity: 0;
-  transform: translateY(24px) scale(0.98);
+  transform: scale(0.95) translateY(8px);
+  filter: blur(1px);
 }
 
-.page-slide-up-leave-to {
+.page-fade-scale-in-leave-to {
   opacity: 0;
-  transform: translateY(-12px) scale(1.01);
+  transform: scale(1.02) translateY(-4px);
+  filter: blur(0.5px);
 }
 
-.page-slide-down-enter-from {
+.page-fade-scale-out-enter-from {
   opacity: 0;
-  transform: translateY(-24px) scale(0.98);
+  transform: scale(1.02) translateY(-8px);
+  filter: blur(1px);
 }
 
-.page-slide-down-leave-to {
+.page-fade-scale-out-leave-to {
   opacity: 0;
-  transform: translateY(12px) scale(1.01);
+  transform: scale(0.98) translateY(4px);
+  filter: blur(0.5px);
 }
 </style>

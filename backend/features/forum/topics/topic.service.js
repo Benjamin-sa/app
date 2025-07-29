@@ -46,7 +46,12 @@ class TopicService {
       const topicRef = await this.queries.createTopic(validatedTopic);
 
       // Retrieve the created topic with actual server timestamps and ID
-      return await this.queries.getTopicById(topicRef.id);
+      const createdTopic = await this.queries.getTopicById(topicRef.id);
+
+      // Update category statistics
+      await this.updateCategoryStatistics(category, createdTopic);
+
+      return createdTopic;
     } catch (error) {
       // Enhanced error handling with context
       if (error instanceof ValidationError) {
@@ -85,7 +90,14 @@ class TopicService {
 
       await this.queries.updateTopic(validatedTopicId, validatedUpdateData);
 
-      return await this.queries.getTopicById(validatedTopicId);
+      const updatedTopic = await this.queries.getTopicById(validatedTopicId);
+
+      // Update category last activity if this is a significant update
+      if (validatedUpdateData.title || validatedUpdateData.content) {
+        await this.updateCategoryStatistics(updatedTopic.category, updatedTopic);
+      }
+
+      return updatedTopic;
     } catch (error) {
       if (error instanceof ValidationError) {
         throw new Error(`TOPIC_SERVICE_VALIDATION_ERROR: ${error.message}`);
@@ -255,6 +267,59 @@ class TopicService {
       throw new Error(
         `TOPIC_SERVICE_ERROR: Failed to get topic stats - ${error.message}`
       );
+    }
+  }
+
+  /**
+   * Update category statistics when topic activities occur
+   */
+  async updateCategoryStatistics(categoryId, topicData) {
+    try {
+      // Get user data for last activity
+      const userData = await this.queries.getUserById(topicData.userId);
+      
+      const activityData = {
+        topicId: topicData.id,
+        topicTitle: topicData.title,
+        userId: topicData.userId,
+        userName: userData?.displayName || userData?.username || 'Anonymous',
+        userAvatar: userData?.avatar || null,
+      };
+
+      // Update category last activity
+      await this.queries.updateCategoryLastActivity(categoryId, activityData);
+      
+      // Increment topic count only for new topics (when called from createTopic)
+      // The real-time aggregation in getCategoryStatistics will handle the actual counts
+    } catch (error) {
+      // Don't throw here as this is a background operation
+      console.warn(`Failed to update category statistics: ${error.message}`);
+    }
+  }
+
+  /**
+   * Track topic view and update category view count
+   */
+  async trackTopicView(topicId, userId = null) {
+    try {
+      const validatedTopicId = validateId(topicId, "topicId");
+      
+      // Get topic to find its category
+      const topic = await this.queries.getTopicById(validatedTopicId);
+      if (!topic || topic.isDeleted) {
+        throw new Error("Topic not found");
+      }
+
+      // Increment topic views
+      await this.queries.incrementTopicViews(validatedTopicId);
+
+      // Update category view count
+      await this.queries.updateCategoryViews(topic.category, 1);
+
+      return true;
+    } catch (error) {
+      console.warn(`Failed to track topic view: ${error.message}`);
+      return false;
     }
   }
 }

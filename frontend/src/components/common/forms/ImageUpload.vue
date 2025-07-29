@@ -51,7 +51,7 @@
                 <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
                     <p class="text-white text-xs font-medium truncate">
                         {{ getImageName(image) }}
-                        <span v-if="image.isNew" class="ml-1 px-2 py-0.5 bg-blue-500 rounded-full text-xs">
+                        <span v-if="image.isNew" class="ml-1 px-2 py-0.5 bg-primary-500 rounded-full text-xs">
                             new
                         </span>
                     </p>

@@ -6,11 +6,12 @@
 
         <!-- Editor Container -->
         <div :class="[
-            'border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-blue-800 overflow-hidden',
+            'border border-primary-300 dark:border-primary-600 rounded-md bg-white dark:bg-primary-800 overflow-hidden',
             { 'border-red-300 dark:border-red-600': error }
         ]">
             <!-- Toolbar -->
-            <div ref="toolbar" class="border-b border-blue-200 dark:border-blue-600 bg-blue-50 dark:bg-blue-700 p-2">
+            <div ref="toolbar"
+                class="border-b border-primary-200 dark:border-primary-600 bg-primary-50 dark:bg-primary-700 p-2">
                 <!-- Text Formatting -->
                 <span class="ql-formats">
                     <button class="ql-bold" title="Bold"></button>
@@ -56,13 +57,13 @@
             </div>
 
             <!-- Editor -->
-            <div ref="editor" class="min-h-[200px] bg-white dark:bg-blue-800"></div>
+            <div ref="editor" class="min-h-[200px] bg-white dark:bg-primary-800"></div>
         </div>
 
         <!-- Emoji Picker -->
         <div v-if="showEmojiPicker" class="relative">
             <div
-                class="absolute top-2 left-0 z-50 bg-white dark:bg-blue-800 border border-blue-300 dark:border-blue-600 rounded-lg shadow-lg p-4 max-w-sm">
+                class="absolute top-2 left-0 z-50 bg-white dark:bg-primary-800 border border-primary-300 dark:border-primary-600 rounded-lg shadow-lg p-4 max-w-sm">
                 <div class="mb-3">
                     <input v-model="emojiSearch" type="text" placeholder="Search emojis..."
                         class="w-full px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">

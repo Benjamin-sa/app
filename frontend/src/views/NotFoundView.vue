@@ -6,19 +6,19 @@
                 <div class="mb-12 relative">
                     <div class="absolute inset-0 flex items-center justify-center">
                         <div
-                            class="w-80 h-80 bg-gradient-to-br from-blue-100/40 to-purple-100/40 dark:from-blue-900/20 dark:to-purple-900/20 rounded-full blur-3xl animate-pulse">
+                            class="w-80 h-80 bg-gradient-to-br from-primary-100/40 to-accent-100/40 dark:from-primary-900/20 dark:to-accent-900/20 rounded-full blur-3xl animate-pulse">
                         </div>
                     </div>
                     <div class="relative">
                         <h1
-                            class="text-8xl sm:text-9xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 dark:from-blue-400 dark:via-purple-400 dark:to-blue-600 bg-clip-text text-transparent animate-bounce">
+                            class="text-8xl sm:text-9xl font-bold bg-gradient-to-r from-primary-600 via-accent-600 to-primary-800 dark:from-primary-400 dark:via-accent-400 dark:to-primary-600 bg-clip-text text-transparent animate-bounce">
                             404
                         </h1>
                         <div
                             class="absolute -top-4 -right-4 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-ping">
                         </div>
                         <div
-                            class="absolute -bottom-2 -left-2 w-6 h-6 bg-gradient-to-r from-green-400 to-blue-500 rounded-full animate-pulse">
+                            class="absolute -bottom-2 -left-2 w-6 h-6 bg-gradient-to-r from-green-400 to-primary-500 rounded-full animate-pulse">
                         </div>
                     </div>
                 </div>
@@ -29,7 +29,7 @@
                     <div class="mb-8">
                         <!-- Icon with gradient background -->
                         <div
-                            class="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                            class="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-primary-500 to-accent-600 rounded-full flex items-center justify-center shadow-lg">
                             <ExclamationTriangleIcon class="w-10 h-10 text-white" />
                         </div>
 
@@ -46,13 +46,13 @@
                     <!-- Action Buttons -->
                     <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
                         <ActionButton size="lg" @click="$router.push('/')"
-                            class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
+                            class="bg-gradient-to-r from-primary-600 to-accent-600 hover:from-primary-700 hover:to-accent-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
                             <HomeIcon class="w-5 h-5 mr-2" />
                             Go to Homepage
                         </ActionButton>
 
                         <ActionButton variant="outline" size="lg" @click="$router.go(-1)"
-                            class="border-2 border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 transform hover:-translate-y-0.5 transition-all duration-200">
+                            class="border-2 border-primary-300 dark:border-primary-600 text-primary-700 dark:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 transform hover:-translate-y-0.5 transition-all duration-200">
                             <ArrowLeftIcon class="w-5 h-5 mr-2" />
                             Go Back
                         </ActionButton>
@@ -69,9 +69,9 @@
 
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <router-link to="/forum"
-                            class="group flex flex-col items-center p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border border-blue-200/50 dark:border-blue-700/50 hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200">
+                            class="group flex flex-col items-center p-4 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/30 border border-primary-200/50 dark:border-primary-700/50 hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200">
                             <ChatBubbleLeftIcon
-                                class="w-8 h-8 text-blue-600 dark:text-blue-400 mb-2 group-hover:scale-110 transition-transform duration-200" />
+                                class="w-8 h-8 text-primary-600 dark:text-primary-400 mb-2 group-hover:scale-110 transition-transform duration-200" />
                             <span class="font-medium text-gray-900 dark:text-white">Forum</span>
                         </router-link>
 

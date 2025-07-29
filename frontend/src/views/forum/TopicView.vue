@@ -5,11 +5,12 @@
 
         <div v-else-if="topic" class="space-y-4 sm:space-y-6">
             <!-- Back Button -->
-            <BackButton label="Back to Forum" fallback-path="/forum" />
+            <BackButton label="Back to Category" :fallback-path="`/forum/category/${topic?.category || 'general'}`" />
 
             <!-- Modern Breadcrumb -->
             <BreadcrumbNav :items="[
                 { label: 'Forum', path: '/forum' },
+                { label: getCategoryLabel(topic.category), path: `/forum/category/${topic.category}` },
                 { label: topic.title, path: null }
             ]" />
 
@@ -18,15 +19,15 @@
                 class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
                 <!-- Topic Status Bar -->
                 <div v-if="topic.isPinned || topic.isLocked"
-                    class="bg-gradient-to-r from-blue-50/80 to-blue-100/80 dark:from-blue-900/50 dark:to-blue-800/50 backdrop-blur-sm px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200/50 dark:border-gray-600/50">
+                    class="bg-gradient-to-r from-primary-50/80 to-primary-100/80 dark:from-primary-900/50 dark:to-primary-800/50 backdrop-blur-sm px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200/50 dark:border-gray-600/50">
                     <div class="flex flex-wrap items-center gap-2 sm:gap-3">
                         <span v-if="topic.isPinned"
-                            class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full shadow-lg">
+                            class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-full shadow-lg">
                             <MapPinIcon class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                             Pinned Topic
                         </span>
                         <span v-if="topic.isLocked"
-                            class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold bg-gradient-to-r from-blue-700 to-blue-800 text-white rounded-full shadow-lg">
+                            class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold bg-gradient-to-r from-primary-700 to-primary-800 text-white rounded-full shadow-lg">
                             <LockClosedIcon class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                             Topic Locked
                         </span>
@@ -36,9 +37,8 @@
                 <div class="p-4 sm:p-6 lg:p-8">
                     <div class="space-y-6 lg:space-y-8">
                         <!-- Modern Category Badge -->
-                        <div>
-                            <span v-if="topic.category"
-                                class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 text-white shadow-lg">
+                        <div> <span v-if="topic.category"
+                                class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 text-white shadow-lg">
                                 {{ getCategoryLabel(topic.category) }}
                             </span>
                         </div>
@@ -61,7 +61,7 @@
                             <div v-if="topic.images && topic.images.length > 0">
                                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                                     <div v-for="(image, index) in topic.images" :key="index"
-                                        class="relative group cursor-pointer rounded-xl sm:rounded-2xl overflow-hidden border border-gray-200/50 dark:border-gray-700/50 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:shadow-xl"
+                                        class="relative group cursor-pointer rounded-xl sm:rounded-2xl overflow-hidden border border-gray-200/50 dark:border-gray-700/50 hover:border-primary-300 dark:hover:border-primary-600 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:shadow-xl"
                                         @click="openImageModal(image.url)">
                                         <img :src="image.thumbnailUrl || image.url" :alt="`Topic image ${index + 1}`"
                                             class="w-full h-40 sm:h-48 lg:h-56 object-cover">
@@ -78,7 +78,7 @@
                             <!-- Enhanced Tags -->
                             <div v-if="topic.tags && topic.tags.length > 0" class="flex flex-wrap gap-2 sm:gap-3">
                                 <span v-for="tag in topic.tags" :key="tag"
-                                    class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 dark:from-blue-900/30 dark:to-blue-800/30 dark:text-blue-400 border border-blue-200/50 dark:border-blue-700/50 hover:from-blue-100 hover:to-blue-200 dark:hover:from-blue-900/50 dark:hover:to-blue-800/50 transition-all duration-200 cursor-pointer hover:scale-105">
+                                    class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium bg-gradient-to-r from-primary-50 to-primary-100 text-primary-700 dark:from-primary-900/30 dark:to-primary-800/30 dark:text-primary-400 border border-primary-200/50 dark:border-primary-700/50 hover:from-primary-100 hover:to-primary-200 dark:hover:from-primary-900/50 dark:hover:to-primary-800/50 transition-all duration-200 cursor-pointer hover:scale-105">
                                     #{{ tag }}
                                 </span>
                             </div>
@@ -86,7 +86,7 @@
 
                         <!-- Enhanced Author Display -->
                         <div
-                            class="p-4 sm:p-6 bg-gradient-to-r from-blue-50/80 to-blue-100/80 dark:from-blue-900/30 dark:to-blue-800/30 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-blue-200/50 dark:border-blue-700/50">
+                            class="p-4 sm:p-6 bg-gradient-to-r from-primary-50/80 to-primary-100/80 dark:from-primary-900/30 dark:to-primary-800/30 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-primary-200/50 dark:border-primary-700/50">
                             <div class="flex items-center space-x-3 sm:space-x-4">
                                 <AuthorDisplay :userId="topic.userId" size="lg" />
                                 <div class="flex-1 min-w-0">
@@ -106,8 +106,8 @@
                             class="flex flex-wrap items-center justify-between gap-4 text-sm pt-4 sm:pt-6 border-t border-gray-200/50 dark:border-gray-600/50">
                             <div class="flex flex-wrap gap-4 sm:gap-8">
                                 <div class="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
-                                    <div class="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                        <EyeIcon class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
+                                    <div class="p-1.5 sm:p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+                                        <EyeIcon class="w-4 h-4 sm:w-5 sm:h-5 text-primary-600 dark:text-primary-400" />
                                     </div>
                                     <div>
                                         <span
@@ -118,9 +118,9 @@
                                     </div>
                                 </div>
                                 <div class="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
-                                    <div class="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                    <div class="p-1.5 sm:p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
                                         <ChatBubbleLeftIcon
-                                            class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
+                                            class="w-4 h-4 sm:w-5 sm:h-5 text-primary-600 dark:text-primary-400" />
                                     </div>
                                     <div>
                                         <span
@@ -132,8 +132,9 @@
                                 </div>
                                 <div v-if="topic.lastActivity"
                                     class="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
-                                    <div class="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                        <ClockIcon class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
+                                    <div class="p-1.5 sm:p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+                                        <ClockIcon
+                                            class="w-4 h-4 sm:w-5 sm:h-5 text-primary-600 dark:text-primary-400" />
                                     </div>
                                     <div>
                                         <span class="text-xs sm:text-sm">Last activity {{ formatDate(topic.lastActivity)
@@ -167,7 +168,7 @@
                 </div>
 
                 <ActionButton v-if="!topic.isLocked" @click="showAnswerModal = true" size="md"
-                    class="w-full sm:w-auto bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 hover:from-blue-700 hover:via-blue-800 hover:to-blue-900 text-white shadow-lg">
+                    class="w-full sm:w-auto bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 hover:from-primary-700 hover:via-primary-800 hover:to-primary-900 text-white shadow-lg">
                     <ChatBubbleLeftIcon class="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     Post Answer
                 </ActionButton>
@@ -177,10 +178,11 @@
             <div
                 class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
                 <div
-                    class="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-gradient-to-r from-blue-50/80 to-blue-100/80 dark:from-blue-900/50 dark:to-blue-800/50 backdrop-blur-sm border-b border-gray-200/50 dark:border-gray-600/50">
+                    class="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-gradient-to-r from-primary-50/80 to-primary-100/80 dark:from-primary-900/50 dark:to-primary-800/50 backdrop-blur-sm border-b border-gray-200/50 dark:border-gray-600/50">
                     <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
-                        <div class="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg sm:rounded-xl mr-2 sm:mr-3">
-                            <ChatBubbleLeftIcon class="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
+                        <div
+                            class="p-1.5 sm:p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg sm:rounded-xl mr-2 sm:mr-3">
+                            <ChatBubbleLeftIcon class="w-5 h-5 sm:w-6 sm:h-6 text-primary-600 dark:text-primary-400" />
                         </div>
                         {{ formatNumber(answerCount) }} {{ answerCount === 1 ? 'Answer' : 'Answers' }}
                     </h2>
@@ -199,7 +201,7 @@
             </p>
             <div class="mt-6">
                 <ActionButton @click="$router.push('/forum')" variant="primary">
-                    Back to Forum
+                    Back to Categories
                 </ActionButton>
             </div>
         </div>

@@ -52,6 +52,37 @@ export const useForumStore = defineStore("forum", () => {
     });
   });
 
+  const getTopicsByCategory = computed(() => {
+    return (category) => {
+      if (!category) return getTopicsList.value;
+
+      return Array.from(topics.value.values())
+        .filter((topic) => topic.category === category)
+        .sort((a, b) => {
+          // Handle Firestore timestamp format
+          const getTimestamp = (timestamp) => {
+            if (!timestamp) return 0;
+            if (timestamp._seconds) {
+              return (
+                timestamp._seconds * 1000 +
+                Math.floor(timestamp._nanoseconds / 1000000)
+              );
+            }
+            return new Date(timestamp).getTime();
+          };
+
+          const aTime = getTimestamp(
+            a.lastActivity || a.updatedAt || a.createdAt
+          );
+          const bTime = getTimestamp(
+            b.lastActivity || b.updatedAt || b.createdAt
+          );
+
+          return bTime - aTime; // Most recent first
+        });
+    };
+  });
+
   // Actions
   const setError = (errorMessage) => {
     error.value = errorMessage;
@@ -88,7 +119,13 @@ export const useForumStore = defineStore("forum", () => {
         limit = 20,
         category = null,
         sortBy = "createdAt",
+        clearPrevious = false,
       } = options;
+
+      // Clear previous topics if this is a new category or explicitly requested
+      if (clearPrevious || page === 1) {
+        topics.value.clear();
+      }
 
       const params = new URLSearchParams({
         page: page.toString(),
@@ -106,7 +143,7 @@ export const useForumStore = defineStore("forum", () => {
         const topicsArray = response.data.topics || response.data;
 
         if (Array.isArray(topicsArray)) {
-          // Add topics to store (don't clear - allow pagination)
+          // Add topics to store
           topicsArray.forEach((topic) => {
             topics.value.set(topic.id, topic);
           });
@@ -445,6 +482,12 @@ export const useForumStore = defineStore("forum", () => {
     loadingSearch.value = false;
   };
 
+  // Clear topics cache (useful when switching categories)
+  const clearTopics = () => {
+    topics.value.clear();
+    searchResults.value = [];
+  };
+
   // Clear all data (useful for logout)
   const clearAllData = () => {
     topics.value.clear();
@@ -485,6 +528,38 @@ export const useForumStore = defineStore("forum", () => {
     return converted;
   };
 
+  // Load category statistics
+  const loadCategoryStats = async () => {
+    try {
+      const response = await apiService.get('/forum/categories');
+      
+      if (response.success && response.data) {
+        return response.data;
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Error loading category stats:', error);
+      return [];
+    }
+  };
+
+  // Load single category statistics
+  const loadCategoryStatistics = async (categoryId) => {
+    try {
+      const response = await apiService.get(`/forum/categories/${categoryId}/stats`);
+      
+      if (response.success && response.data) {
+        return response.data;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error loading category statistics:', error);
+      return null;
+    }
+  };
+
   return {
     // State
     loadingTopics,
@@ -499,6 +574,7 @@ export const useForumStore = defineStore("forum", () => {
     isLoadingTopic,
     isLoadingTopicAnswers,
     getTopicsList,
+    getTopicsByCategory,
 
     // Topics actions
     loadTopics,
@@ -519,6 +595,10 @@ export const useForumStore = defineStore("forum", () => {
     // Utility actions
     clearAllData,
     clearError,
+
+    // Category actions
+    loadCategoryStats,
+    loadCategoryStatistics,
 
     // Direct access for debugging
     topics: computed(() => topics.value),

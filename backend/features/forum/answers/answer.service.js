@@ -32,7 +32,12 @@ class AnswerService {
       validatedAnswer.updatedAt = new Date().toISOString();
 
       const docRef = await this.queries.createAnswer(validatedAnswer);
-      return { id: docRef.id, ...validatedAnswer };
+      const createdAnswer = { id: docRef.id, ...validatedAnswer };
+
+      // Update topic's last activity and category statistics
+      await this.updateTopicAndCategoryActivity(topicId, validatedAnswer.userId);
+
+      return createdAnswer;
     } catch (error) {
       if (error instanceof ValidationError) {
         throw new Error(`ANSWER_SERVICE_VALIDATION_ERROR: ${error.message}`);
@@ -149,6 +154,41 @@ class AnswerService {
       return await this.queries.getAnswerStats();
     } catch (error) {
       throw new Error(`Failed to get answer stats: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update topic and category activity when an answer is posted
+   */
+  async updateTopicAndCategoryActivity(topicId, userId) {
+    try {
+      // Get the topic to find its category
+      const topic = await this.queries.getTopicById(topicId);
+      if (!topic || topic.isDeleted) {
+        return; // Topic doesn't exist, skip update
+      }
+
+      // Update topic's last activity
+      await this.queries.updateTopic(topicId, {
+        lastActivity: new Date().toISOString(),
+      });
+
+      // Get user data for activity tracking
+      const userData = await this.queries.getUserById(userId);
+      
+      const activityData = {
+        topicId: topic.id,
+        topicTitle: topic.title,
+        userId: userId,
+        userName: userData?.displayName || userData?.username || 'Anonymous',
+        userAvatar: userData?.avatar || null,
+      };
+
+      // Update category last activity
+      await this.queries.updateCategoryLastActivity(topic.category, activityData);
+    } catch (error) {
+      // Don't throw here as this is a background operation
+      console.warn(`Failed to update topic/category activity: ${error.message}`);
     }
   }
 }

@@ -157,6 +157,25 @@ class FirebaseQueries extends BaseFirebaseQueries {
     );
   }
 
+  async updateCategoryViews(categoryId, increment = 1) {
+    return await this.categoryQueries.updateCategoryViews(categoryId, increment);
+  }
+
+  async updateCategoryLastActivity(categoryId, activityData) {
+    return await this.categoryQueries.updateCategoryLastActivity(
+      categoryId,
+      activityData
+    );
+  }
+
+  async getCategoryStatistics(categoryId) {
+    return await this.categoryQueries.getCategoryStatistics(categoryId);
+  }
+
+  async refreshAllCategoryStatistics() {
+    return await this.categoryQueries.refreshAllCategoryStatistics();
+  }
+
   // =====================
   // STATS OPERATIONS - Delegate to StatsQueries
   // =====================
