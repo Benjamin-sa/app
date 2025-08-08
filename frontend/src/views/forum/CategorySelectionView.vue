@@ -137,26 +137,13 @@ const scrollToTop = () => {
 // Load forum statistics on mount
 onMounted(async () => {
     try {
-        // Load real category data with statistics
-        const categoryData = await forumStore.loadCategoryStats();
-        
-        if (categoryData && categoryData.length > 0) {
-            categories.value = categoryData.map(category => ({
-                ...category,
-                // Ensure we have the required structure for the UI
-                description: category.description || getDefaultCategoryDescription(category.id),
-                topicCount: category.topicCount || 0,
-                totalViews: category.totalViews || 0,
-                lastActivity: category.lastActivity || null
-            }));
-        } else {
-            // Fallback to default categories if API fails
-            categories.value = getDefaultCategories();
-        }
+        // Load topics for all categories first to populate the store
+        await forumStore.loadTopics({ limit: 50 });
+
+        categories.value = getDefaultCategories();
+
     } catch (error) {
         console.error('Error loading forum categories:', error);
-        // Fallback to default categories
-        categories.value = getDefaultCategories();
     } finally {
         loading.value = false;
     }

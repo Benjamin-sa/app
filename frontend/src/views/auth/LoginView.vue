@@ -86,7 +86,7 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { useNotificationStore } from '@/stores/notification';
+import { useNotificationStore } from '@/stores/ui/notification';
 import { validateEmail } from '@/utils/helpers';
 import Button from '@/components/common/buttons/ActionButton.vue';
 import ErrorSection from '@/components/common/sections/ErrorSection.vue';

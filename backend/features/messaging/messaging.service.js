@@ -13,47 +13,61 @@ class MessagingService {
     this.queries = firebaseQueries;
   }
 
+  // Helper: validate participants and permissions
+  async _validateParticipants(senderId, receiverId) {
+    const validatedSenderId = validateId(senderId, "senderId");
+    const validatedReceiverId = validateId(receiverId, "receiverId");
+
+    if (validatedSenderId === validatedReceiverId) {
+      throw new Error(
+        "MESSAGE_SERVICE_ERROR: Cannot start conversation with yourself"
+      );
+    }
+
+    const receiver = await this.queries.getUserById(validatedReceiverId);
+    if (!receiver || !receiver.allow_messages) {
+      throw new Error("MESSAGE_SERVICE_ERROR: User does not accept messages");
+    }
+
+    return { validatedSenderId, validatedReceiverId, receiver };
+  }
+
+  // Helper: get existing conversation or create a new one
+  async _getOrCreateConversation(validatedSenderId, validatedReceiverId) {
+    let conversation = await this.queries.getConversationBetweenUsers(
+      validatedSenderId,
+      validatedReceiverId
+    );
+
+    if (!conversation) {
+      const conversationData = createConversation({
+        participants: [validatedSenderId, validatedReceiverId],
+        unreadCount: { [validatedReceiverId]: 0, [validatedSenderId]: 0 },
+      });
+
+      const now = new Date().toISOString();
+      conversationData.createdAt = now;
+      conversationData.updatedAt = now;
+
+      const conversationRef = await this.queries.createConversation(
+        conversationData
+      );
+      conversation = { id: conversationRef.id, ...conversationData };
+    }
+
+    return conversation;
+  }
+
   async startConversationWithUser(senderId, receiverId, initialMessage = null) {
     try {
-      // Validate required parameters
-      const validatedSenderId = validateId(senderId, "senderId");
-      const validatedReceiverId = validateId(receiverId, "receiverId");
+      const { validatedSenderId, validatedReceiverId } =
+        await this._validateParticipants(senderId, receiverId);
 
-      if (validatedSenderId === validatedReceiverId) {
-        throw new Error(
-          "MESSAGE_SERVICE_ERROR: Cannot start conversation with yourself"
-        );
-      }
-
-      // Check if receiver allows messages
-      const receiver = await this.queries.getUserById(validatedReceiverId);
-      if (!receiver || !receiver.allow_messages) {
-        throw new Error("MESSAGE_SERVICE_ERROR: User does not accept messages");
-      }
-
-      // Check if conversation already exists
-      let conversation = await this.queries.getConversationBetweenUsers(
+      const conversation = await this._getOrCreateConversation(
         validatedSenderId,
         validatedReceiverId
       );
 
-      if (!conversation) {
-        // Create new conversation using validation system
-        const conversationData = createConversation({
-          participants: [validatedSenderId, validatedReceiverId],
-          unreadCount: { [validatedReceiverId]: 0, [validatedSenderId]: 0 },
-        });
-
-        conversationData.createdAt = new Date().toISOString();
-        conversationData.updatedAt = new Date().toISOString();
-
-        const conversationRef = await this.queries.createConversation(
-          conversationData
-        );
-        conversation = { id: conversationRef.id, ...conversationData };
-      }
-
-      // Send initial message if provided
       if (initialMessage && initialMessage.trim()) {
         await this.sendMessage(
           validatedSenderId,
@@ -75,52 +89,27 @@ class MessagingService {
 
   async sendMessage(senderId, receiverId, content, attachments = []) {
     try {
-      // Validate required parameters
-      const validatedSenderId = validateId(senderId, "senderId");
-      const validatedReceiverId = validateId(receiverId, "receiverId");
+      const { validatedSenderId, validatedReceiverId } =
+        await this._validateParticipants(senderId, receiverId);
+
+      const conversation = await this._getOrCreateConversation(
+        validatedSenderId,
+        validatedReceiverId
+      );
 
       // Create and validate message using validation system
       const validatedMessage = createMessage({
         senderId: validatedSenderId,
         receiverId: validatedReceiverId,
+        conversationId: conversation.id,
         content,
         attachments,
       });
 
-      // Check if receiver allows messages
-      const receiver = await this.queries.getUserById(validatedReceiverId);
-      if (!receiver.allow_messages) {
-        throw new Error("MESSAGE_SERVICE_ERROR: User does not accept messages");
-      }
-
-      // Get or create conversation
-      let conversation = await this.queries.getConversationBetweenUsers(
-        validatedSenderId,
-        validatedReceiverId
-      );
-
-      if (!conversation) {
-        const conversationData = createConversation({
-          participants: [validatedSenderId, validatedReceiverId],
-          unreadCount: { [validatedReceiverId]: 0 },
-        });
-
-        conversationData.createdAt = new Date().toISOString();
-        conversationData.updatedAt = new Date().toISOString();
-
-        const conversationRef = await this.queries.createConversation(
-          conversationData
-        );
-        conversation = { id: conversationRef.id, ...conversationData };
-      }
-
-      // Add conversation ID and timestamps
-      validatedMessage.conversationId = conversation.id;
       validatedMessage.createdAt = new Date().toISOString();
 
       const messageRef = await this.queries.createMessage(validatedMessage);
 
-      // Update conversation
       await this.queries.updateConversationLastMessage(
         conversation.id,
         validatedMessage
@@ -139,7 +128,6 @@ class MessagingService {
 
   async getUserConversations(userId, options = {}) {
     try {
-      // Validate userId and pagination options
       const validatedUserId = validateId(userId, "userId");
       const validatedOptions = validatePaginationOptions(options);
 
@@ -159,7 +147,6 @@ class MessagingService {
 
   async getConversationMessages(conversationId, userId, options = {}) {
     try {
-      // Validate required parameters
       const validatedConversationId = validateId(
         conversationId,
         "conversationId"
@@ -167,7 +154,6 @@ class MessagingService {
       const validatedUserId = validateId(userId, "userId");
       const validatedOptions = validatePaginationOptions(options);
 
-      // Verify user is participant
       const conversation = await this.queries.getConversationById(
         validatedConversationId
       );

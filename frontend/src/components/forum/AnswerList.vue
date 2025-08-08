@@ -113,7 +113,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useForumStore } from '@/stores/forum';
-import { useNotificationStore } from '@/stores/notification';
+import { useNotificationStore } from '@/stores/ui/notification';
 import { formatDate, formatContent } from '@/utils/helpers';
 import LoadingSection from '@/components/common/sections/LoadingSection.vue';
 import VoteButton from '@/components/forum/VoteButton.vue';

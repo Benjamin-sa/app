@@ -58,7 +58,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useNotificationStore } from '@/stores/notification'
+import { useNotificationStore } from '@/stores/ui/notification'
 import { useProductStore } from '@/stores/products'
 import DetailPageLayout from '@/layouts/DetailPageLayout.vue'
 import ImageGallery from '@/components/common/images/ImageGallery.vue'

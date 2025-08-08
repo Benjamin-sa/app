@@ -19,6 +19,7 @@ const corsOptions = {
     "http://127.0.0.1:5173",
     "http://192.168.0.225:5173",
     "http://192.168.0.225:3000",
+    "http://192.168.0.175:5173",
     process.env.FRONTEND_URL || "https://git.heroku.com/forum-beta.git",
   ].filter(Boolean),
   credentials: true,
@@ -33,7 +34,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 // Serve static files from the frontend build (only in production)
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "public")));
 }
 
@@ -80,14 +81,15 @@ app.get("*", (req, res) => {
   }
 
   // Only serve the frontend app in production
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === "production") {
     res.sendFile(path.join(__dirname, "public", "index.html"));
   } else {
     // In development, return a helpful message
     res.status(404).json({
       error: "Frontend not served in development",
-      message: "Run the frontend development server separately (e.g., npm run dev in frontend folder)",
-      api_available: true
+      message:
+        "Run the frontend development server separately (e.g., npm run dev in frontend folder)",
+      api_available: true,
     });
   }
 });
@@ -98,12 +100,4 @@ app.get("*", (req, res) => {
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
   console.log(`🌐 Network access: http://192.168.0.225:${PORT}`);
-  
-  // Initialize category statistics service
-  const categoryStatsService = require("./services/categoryStats.service");
-  
-  // Start periodic updates every 30 minutes
-  categoryStatsService.startPeriodicUpdates(30);
-  
-  console.log("📊 Category statistics service started");
 });

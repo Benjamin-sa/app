@@ -9,8 +9,6 @@ const ForumQueries = require("./domains/ForumQueries");
 const BikeQueries = require("./domains/BikeQueries");
 const VotingQueries = require("./domains/VotingQueries");
 const MessagingQueries = require("./domains/MessagingQueries");
-const CategoryQueries = require("./domains/CategoryQueries");
-const StatsQueries = require("./domains/StatsQueries");
 const StorageQueries = require("./domains/StorageQueries");
 const BaseFirebaseQueries = require("./base/BaseFirebaseQueries");
 
@@ -24,8 +22,6 @@ class FirebaseQueries extends BaseFirebaseQueries {
     this.bikeQueries = new BikeQueries();
     this.votingQueries = new VotingQueries();
     this.messagingQueries = new MessagingQueries();
-    this.categoryQueries = new CategoryQueries();
-    this.statsQueries = new StatsQueries();
     this.storageQueries = new StorageQueries();
   }
 
@@ -136,56 +132,6 @@ class FirebaseQueries extends BaseFirebaseQueries {
       targetType,
       voteType
     );
-  }
-
-  // =====================
-  // CATEGORY OPERATIONS - Delegate to CategoryQueries
-  // =====================
-
-  async getCategories() {
-    return await this.categoryQueries.getCategories();
-  }
-
-  async upsertCategory(categoryId, categoryData) {
-    return await this.categoryQueries.upsertCategory(categoryId, categoryData);
-  }
-
-  async updateCategoryTopicCount(categoryId, increment = 1) {
-    return await this.categoryQueries.updateCategoryTopicCount(
-      categoryId,
-      increment
-    );
-  }
-
-  async updateCategoryViews(categoryId, increment = 1) {
-    return await this.categoryQueries.updateCategoryViews(categoryId, increment);
-  }
-
-  async updateCategoryLastActivity(categoryId, activityData) {
-    return await this.categoryQueries.updateCategoryLastActivity(
-      categoryId,
-      activityData
-    );
-  }
-
-  async getCategoryStatistics(categoryId) {
-    return await this.categoryQueries.getCategoryStatistics(categoryId);
-  }
-
-  async refreshAllCategoryStatistics() {
-    return await this.categoryQueries.refreshAllCategoryStatistics();
-  }
-
-  // =====================
-  // STATS OPERATIONS - Delegate to StatsQueries
-  // =====================
-
-  async getGlobalStats() {
-    return await this.statsQueries.getGlobalStats();
-  }
-
-  async updateGlobalStats(statsData) {
-    return await this.statsQueries.updateGlobalStats(statsData);
   }
 
   // =====================

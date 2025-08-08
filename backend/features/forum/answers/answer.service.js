@@ -35,7 +35,10 @@ class AnswerService {
       const createdAnswer = { id: docRef.id, ...validatedAnswer };
 
       // Update topic's last activity and category statistics
-      await this.updateTopicAndCategoryActivity(topicId, validatedAnswer.userId);
+      await this.updateTopicAndCategoryActivity(
+        topicId,
+        validatedAnswer.userId
+      );
 
       return createdAnswer;
     } catch (error) {
@@ -175,20 +178,25 @@ class AnswerService {
 
       // Get user data for activity tracking
       const userData = await this.queries.getUserById(userId);
-      
+
       const activityData = {
         topicId: topic.id,
         topicTitle: topic.title,
         userId: userId,
-        userName: userData?.displayName || userData?.username || 'Anonymous',
+        userName: userData?.displayName || userData?.username || "Anonymous",
         userAvatar: userData?.avatar || null,
       };
 
       // Update category last activity
-      await this.queries.updateCategoryLastActivity(topic.category, activityData);
+      await this.queries.updateCategoryLastActivity(
+        topic.category,
+        activityData
+      );
     } catch (error) {
       // Don't throw here as this is a background operation
-      console.warn(`Failed to update topic/category activity: ${error.message}`);
+      console.warn(
+        `Failed to update topic/category activity: ${error.message}`
+      );
     }
   }
 }

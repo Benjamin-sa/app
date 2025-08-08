@@ -482,12 +482,6 @@ export const useForumStore = defineStore("forum", () => {
     loadingSearch.value = false;
   };
 
-  // Clear topics cache (useful when switching categories)
-  const clearTopics = () => {
-    topics.value.clear();
-    searchResults.value = [];
-  };
-
   // Clear all data (useful for logout)
   const clearAllData = () => {
     topics.value.clear();
@@ -505,58 +499,6 @@ export const useForumStore = defineStore("forum", () => {
     const topic = topics.value.get(topicId);
     if (topic) {
       topic.answerCount = newCount;
-    }
-  };
-
-  // Helper function to convert Firestore timestamps
-  const convertTimestamps = (item) => {
-    if (!item) return item;
-
-    const converted = { ...item };
-
-    // Convert common timestamp fields
-    if (converted.createdAt && converted.createdAt._seconds) {
-      converted.createdAt = new Date(converted.createdAt._seconds * 1000);
-    }
-    if (converted.updatedAt && converted.updatedAt._seconds) {
-      converted.updatedAt = new Date(converted.updatedAt._seconds * 1000);
-    }
-    if (converted.editedAt && converted.editedAt._seconds) {
-      converted.editedAt = new Date(converted.editedAt._seconds * 1000);
-    }
-
-    return converted;
-  };
-
-  // Load category statistics
-  const loadCategoryStats = async () => {
-    try {
-      const response = await apiService.get('/forum/categories');
-      
-      if (response.success && response.data) {
-        return response.data;
-      }
-      
-      return [];
-    } catch (error) {
-      console.error('Error loading category stats:', error);
-      return [];
-    }
-  };
-
-  // Load single category statistics
-  const loadCategoryStatistics = async (categoryId) => {
-    try {
-      const response = await apiService.get(`/forum/categories/${categoryId}/stats`);
-      
-      if (response.success && response.data) {
-        return response.data;
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Error loading category statistics:', error);
-      return null;
     }
   };
 
@@ -595,10 +537,6 @@ export const useForumStore = defineStore("forum", () => {
     // Utility actions
     clearAllData,
     clearError,
-
-    // Category actions
-    loadCategoryStats,
-    loadCategoryStatistics,
 
     // Direct access for debugging
     topics: computed(() => topics.value),

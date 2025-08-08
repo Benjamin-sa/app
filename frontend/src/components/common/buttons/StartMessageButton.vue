@@ -11,7 +11,7 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useApi } from '@/composables/useApi';
-import { useNotificationStore } from '@/stores/notification';
+import { useNotificationStore } from '@/stores/ui/notification';
 import { apiService } from '@/services/api.service';
 import ActionButton from '@/components/common/buttons/ActionButton.vue';
 import { ChatBubbleLeftIcon } from '@heroicons/vue/24/outline';

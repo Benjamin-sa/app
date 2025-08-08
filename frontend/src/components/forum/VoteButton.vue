@@ -26,7 +26,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/vue/24/outline';
 import { useAuthStore } from '@/stores/auth';
 import { useVotingStore } from '@/stores/voting';
-import { useNotificationStore } from '@/stores/notification';
+import { useNotificationStore } from '@/stores/ui/notification';
 
 const props = defineProps({
     targetId: {

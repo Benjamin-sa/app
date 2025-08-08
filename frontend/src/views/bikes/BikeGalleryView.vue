@@ -173,7 +173,7 @@
                                 class="inline-flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-lg">
                                 <CogIcon class="w-4 h-4 text-gray-500 dark:text-gray-400" />
                                 <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ bike.engine_size
-                                    }}cc</span>
+                                }}cc</span>
                             </div>
 
                             <!-- Description -->
@@ -253,7 +253,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { useNotificationStore } from '@/stores/notification'
+import { useNotificationStore } from '@/stores/ui/notification'
 import { apiService } from '@/services/api.service'
 import { debounce } from '@/utils/helpers'
 import GalleryLayout from '@/layouts/GalleryLayout.vue'

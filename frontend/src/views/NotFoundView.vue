@@ -118,7 +118,7 @@
 
 <script setup>
 import { useAuthStore } from '@/stores/auth';
-import { useNavbarStore } from '@/stores/navbar';
+import { useNavbarStore } from '@/stores/ui/navbar';
 import ActionButton from '@/components/common/buttons/ActionButton.vue';
 import {
     ExclamationTriangleIcon,

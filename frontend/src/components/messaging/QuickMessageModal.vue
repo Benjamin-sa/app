@@ -32,7 +32,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useApi } from '@/composables/useApi';
-import { useNotificationStore } from '@/stores/notification';
+import { useNotificationStore } from '@/stores/ui/notification';
 import { apiService } from '@/services/api.service';
 import Modal from '@/components/common/Modal.vue';
 import ActionButton from '@/components/common/buttons/ActionButton.vue';

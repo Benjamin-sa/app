@@ -34,7 +34,7 @@
 </template>
 
 <script setup>
-import { useNavbarStore } from '@/stores/navbar'
+import { useNavbarStore } from '@/stores/ui/navbar'
 import LoadingSection from '@/components/common/sections/LoadingSection.vue'
 import ErrorSection from '@/components/common/sections/ErrorSection.vue'
 import BreadcrumbNav from '@/components/common/nav/BreadcrumbNav.vue'

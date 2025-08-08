@@ -49,6 +49,13 @@
                                 : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'">
                             Products
                         </RouterLink>
+                        <RouterLink to="/messages"
+                            class="inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2 transition-colors duration-200"
+                            :class="$route.name === 'Messages'
+                                ? 'text-primary-600 dark:text-primary-400 border-primary-500'
+                                : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'">
+                            Messages
+                        </RouterLink>
                     </div>
                 </div>
 
@@ -188,6 +195,14 @@
                             @click="closeMobileMenu">
                             Products
                         </RouterLink>
+                        <RouterLink to="/messages"
+                            class="block px-3 py-2 text-base font-medium rounded-lg transition-colors duration-200"
+                            :class="$route.name === 'Messages'
+                                ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+                                : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'"
+                            @click="closeMobileMenu">
+                            Messages
+                        </RouterLink>
 
                         <!-- User actions for mobile -->
                         <div v-if="authStore.isAuthenticated"
@@ -245,7 +260,7 @@ import { RouterLink, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useNotification } from '@/composables/useNotification';
 import ThemeToggle from '@/components/common/nav/ThemeToggle.vue';
-import { useNavbarStore } from '@/stores/navbar';
+import { useNavbarStore } from '@/stores/ui/navbar';
 import {
     MagnifyingGlassIcon,
     UserIcon,
@@ -254,6 +269,7 @@ import {
     ChevronDownIcon,
     Bars3Icon,
     XMarkIcon,
+    ChatBubbleLeftRightIcon // potential future use
 } from '@heroicons/vue/24/outline';
 
 const router = useRouter();

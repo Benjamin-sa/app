@@ -26,8 +26,8 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useThemeStore } from '@/stores/theme'
-import { useNavbarStore } from '@/stores/navbar'
+import { useThemeStore } from '@/stores/ui/theme'
+import { useNavbarStore } from '@/stores/ui/navbar'
 import NavBar from '@/components/common/nav/NavBar.vue'
 import NotificationContainer from '@/components/common/NotificationContainer.vue'
 

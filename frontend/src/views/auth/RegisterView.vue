@@ -119,7 +119,7 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { useNotificationStore } from '@/stores/notification';
+import { useNotificationStore } from '@/stores/ui/notification';
 import { validateEmail, validateUsername } from '@/utils/helpers';
 import ActionButton from '@/components/common/buttons/ActionButton.vue';
 import ErrorSection from '@/components/common/sections/ErrorSection.vue';

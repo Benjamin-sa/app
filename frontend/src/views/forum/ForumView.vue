@@ -148,7 +148,7 @@ import {
     XMarkIcon,
     ChevronRightIcon
 } from '@heroicons/vue/24/outline';
-import { useNavbarStore } from '@/stores/navbar';
+import { useNavbarStore } from '@/stores/ui/navbar';
 
 const route = useRoute();
 const authStore = useAuthStore();

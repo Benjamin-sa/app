@@ -85,7 +85,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useNavbarStore } from '@/stores/navbar'
+import { useNavbarStore } from '@/stores/ui/navbar'
 import LoadingSection from '@/components/common/sections/LoadingSection.vue'
 import { AdjustmentsHorizontalIcon, ChevronDownIcon } from '@heroicons/vue/24/outline'
 

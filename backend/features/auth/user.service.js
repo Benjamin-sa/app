@@ -44,6 +44,7 @@ class UserService {
         "username",
         validatedProfile.username
       );
+
       if (
         existingUserWithUsername &&
         existingUserWithUsername.uid !== validatedProfile.uid
@@ -58,10 +59,6 @@ class UserService {
       validatedProfile.lastActive = this.queries.getServerTimestamp();
       validatedProfile.updatedAt = this.queries.getServerTimestamp();
       validatedProfile.authProvider = authProvider || "email";
-
-      console.log(
-        `Creating user profile for UID: ${validatedProfile.uid}, Username: ${validatedProfile.username}`
-      );
 
       await this.queries.createUser(validatedProfile.uid, validatedProfile);
       return validatedProfile;
@@ -80,16 +77,14 @@ class UserService {
 
   async getUserProfile(uid, viewerUid = null) {
     try {
-      const validatedUid = validateId(uid, "uid");
-
-      const user = await this.queries.getUserById(validatedUid);
+      const user = await this.queries.getUserById(uid);
 
       if (!user) {
         throw new Error("USER_SERVICE_NOT_FOUND_ERROR: User profile not found");
       }
 
       // If viewing own profile, return full data, otherwise sanitize
-      const isOwnProfile = viewerUid === validatedUid;
+      const isOwnProfile = viewerUid === uid;
 
       if (isOwnProfile) {
         return user; // Return complete profile for own profile

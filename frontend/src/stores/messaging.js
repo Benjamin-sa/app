@@ -70,18 +70,14 @@ export const useMessagingStore = defineStore("messaging", () => {
       const response = await apiService.get("/messages/conversations");
 
       if (response.success && response.data) {
-        // Check if conversations are directly in data or nested under conversations
-        const conversationsArray = response.data.conversations || response.data;
+        // Conversations are returned under data.conversations
+        const conversationsArray = response.data.conversations || [];
 
         if (Array.isArray(conversationsArray)) {
-          // Clear existing conversations
           conversations.value.clear();
-
-          // Add new conversations to the store
           conversationsArray.forEach((conversation) => {
             conversations.value.set(conversation.id, conversation);
           });
-
           return conversationsArray;
         } else {
           setError("Invalid conversations data format");
@@ -112,9 +108,11 @@ export const useMessagingStore = defineStore("messaging", () => {
         `/messages/conversations/${conversationId}`
       );
 
-      if (response.success && response.messages) {
+      // Backend returns { success, data: { messages: [...] } }
+      const msgs = response.success ? response.data?.messages : null;
+      if (msgs && Array.isArray(msgs)) {
         // Store messages in reverse order (oldest first)
-        const conversationMessages = response.messages.reverse();
+        const conversationMessages = [...msgs].reverse();
         messages.value.set(conversationId, conversationMessages);
         return conversationMessages;
       } else {
@@ -130,7 +128,30 @@ export const useMessagingStore = defineStore("messaging", () => {
     }
   };
 
-  // Send a new message
+  // Start a new conversation (optionally with an initial message)
+  const startConversation = async (receiverId, initialMessage = "") => {
+    if (!receiverId) return null;
+    clearError();
+    try {
+      const response = await apiService.post("/messages/start", {
+        receiverId,
+        initialMessage: initialMessage?.trim() || undefined,
+      });
+      if (response.success && response.data) {
+        const conversation = response.data; // backend returns conversation object directly in data
+        conversations.value.set(conversation.id, conversation);
+        return conversation;
+      }
+      setError("Failed to start conversation");
+      return null;
+    } catch (e) {
+      console.error("Error starting conversation:", e);
+      setError("Failed to start conversation");
+      return null;
+    }
+  };
+
+  // Send a new message (either to existing conversation via receiverId or implicit existing conversation)
   const sendMessage = async (receiverId, content) => {
     if (!receiverId || !content?.trim()) return null;
 
@@ -143,25 +164,20 @@ export const useMessagingStore = defineStore("messaging", () => {
       });
 
       if (response.success && response.data) {
-        const newMessage = response.data;
+        const newMessage = response.data; // backend returns the message object
+        const conversationId = newMessage.conversationId;
 
-        // Find or create conversation
-        let conversationId = newMessage.conversationId;
-
-        // Add message to the appropriate conversation
         if (conversationId) {
           const existingMessages = messages.value.get(conversationId) || [];
           messages.value.set(conversationId, [...existingMessages, newMessage]);
 
-          // Update conversation's last message time
+          // Update conversation summary fields to align with backend schema
           const conversation = conversations.value.get(conversationId);
           if (conversation) {
             conversation.updatedAt = newMessage.createdAt;
-            conversation.lastMessage = {
-              content: newMessage.content,
-              createdAt: newMessage.createdAt,
-              senderId: newMessage.senderId,
-            };
+            conversation.lastMessage = newMessage.content; // backend stores a string
+            conversation.lastMessageBy = newMessage.senderId;
+            conversation.lastMessageAt = newMessage.createdAt; // local optimistic update
           }
         }
 
@@ -177,7 +193,7 @@ export const useMessagingStore = defineStore("messaging", () => {
     }
   };
 
-  // Mark messages as read
+  // Mark messages as read (requires backend endpoint PUT /messages/conversations/:id/read)
   const markAsRead = async (conversationId) => {
     if (!conversationId) return;
 
@@ -187,37 +203,45 @@ export const useMessagingStore = defineStore("messaging", () => {
       // Update local state - mark all messages as read
       const conversationMessages = messages.value.get(conversationId);
       if (conversationMessages) {
+        const nowIso = new Date().toISOString();
         const updatedMessages = conversationMessages.map((msg) => ({
           ...msg,
-          readAt: msg.readAt || new Date().toISOString(),
+          readAt: msg.readAt || nowIso,
         }));
         messages.value.set(conversationId, updatedMessages);
+      }
+
+      // Reset unread counter locally if present
+      const conversation = conversations.value.get(conversationId);
+      if (conversation?.unreadCount) {
+        // Assuming current user id will be handled in UI using auth store to index
+        // We'll zero out all keys (frontend responsibility to target correct key).
+        Object.keys(conversation.unreadCount).forEach((k) => {
+          conversation.unreadCount[k] = 0;
+        });
       }
     } catch (error) {
       console.error("Error marking messages as read:", error);
     }
   };
 
-  // Add a new message (useful for real-time updates)
+  // Add a new message (e.g., real-time push)
   const addMessage = (conversationId, message) => {
     if (!conversationId || !message) return;
 
     const existingMessages = messages.value.get(conversationId) || [];
     messages.value.set(conversationId, [...existingMessages, message]);
 
-    // Update conversation if exists
     const conversation = conversations.value.get(conversationId);
     if (conversation) {
       conversation.updatedAt = message.createdAt;
-      conversation.lastMessage = {
-        content: message.content,
-        createdAt: message.createdAt,
-        senderId: message.senderId,
-      };
+      conversation.lastMessage = message.content; // keep as string
+      conversation.lastMessageBy = message.senderId;
+      conversation.lastMessageAt = message.createdAt;
     }
   };
 
-  // Clear all data (useful for logout)
+  // Clear all data (e.g., on logout)
   const clearAllData = () => {
     conversations.value.clear();
     messages.value.clear();
@@ -240,13 +264,14 @@ export const useMessagingStore = defineStore("messaging", () => {
     // Actions
     loadConversations,
     loadMessages,
+    startConversation,
     sendMessage,
     markAsRead,
     addMessage,
     clearAllData,
     clearError,
 
-    // Direct access for debugging
+    // Direct access (debugging)
     conversations: computed(() => conversations.value),
     messages: computed(() => messages.value),
   };

@@ -17,12 +17,14 @@ class CategoryController extends BaseController {
         cacheKey,
         async () => {
           const categories = await firebaseQueries.getCategories();
-          
+
           // Get real-time statistics for each category
           const categoriesWithStats = await Promise.all(
             categories.map(async (category) => {
               try {
-                const stats = await firebaseQueries.getCategoryStatistics(category.id);
+                const stats = await firebaseQueries.getCategoryStatistics(
+                  category.id
+                );
                 return {
                   ...category,
                   topicCount: stats.topicCount,
@@ -30,7 +32,10 @@ class CategoryController extends BaseController {
                   lastActivity: stats.lastActivity,
                 };
               } catch (error) {
-                console.warn(`Failed to get stats for category ${category.id}:`, error.message);
+                console.warn(
+                  `Failed to get stats for category ${category.id}:`,
+                  error.message
+                );
                 return category; // Return category without updated stats
               }
             })
@@ -74,12 +79,14 @@ class CategoryController extends BaseController {
     try {
       // This could be protected by admin middleware
       await firebaseQueries.refreshAllCategoryStatistics();
-      
+
       // Clear related caches
       await this.invalidateCache("categories_with_stats");
       await this.invalidateCache("category_stats:*");
 
-      this.sendSuccess(res, { message: "Category statistics refreshed successfully" });
+      this.sendSuccess(res, {
+        message: "Category statistics refreshed successfully",
+      });
     } catch (error) {
       this.handleError(res, error, "Refresh Category Stats");
     }

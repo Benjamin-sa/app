@@ -214,7 +214,7 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useNavbarStore } from '@/stores/navbar'
+import { useNavbarStore } from '@/stores/ui/navbar'
 import { useNotification } from '@/composables/useNotification'
 import { formatDate, debounce } from '@/utils/helpers'
 import LoadingSection from '@/components/common/sections/LoadingSection.vue'

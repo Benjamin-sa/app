@@ -236,7 +236,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useNotificationStore } from '@/stores/notification'
+import { useNotificationStore } from '@/stores/ui/notification'
 import { useApi } from '@/composables/useApi'
 import { apiService } from '@/services/api.service'
 import ActionButton from '@/components/common/buttons/ActionButton.vue'
@@ -247,7 +247,7 @@ import VoteButton from '@/components/forum/VoteButton.vue'
 import AnswerList from '@/components/forum/AnswerList.vue'
 import AnswerForm from '@/components/forum/AnswerForm.vue'
 import Modal from '@/components/common/Modal.vue'
-import { useNavbarStore } from '@/stores/navbar'
+import { useNavbarStore } from '@/stores/ui/navbar'
 import {
     CameraIcon,
     PhotoIcon,

@@ -48,7 +48,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useNavbarStore } from '@/stores/navbar';
+import { useNavbarStore } from '@/stores/ui/navbar';
 import { useMessagingStore } from '@/stores/messaging';
 import ConversationList from '@/components/messaging/ConversationList.vue';
 import MessageThread from '@/components/messaging/MessageThread.vue';

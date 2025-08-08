@@ -155,7 +155,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import { useNavbarStore } from '@/stores/navbar';
+import { useNavbarStore } from '@/stores/ui/navbar';
 import { apiService } from '@/services/api.service';
 import { formatDate } from '@/utils/helpers';
 import ActionButton from '@/components/common/buttons/ActionButton.vue';

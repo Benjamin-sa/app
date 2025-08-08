@@ -24,7 +24,7 @@
                     <div class="flex items-center space-x-4 text-sm">
                         <span class="flex items-center">
                             <ChatBubbleLeftIcon class="w-4 h-4 mr-1" />
-                            {{ category.topicCount || 0 }} topics
+                            {{ actualTopicCount }} topics
                         </span>
                         <span class="flex items-center">
                             <EyeIcon class="w-4 h-4 mr-1" />
@@ -37,29 +37,41 @@
             </div>
         </div>
 
-        <!-- Recent Activity -->
+        <!-- Recent Topics -->
         <div class="p-6">
-            <div v-if="category.lastActivity" class="space-y-3">
-                <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Recent Activity</h4>
+            <div v-if="categoryTopics.length > 0" class="space-y-3">
+                <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Recent Topics</h4>
 
-                <div class="flex items-center space-x-3">
-                    <div class="flex-shrink-0">
-                        <img v-if="category.lastActivity.userAvatar" :src="category.lastActivity.userAvatar"
-                            :alt="category.lastActivity.userName" class="w-8 h-8 rounded-full object-cover">
-                        <div v-else
-                            class="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                            <UserIcon class="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <!-- Display up to 3 recent topics -->
+                <div v-for="topic in categoryTopics.slice(0, 3)" :key="topic.id"
+                    class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                    @click.stop="$router.push(`/forum/topic/${topic.id}`)">
+
+                    <div class="flex-1 min-w-0">
+                        <p class="text-base text-gray-900 dark:text-white font-semibold truncate mb-1">
+                            {{ topic.title }}
+                        </p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                                <AuthorDisplay v-if="topic.userId" :userId="topic.userId" size="sm" :showName="true"
+                                    class="ml-1" />
+                                <span v-else>Unknown</span>
+                                <span class="mx-1">•</span>
+                                <span>{{ formatRelativeTime(topic.createdAt) }}</span>
+                            </div>
+                            <div v-if="topic.answerCount > 0" class="flex items-center text-xs text-gray-400">
+                                <ChatBubbleLeftIcon class="w-3 h-3 mr-1" />
+                                {{ topic.answerCount }}
+                            </div>
                         </div>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm text-gray-900 dark:text-white font-medium truncate">
-                            {{ category.lastActivity.topicTitle }}
-                        </p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">
-                            by {{ category.lastActivity.userName }} • {{
-                                formatRelativeTime(category.lastActivity.timestamp) }}
-                        </p>
-                    </div>
+                </div>
+
+                <!-- Show more link if there are more topics -->
+                <div v-if="categoryTopics.length > 3" class="text-center pt-2">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        +{{ categoryTopics.length - 3 }} more topics
+                    </p>
                 </div>
             </div>
 
@@ -76,8 +88,11 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useForumStore } from '@/stores/forum';
+import { useTopicsWithUsers } from '@/composables/useTopicsWithUsers';
 import { getCategoryLabel } from '@/utils/helpers';
 import { formatRelativeTime } from '@/utils/helpers';
+import AuthorDisplay from '@/components/common/AuthorDisplay.vue';
 import {
     ChatBubbleLeftIcon,
     EyeIcon,
@@ -96,6 +111,22 @@ const props = defineProps({
         type: Object,
         required: true
     }
+});
+
+// Initialize forum store
+const forumStore = useForumStore();
+
+// Get topics for this category
+const categoryTopics = computed(() => {
+    return forumStore.getTopicsByCategory(props.category.id);
+});
+
+// Use composable to enhance topics with user data
+const { topicsWithUsers } = useTopicsWithUsers(categoryTopics);
+
+// Get actual topic count from store instead of relying on category stats
+const actualTopicCount = computed(() => {
+    return topicsWithUsers.value.length;
 });
 
 // Map category IDs to their respective icons

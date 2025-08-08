@@ -94,7 +94,10 @@ class TopicService {
 
       // Update category last activity if this is a significant update
       if (validatedUpdateData.title || validatedUpdateData.content) {
-        await this.updateCategoryStatistics(updatedTopic.category, updatedTopic);
+        await this.updateCategoryStatistics(
+          updatedTopic.category,
+          updatedTopic
+        );
       }
 
       return updatedTopic;
@@ -277,18 +280,18 @@ class TopicService {
     try {
       // Get user data for last activity
       const userData = await this.queries.getUserById(topicData.userId);
-      
+
       const activityData = {
         topicId: topicData.id,
         topicTitle: topicData.title,
         userId: topicData.userId,
-        userName: userData?.displayName || userData?.username || 'Anonymous',
+        userName: userData?.displayName || userData?.username || "Anonymous",
         userAvatar: userData?.avatar || null,
       };
 
       // Update category last activity
       await this.queries.updateCategoryLastActivity(categoryId, activityData);
-      
+
       // Increment topic count only for new topics (when called from createTopic)
       // The real-time aggregation in getCategoryStatistics will handle the actual counts
     } catch (error) {
@@ -303,7 +306,7 @@ class TopicService {
   async trackTopicView(topicId, userId = null) {
     try {
       const validatedTopicId = validateId(topicId, "topicId");
-      
+
       // Get topic to find its category
       const topic = await this.queries.getTopicById(validatedTopicId);
       if (!topic || topic.isDeleted) {

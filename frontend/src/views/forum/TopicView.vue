@@ -247,7 +247,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useForumStore } from '@/stores/forum';
-import { useNotificationStore } from '@/stores/notification';
+import { useNotificationStore } from '@/stores/ui/notification';
 import { formatDate, formatContent, formatNumber, getCategoryLabel } from '@/utils/helpers';
 import ActionButton from '@/components/common/buttons/ActionButton.vue';
 import BreadcrumbNav from '@/components/common/nav/BreadcrumbNav.vue';
@@ -272,7 +272,7 @@ import {
     MagnifyingGlassIcon,
     ClockIcon
 } from '@heroicons/vue/24/outline';
-import { useNavbarStore } from '@/stores/navbar';
+import { useNavbarStore } from '@/stores/ui/navbar';
 
 const route = useRoute();
 const router = useRouter();

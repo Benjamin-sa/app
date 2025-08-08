@@ -93,7 +93,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import { useNotificationStore } from '@/stores/notification';
+import { useNotificationStore } from '@/stores/ui/notification';
 import { useProductStore } from '@/stores/products';
 import ActionButton from '@/components/common/buttons/ActionButton.vue';
 import IconButton from '@/components/common/buttons/IconButton.vue';

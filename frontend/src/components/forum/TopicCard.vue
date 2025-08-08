@@ -80,7 +80,7 @@
 </template>
 
 <script setup>
-import { useNotificationStore } from '@/stores/notification';
+import { useNotificationStore } from '@/stores/ui/notification';
 import { formatDate, getCategoryLabel } from '@/utils/helpers';
 import ActionButton from '@/components/common/buttons/ActionButton.vue';
 import AuthorDisplay from '@/components/common/AuthorDisplay.vue';

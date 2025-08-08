@@ -66,7 +66,7 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue'
-import { useNotificationStore } from '@/stores/notification'
+import { useNotificationStore } from '@/stores/ui/notification'
 import { useApi } from '@/composables/useApi'
 import { apiService } from '@/services/api.service'
 import ActionButton from '@/components/common/buttons/ActionButton.vue'

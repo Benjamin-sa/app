@@ -43,7 +43,7 @@
 
 <script setup>
 import { storeToRefs } from 'pinia';
-import { useNotificationStore } from '@/stores/notification';
+import { useNotificationStore } from '@/stores/ui/notification';
 import {
     CheckCircleIcon,
     ExclamationCircleIcon,
