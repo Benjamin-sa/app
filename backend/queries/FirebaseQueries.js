@@ -194,45 +194,57 @@ class FirebaseQueries extends BaseFirebaseQueries {
   // MESSAGING OPERATIONS - Delegate to MessagingQueries
   // =====================
 
-  async createConversation(conversationData) {
-    return await this.messagingQueries.createConversation(conversationData);
+  // Thread operations (new)
+  async createThread(threadData) {
+    return await this.messagingQueries.createThread(threadData);
   }
 
-  async getConversationBetweenUsers(userId1, userId2) {
-    return await this.messagingQueries.getConversationBetweenUsers(
-      userId1,
-      userId2
+  async getThreadById(threadId) {
+    return await this.messagingQueries.getThreadById(threadId);
+  }
+
+  async getThreadByParticipants(participants) {
+    return await this.messagingQueries.getThreadByParticipants(participants);
+  }
+
+  async getUserThreads(userId, limit = 20) {
+    return await this.messagingQueries.getUserThreads(userId, limit);
+  }
+
+  async updateThread(threadId, updates) {
+    return await this.messagingQueries.updateThread(threadId, updates);
+  }
+
+  async resetUnreadCounter(threadId, userId) {
+    return await this.messagingQueries.resetUnreadCounter(threadId, userId);
+  }
+
+  async getThreadMessages(threadId, limit = 50, before) {
+    return await this.messagingQueries.getThreadMessages(
+      threadId,
+      limit,
+      before
     );
   }
 
-  async getConversationById(conversationId) {
-    return await this.messagingQueries.getConversationById(conversationId);
+  async getUnreadMessages(threadId, userId) {
+    return await this.messagingQueries.getUnreadMessages(threadId, userId);
   }
 
-  async getUserConversations(userId, options = {}) {
-    return await this.messagingQueries.getUserConversations(userId, options);
+  async markMessagesAsRead(messageIds, userId) {
+    return await this.messagingQueries.markMessagesAsRead(messageIds, userId);
+  }
+
+  async getMessageById(messageId) {
+    return await this.messagingQueries.getMessageById(messageId);
   }
 
   async createMessage(messageData) {
     return await this.messagingQueries.createMessage(messageData);
   }
 
-  async getConversationMessages(conversationId, options = {}) {
-    return await this.messagingQueries.getConversationMessages(
-      conversationId,
-      options
-    );
-  }
-
-  async markMessageAsRead(messageId) {
-    return await this.messagingQueries.markMessageAsRead(messageId);
-  }
-
-  async updateConversationLastMessage(conversationId, messageData) {
-    return await this.messagingQueries.updateConversationLastMessage(
-      conversationId,
-      messageData
-    );
+  async softDeleteMessage(messageId) {
+    return await this.messagingQueries.softDeleteMessage(messageId);
   }
 }
 

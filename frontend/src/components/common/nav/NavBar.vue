@@ -50,11 +50,16 @@
                             Products
                         </RouterLink>
                         <RouterLink to="/messages"
-                            class="inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2 transition-colors duration-200"
+                            class="inline-flex items-center gap-2 px-1 pt-1 text-sm font-medium border-b-2 transition-colors duration-200"
                             :class="$route.name === 'Messages'
                                 ? 'text-primary-600 dark:text-primary-400 border-primary-500'
                                 : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'">
-                            Messages
+                            <span>Messages</span>
+                            <!-- Unread Messages Badge -->
+                            <span v-if="authStore.isAuthenticated && messagingStore.hasUnreadMessages"
+                                class="inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-semibold text-white bg-red-500 rounded-full min-w-[1.125rem] h-4.5 shadow-sm">
+                                {{ messagingStore.totalUnreadCount > 99 ? '99+' : messagingStore.totalUnreadCount }}
+                            </span>
                         </RouterLink>
                     </div>
                 </div>
@@ -196,12 +201,17 @@
                             Products
                         </RouterLink>
                         <RouterLink to="/messages"
-                            class="block px-3 py-2 text-base font-medium rounded-lg transition-colors duration-200"
+                            class="flex items-center justify-between px-3 py-2 text-base font-medium rounded-lg transition-colors duration-200"
                             :class="$route.name === 'Messages'
                                 ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
                                 : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'"
                             @click="closeMobileMenu">
-                            Messages
+                            <span>Messages</span>
+                            <!-- Unread Messages Badge -->
+                            <span v-if="authStore.isAuthenticated && messagingStore.hasUnreadMessages"
+                                class="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold text-white bg-red-500 rounded-full min-w-[1.5rem] h-6 shadow-sm">
+                                {{ messagingStore.totalUnreadCount > 99 ? '99+' : messagingStore.totalUnreadCount }}
+                            </span>
                         </RouterLink>
 
                         <!-- User actions for mobile -->
@@ -258,6 +268,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { useMessagingStore } from '@/stores/messaging';
 import { useNotification } from '@/composables/useNotification';
 import ThemeToggle from '@/components/common/nav/ThemeToggle.vue';
 import { useNavbarStore } from '@/stores/ui/navbar';
@@ -274,6 +285,7 @@ import {
 
 const router = useRouter();
 const authStore = useAuthStore();
+const messagingStore = useMessagingStore();
 const navbarStore = useNavbarStore();
 const { success, error } = useNotification();
 

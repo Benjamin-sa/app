@@ -86,9 +86,18 @@ class BaseFirebaseQueries {
       const result = { id: doc.id, ...data };
 
       if (transformTimestamps) {
-        if (data.createdAt) result.createdAt = data.createdAt.toDate();
-        if (data.updatedAt) result.updatedAt = data.updatedAt.toDate();
-        if (data.lastActivity) result.lastActivity = data.lastActivity.toDate();
+        if (data.createdAt)
+          result.createdAt = data.createdAt.toDate
+            ? data.createdAt.toDate()
+            : data.createdAt;
+        if (data.updatedAt)
+          result.updatedAt = data.updatedAt.toDate
+            ? data.updatedAt.toDate()
+            : data.updatedAt;
+        if (data.lastActivity)
+          result.lastActivity = data.lastActivity.toDate
+            ? data.lastActivity.toDate()
+            : data.lastActivity;
       }
 
       return result;

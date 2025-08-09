@@ -106,26 +106,9 @@
         </div>
 
         <!-- Enhanced Create Topic Modal -->
-        <div v-if="showCreateTopic" class="fixed inset-0 z-50 overflow-y-auto">
-            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                <!-- Enhanced Backdrop -->
-                <div class="fixed inset-0 transition-opacity bg-black/60 backdrop-blur-sm"
-                    @click="showCreateTopic = false"></div>
-
-                <!-- Enhanced Modal Content -->
-                <div
-                    class="inline-block w-full max-w-2xl p-8 my-8 overflow-hidden text-left align-middle transition-all transform bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl shadow-2xl rounded-2xl relative z-60 border border-gray-200/50 dark:border-gray-700/50">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Create New Topic</h3>
-                        <IconButton @click="showCreateTopic = false" :icon="XMarkIcon" variant="ghost"
-                            class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-                            title="Close modal" />
-                    </div>
-                    <TopicForm :category="currentCategory" @success="handleTopicCreated"
-                        @cancel="showCreateTopic = false" />
-                </div>
-            </div>
-        </div>
+        <Modal v-model="showCreateTopic" title="Create New Topic" size="xl" :closable="true" :close-on-backdrop="true">
+            <TopicForm :category="currentCategory" @success="handleTopicCreated" @cancel="showCreateTopic = false" />
+        </Modal>
     </div>
 </template>
 
@@ -139,6 +122,7 @@ import { FORUM_CATEGORIES } from '@/utils/constants.repository.js'
 import ActionButton from '@/components/common/buttons/ActionButton.vue';
 import IconButton from '@/components/common/buttons/IconButton.vue';
 import LoadingSection from '@/components/common/sections/LoadingSection.vue';
+import Modal from '@/components/common/Modal.vue';
 import TopicCard from '@/components/forum/TopicCard.vue';
 import TopicForm from '@/components/forum/TopicForm.vue';
 import {

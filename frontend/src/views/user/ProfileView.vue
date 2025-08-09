@@ -231,7 +231,6 @@ import { apiService } from '@/services/api.service'
 import {
     UserIcon,
     PencilIcon,
-    ChatBubbleLeftIcon,
     LinkIcon,
     MapPinIcon,
     CalendarIcon,
@@ -272,24 +271,6 @@ const isOwnProfile = computed(() => {
     // Compare route ID with current user ID
     return routeId === currentUserId
 })
-
-// Handle sending message - context-aware navigation
-const sendMessage = () => {
-    // If we're already in the messages view, just start the conversation
-    if (route.path.startsWith('/messages')) {
-        // Emit event to parent or use a different approach for in-context messaging
-        router.push({
-            path: '/messages',
-            query: { startConversation: userProfile.value.uid }
-        });
-    } else {
-        // Navigate to messages with pre-selected user
-        router.push({
-            path: '/messages',
-            query: { startConversation: userProfile.value.uid }
-        });
-    }
-};
 
 // Computed property to get the target user ID
 const targetUserId = computed(() => {

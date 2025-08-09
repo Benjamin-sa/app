@@ -168,12 +168,9 @@ import {
 } from '@heroicons/vue/24/outline';
 
 const authStore = useAuthStore();
-const navbarStore = useNavbarStore();
 
 const recentTopics = ref([]);
-const featuredProducts = ref([]);
 const loadingTopics = ref(false);
-const loadingProducts = ref(false);
 
 const loadRecentTopics = async () => {
     try {
@@ -189,22 +186,8 @@ const loadRecentTopics = async () => {
     }
 };
 
-const loadFeaturedProducts = async () => {
-    try {
-        loadingProducts.value = true;
-        const response = await apiService.get('/products', {
-            params: { limit: 5, featured: true }
-        });
-        featuredProducts.value = response.data.products || [];
-    } catch (error) {
-        console.error('Error loading featured products:', error);
-    } finally {
-        loadingProducts.value = false;
-    }
-};
 
 onMounted(() => {
     loadRecentTopics();
-    loadFeaturedProducts();
 });
 </script>

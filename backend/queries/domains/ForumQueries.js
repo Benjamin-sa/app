@@ -70,9 +70,15 @@ class ForumQueries extends BaseFirebaseQueries {
       return {
         id: doc.id,
         ...data,
-        createdAt: data.createdAt?.toDate(),
-        updatedAt: data.updatedAt?.toDate(),
-        lastActivity: data.lastActivity?.toDate(),
+        createdAt: data.createdAt?.toDate
+          ? data.createdAt.toDate()
+          : data.createdAt,
+        updatedAt: data.updatedAt?.toDate
+          ? data.updatedAt.toDate()
+          : data.updatedAt,
+        lastActivity: data.lastActivity?.toDate
+          ? data.lastActivity.toDate()
+          : data.lastActivity,
       };
     });
   }
@@ -131,9 +137,15 @@ class ForumQueries extends BaseFirebaseQueries {
         return {
           id: doc.id,
           ...data,
-          createdAt: data.createdAt?.toDate(),
-          updatedAt: data.updatedAt?.toDate(),
-          lastActivity: data.lastActivity?.toDate(),
+          createdAt: data.createdAt?.toDate
+            ? data.createdAt.toDate()
+            : data.createdAt,
+          updatedAt: data.updatedAt?.toDate
+            ? data.updatedAt.toDate()
+            : data.updatedAt,
+          lastActivity: data.lastActivity?.toDate
+            ? data.lastActivity.toDate()
+            : data.lastActivity,
         };
       })
       .filter((topic) => {

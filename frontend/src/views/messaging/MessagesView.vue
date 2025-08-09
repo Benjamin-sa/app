@@ -1,10 +1,14 @@
 <template>
     <div class="max-w-7xl mx-auto px-4 py-8" :style="{ paddingTop: `${navbarStore.effectiveNavbarHeight + 32}px` }">
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden h-[calc(100vh-200px)] flex">
-            <!-- Conversations Sidebar -->
-            <div class="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-                <!-- Add loading and error states for conversations -->
-                <div v-if="messagingStore.loadingConversations" class="flex-1 flex items-center justify-center">
+            <!-- Conversations Sidebar - Hidden on mobile when thread is selected -->
+            <div :class="[
+                'border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300',
+                'w-full md:w-80',
+                selectedThread && isMobile ? 'hidden' : 'flex'
+            ]">
+                <!-- Add loading and error states for threads -->
+                <div v-if="messagingStore.loading.threads" class="flex-1 flex items-center justify-center">
                     <div class="animate-pulse space-y-3 w-full p-4">
                         <div v-for="i in 5" :key="i" class="flex space-x-3">
                             <div class="rounded-full bg-gray-200 dark:bg-gray-700 h-10 w-10"></div>
@@ -16,14 +20,30 @@
                     </div>
                 </div>
 
-                <ConversationList v-else :conversations="conversations"
-                    :selected-conversation-id="selectedConversation?.id" @select-conversation="selectConversation" />
+                <!-- Debug info - temporary -->
+                <div v-else-if="threads.length === 0"
+                    class="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg m-4">
+                    <div class="text-sm text-yellow-800 dark:text-yellow-200">
+                        <p><strong>Debug Info:</strong></p>
+                        <p>Threads count: {{ threads.length }}</p>
+                        <p>Loading: {{ messagingStore.loading.threads }}</p>
+                        <p>Auth user: {{ authStore.user?.uid || 'Not authenticated' }}</p>
+                        <p>Total unread: {{ messagingStore.totalUnreadCount }}</p>
+                    </div>
+                </div>
+
+                <ConversationList v-else :conversations="threads" :selected-conversation-id="selectedThread?.id"
+                    @select-conversation="selectThread" />
             </div>
 
-            <!-- Message Thread -->
-            <div class="flex-1 flex flex-col">
-                <MessageThread v-if="selectedConversation" :conversation-id="selectedConversation.id"
-                    :conversation="selectedConversation" @message-sent="handleMessageSent" />
+            <!-- Message Thread - Full width on mobile when thread is selected -->
+            <div :class="[
+                'flex flex-col transition-all duration-300',
+                selectedThread && isMobile ? 'w-full' : 'flex-1',
+                !selectedThread && isMobile ? 'hidden' : 'flex'
+            ]">
+                <MessageThread v-if="selectedThread" :conversation-id="selectedThread.id" :conversation="selectedThread"
+                    @message-sent="handleMessageSent" @back="handleBackToThreads" />
 
                 <div v-else class="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
                     <div class="text-center space-y-4">
@@ -34,8 +54,8 @@
                         <div>
                             <h3 class="text-lg font-medium mb-2">Welcome to Messages</h3>
                             <p class="text-sm text-gray-600 dark:text-gray-400 max-w-sm">
-                                Select a conversation from the sidebar to start messaging, or visit someone's profile to
-                                start a new conversation.
+                                Select a thread from the sidebar to start messaging, or visit someone's profile to
+                                start a new thread.
                             </p>
                         </div>
                     </div>
@@ -46,10 +66,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useNavbarStore } from '@/stores/ui/navbar';
 import { useMessagingStore } from '@/stores/messaging';
+import { useAuthStore } from '@/stores/auth';
 import ConversationList from '@/components/messaging/ConversationList.vue';
 import MessageThread from '@/components/messaging/MessageThread.vue';
 import { ChatBubbleLeftIcon } from '@heroicons/vue/24/outline';
@@ -58,94 +79,141 @@ const route = useRoute();
 const router = useRouter();
 const navbarStore = useNavbarStore();
 const messagingStore = useMessagingStore();
+const authStore = useAuthStore();
 
-const selectedConversation = ref(null);
+const selectedThread = ref(null);
+const screenWidth = ref(window.innerWidth);
 
-// Get conversations from the store
-const conversations = computed(() => messagingStore.getConversationsList);
+// Mobile breakpoint detection
+const isMobile = computed(() => screenWidth.value < 768);
 
-const loadConversations = async () => {
-    const result = await messagingStore.loadConversations();
+// Get threads from the store
+const threads = computed(() => messagingStore.threadsList);
 
-    if (result && result.length > 0) {
-        // Auto-select conversation if coming from a profile or specific conversation
-        const conversationId = route.query.conversation;
+// Handle window resize
+const handleResize = () => {
+    screenWidth.value = window.innerWidth;
+};
+
+const loadThreads = async () => {
+    // Check if threads are already loaded or currently loading
+    if (messagingStore.threadsList.length > 0 || messagingStore.loading.threads) {
+        handleExistingThreads();
+        return;
+    }
+
+    // Load threads if not already loaded
+    try {
+        await messagingStore.loadThreads();
+        handleExistingThreads();
+    } catch (error) {
+        console.error('Failed to load threads:', error);
+    }
+};
+
+const handleExistingThreads = () => {
+    if (messagingStore.threadsList.length > 0) {
+        // Auto-select thread if coming from a profile or specific thread
+        const threadId = route.query.conversation;
         const startConversation = route.query.startConversation;
 
-        if (conversationId) {
-            const conversation = result.find(c => c.id === conversationId);
-            if (conversation) {
-                selectedConversation.value = conversation;
+        if (threadId) {
+            const thread = messagingStore.getThread(threadId);
+            if (thread) {
+                selectedThread.value = thread;
             }
         } else if (startConversation) {
-            // Check if conversation already exists with this user
-            const existingConversation = result.find(c =>
-                c.participants.includes(startConversation)
+            // Check if thread already exists with this user
+            const existingThread = messagingStore.threadsList.find(t =>
+                t.participants.includes(startConversation)
             );
 
-            if (existingConversation) {
-                selectedConversation.value = existingConversation;
+            if (existingThread) {
+                selectedThread.value = existingThread;
             } else {
-                // Create new conversation
-                await createNewConversation(startConversation);
+                // Create new thread
+                createNewThread(startConversation);
             }
         }
     }
 };
 
-const createNewConversation = async (receiverId) => {
+const createNewThread = async (receiverId) => {
     try {
-        // Send a welcome message to create the conversation
-        const result = await messagingStore.sendMessage(receiverId, "Hi! 👋");
+        // Use the store's getOrCreateThread method
+        const threadId = await messagingStore.getOrCreateThread(receiverId);
 
-        if (result) {
-            // Reload conversations and select the new one
-            await messagingStore.loadConversations();
-            const newConversation = messagingStore.getConversation(result.conversationId);
-            if (newConversation) {
-                selectedConversation.value = newConversation;
+        if (threadId) {
+            // Reload threads and select the new one
+            await messagingStore.loadThreads();
+            const newThread = messagingStore.getThread(threadId);
+            if (newThread) {
+                selectedThread.value = newThread;
             }
 
-            // Clear the query parameter to avoid recreating the conversation
+            // Clear the query parameter to avoid recreating the thread
             router.replace({
                 path: route.path,
-                query: { conversation: result.conversationId }
+                query: { conversation: threadId }
             });
         }
     } catch (error) {
-        console.error('Failed to create new conversation:', error);
+        console.error('Failed to create new thread:', error);
     }
 };
 
-const selectConversation = (conversation) => {
-    selectedConversation.value = conversation;
+const selectThread = (thread) => {
+    selectedThread.value = thread;
 
-    // Update URL to reflect selected conversation
+    // Update URL to reflect selected thread
     router.replace({
         path: route.path,
-        query: { conversation: conversation.id }
+        query: { conversation: thread.id }
     });
 };
 
+const handleBackToThreads = () => {
+    // On mobile, go back to threads list
+    if (isMobile.value) {
+        selectedThread.value = null;
+        router.replace({
+            path: route.path,
+            query: {}
+        });
+    }
+};
+
 const handleMessageSent = (message) => {
-    // The messaging store handles updating conversation state
+    // The messaging store handles updating thread state
     // No need to manually update here since it's reactive
 };
 
 // Watch for route changes to handle deep linking
 watch(() => route.query, () => {
-    if (conversations.value.length > 0) {
-        const conversationId = route.query.conversation;
-        if (conversationId) {
-            const conversation = conversations.value.find(c => c.id === conversationId);
-            if (conversation) {
-                selectedConversation.value = conversation;
+    if (threads.value.length > 0) {
+        const threadId = route.query.conversation;
+        if (threadId) {
+            const thread = messagingStore.getThread(threadId);
+            if (thread) {
+                selectedThread.value = thread;
             }
         }
     }
 }, { deep: true });
 
+// Watch for threads to be loaded (in case auto-loading happens after component mount)
+watch(() => messagingStore.threadsList.length, (newLength) => {
+    if (newLength > 0 && !selectedThread.value) {
+        handleExistingThreads();
+    }
+});
+
 onMounted(() => {
-    loadConversations();
+    loadThreads();
+    window.addEventListener('resize', handleResize);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('resize', handleResize);
 });
 </script>

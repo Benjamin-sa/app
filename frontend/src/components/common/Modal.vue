@@ -4,8 +4,8 @@
             enter-to-class="opacity-100" leave-active-class="transition duration-200 ease-in"
             leave-from-class="opacity-100" leave-to-class="opacity-0">
             <div v-if="modelValue" class="fixed inset-0 z-50 overflow-y-auto" @click="handleBackdropClick">
-                <!-- Backdrop -->
-                <div class="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 transition-opacity" />
+                <!-- Enhanced Backdrop with better blur -->
+                <div class="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-md transition-all duration-300" />
 
                 <!-- Modal container -->
                 <div class="flex min-h-full items-center justify-center p-4">
@@ -15,7 +15,7 @@
                         leave-from-class="transform opacity-100 scale-100"
                         leave-to-class="transform opacity-0 scale-95">
                         <div v-if="modelValue" :class="[
-                            'relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-h-full overflow-hidden',
+                            'relative bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl shadow-2xl max-h-full overflow-hidden border border-gray-200/50 dark:border-gray-700/50',
                             sizeClasses,
                         ]" @click.stop>
                             <!-- Header -->
@@ -55,7 +55,7 @@
 </template>
 
 <script setup>
-import { computed, watch } from 'vue';
+import { computed, watch, nextTick, onUnmounted } from 'vue';
 import { XMarkIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -119,7 +119,7 @@ const handleBackdropClick = () => {
     }
 };
 
-// Handle escape key
+// Handle escape key and body scroll
 watch(() => props.modelValue, (isOpen) => {
     const handleEscape = (event) => {
         if (event.key === 'Escape' && props.closable) {
@@ -129,10 +129,21 @@ watch(() => props.modelValue, (isOpen) => {
 
     if (isOpen) {
         document.addEventListener('keydown', handleEscape);
+        // Prevent background scrolling and hide scrollbar
         document.body.style.overflow = 'hidden';
+        document.body.style.paddingRight = `${window.innerWidth - document.documentElement.clientWidth}px`;
     } else {
         document.removeEventListener('keydown', handleEscape);
+        // Restore background scrolling
         document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
     }
+
+    // Cleanup function
+    return () => {
+        document.removeEventListener('keydown', handleEscape);
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+    };
 });
 </script>

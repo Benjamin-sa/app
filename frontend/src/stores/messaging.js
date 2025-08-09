@@ -1,278 +1,266 @@
+/**
+ * Simplified Messaging Store
+ * Clean, focused state management
+ */
+
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { apiService } from "@/services/api.service";
+import { useAuthStore } from "@/stores/auth";
 
-export const useMessagingStore = defineStore("messaging", () => {
+export const useMessagingStore = defineStore("Messaging", () => {
   // State
-  const conversations = ref(new Map()); // Map<conversationId, conversation>
-  const messages = ref(new Map()); // Map<conversationId, messages[]>
-  const loadingStates = ref(new Map()); // Map<conversationId, boolean>
-  const loadingConversations = ref(false);
-  const error = ref(null);
+  const threads = ref(new Map());
+  const messages = ref(new Map()); // threadId -> messages
+  const loading = ref({
+    threads: false,
+    messages: new Map(),
+  });
+
+  // Get auth store reference
+  const authStore = useAuthStore();
 
   // Getters
-  const getConversation = computed(() => {
-    return (conversationId) => conversations.value.get(conversationId) || null;
+  const threadsList = computed(() =>
+    Array.from(threads.value.values()).sort(
+      (a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    )
+  );
+
+  const getThread = computed(() => (threadId) => threads.value.get(threadId));
+  const getThreadMessages = computed(
+    () => (threadId) => messages.value.get(threadId) || []
+  );
+  const isLoadingMessages = computed(
+    () => (threadId) => loading.value.messages.get(threadId) || false
+  );
+
+  const getUnreadCount = computed(() => (threadId, userId) => {
+    const thread = threads.value.get(threadId);
+    return thread?.unreadCounts[userId] || 0;
   });
 
-  const getMessages = computed(() => {
-    return (conversationId) => messages.value.get(conversationId) || [];
+  // Get total unread messages count across all threads
+  const totalUnreadCount = computed(() => {
+    let total = 0;
+    const currentUserId = authStore?.user?.uid;
+    if (!currentUserId) return 0;
+
+    for (const thread of threads.value.values()) {
+      total += thread.unreadCounts?.[currentUserId] || 0;
+    }
+    return total;
   });
 
-  const isLoadingMessages = computed(() => {
-    return (conversationId) => loadingStates.value.get(conversationId) || false;
-  });
-
-  const getConversationsList = computed(() => {
-    return Array.from(conversations.value.values()).sort((a, b) => {
-      // Handle Firestore timestamp format
-      const getTimestamp = (timestamp) => {
-        if (!timestamp) return 0;
-        if (timestamp._seconds) {
-          return (
-            timestamp._seconds * 1000 +
-            Math.floor(timestamp._nanoseconds / 1000000)
-          );
-        }
-        return new Date(timestamp).getTime();
-      };
-
-      const aTime = getTimestamp(a.updatedAt || a.lastMessageAt);
-      const bTime = getTimestamp(b.updatedAt || b.lastMessageAt);
-
-      return bTime - aTime; // Most recent first
-    });
-  });
+  // Check if user has any unread messages
+  const hasUnreadMessages = computed(() => totalUnreadCount.value > 0);
 
   // Actions
-  const setError = (errorMessage) => {
-    error.value = errorMessage;
-  };
 
-  const clearError = () => {
-    error.value = null;
-  };
+  /**
+   * Load user's message threads
+   */
+  const loadThreads = async () => {
+    if (loading.value.threads) return;
 
-  const setLoadingMessages = (conversationId, isLoading) => {
-    if (isLoading) {
-      loadingStates.value.set(conversationId, true);
-    } else {
-      loadingStates.value.delete(conversationId);
-    }
-  };
-
-  // Load all conversations
-  const loadConversations = async () => {
-    loadingConversations.value = true;
-    clearError();
-
+    loading.value.threads = true;
     try {
-      const response = await apiService.get("/messages/conversations");
-
-      if (response.success && response.data) {
-        // Conversations are returned under data.conversations
-        const conversationsArray = response.data.conversations || [];
-
-        if (Array.isArray(conversationsArray)) {
-          conversations.value.clear();
-          conversationsArray.forEach((conversation) => {
-            conversations.value.set(conversation.id, conversation);
-          });
-          return conversationsArray;
-        } else {
-          setError("Invalid conversations data format");
-          return [];
-        }
-      } else {
-        setError("Failed to load conversations");
-        return [];
+      const response = await apiService.get("/messages/threads");
+      if (response.success && response.data.threads) {
+        threads.value.clear();
+        response.data.threads.forEach((thread) => {
+          threads.value.set(thread.id, thread);
+        });
       }
     } catch (error) {
-      console.error("Error loading conversations:", error);
-      setError("Failed to load conversations");
-      return [];
+      console.error("Failed to load threads:", error);
+      throw error;
     } finally {
-      loadingConversations.value = false;
+      loading.value.threads = false;
     }
   };
 
-  // Load messages for a specific conversation
-  const loadMessages = async (conversationId) => {
-    if (!conversationId) return [];
+  /**
+   * Load messages for a thread
+   */
+  const loadMessages = async (threadId) => {
+    if (loading.value.messages.get(threadId)) return;
 
-    setLoadingMessages(conversationId, true);
-    clearError();
-
+    loading.value.messages.set(threadId, true);
     try {
-      const response = await apiService.get(
-        `/messages/conversations/${conversationId}`
-      );
-
-      // Backend returns { success, data: { messages: [...] } }
-      const msgs = response.success ? response.data?.messages : null;
-      if (msgs && Array.isArray(msgs)) {
-        // Store messages in reverse order (oldest first)
-        const conversationMessages = [...msgs].reverse();
-        messages.value.set(conversationId, conversationMessages);
-        return conversationMessages;
-      } else {
-        setError("Failed to load messages");
-        return [];
+      const response = await apiService.get(`/messages/threads/${threadId}`);
+      if (response.success && response.data.messages) {
+        // Store messages in chronological order (oldest first for display)
+        const sortedMessages = response.data.messages.sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+        messages.value.set(threadId, sortedMessages);
       }
     } catch (error) {
-      console.error("Error loading messages:", error);
-      setError("Failed to load messages");
-      return [];
+      console.error("Failed to load messages:", error);
+      throw error;
     } finally {
-      setLoadingMessages(conversationId, false);
+      loading.value.messages.set(threadId, false);
     }
   };
 
-  // Start a new conversation (optionally with an initial message)
-  const startConversation = async (receiverId, initialMessage = "") => {
-    if (!receiverId) return null;
-    clearError();
-    try {
-      const response = await apiService.post("/messages/start", {
-        receiverId,
-        initialMessage: initialMessage?.trim() || undefined,
-      });
-      if (response.success && response.data) {
-        const conversation = response.data; // backend returns conversation object directly in data
-        conversations.value.set(conversation.id, conversation);
-        return conversation;
-      }
-      setError("Failed to start conversation");
-      return null;
-    } catch (e) {
-      console.error("Error starting conversation:", e);
-      setError("Failed to start conversation");
-      return null;
-    }
-  };
-
-  // Send a new message (either to existing conversation via receiverId or implicit existing conversation)
+  /**
+   * Send a message
+   */
   const sendMessage = async (receiverId, content) => {
-    if (!receiverId || !content?.trim()) return null;
-
-    clearError();
-
     try {
       const response = await apiService.post("/messages", {
         receiverId,
-        content: content.trim(),
+        content,
       });
 
       if (response.success && response.data) {
-        const newMessage = response.data; // backend returns the message object
-        const conversationId = newMessage.conversationId;
+        const newMessage = response.data;
 
-        if (conversationId) {
-          const existingMessages = messages.value.get(conversationId) || [];
-          messages.value.set(conversationId, [...existingMessages, newMessage]);
+        // Add message to local state
+        const threadMessages = messages.value.get(newMessage.threadId) || [];
+        messages.value.set(newMessage.threadId, [
+          ...threadMessages,
+          newMessage,
+        ]);
 
-          // Update conversation summary fields to align with backend schema
-          const conversation = conversations.value.get(conversationId);
-          if (conversation) {
-            conversation.updatedAt = newMessage.createdAt;
-            conversation.lastMessage = newMessage.content; // backend stores a string
-            conversation.lastMessageBy = newMessage.senderId;
-            conversation.lastMessageAt = newMessage.createdAt; // local optimistic update
-          }
+        // Update thread with new message info
+        const thread = threads.value.get(newMessage.threadId);
+        if (thread) {
+          Object.assign(thread, {
+            lastMessageId: newMessage.id,
+            lastMessageContent: newMessage.content,
+            lastMessageSentBy: newMessage.senderId,
+            lastMessageAt: newMessage.createdAt,
+            updatedAt: newMessage.createdAt,
+          });
         }
 
         return newMessage;
       } else {
-        setError("Failed to send message");
-        return null;
+        throw new Error("Failed to send message");
       }
     } catch (error) {
-      console.error("Error sending message:", error);
-      setError("Failed to send message");
-      return null;
+      console.error("Failed to send message:", error);
+      throw error;
     }
   };
 
-  // Mark messages as read (requires backend endpoint PUT /messages/conversations/:id/read)
-  const markAsRead = async (conversationId) => {
-    if (!conversationId) return;
-
+  /**
+   * Mark thread as read
+   */
+  const markThreadAsRead = async (threadId, userId) => {
     try {
-      await apiService.put(`/messages/conversations/${conversationId}/read`);
+      await apiService.put(`/messages/threads/${threadId}/read`);
 
-      // Update local state - mark all messages as read
-      const conversationMessages = messages.value.get(conversationId);
-      if (conversationMessages) {
-        const nowIso = new Date().toISOString();
-        const updatedMessages = conversationMessages.map((msg) => ({
-          ...msg,
-          readAt: msg.readAt || nowIso,
-        }));
-        messages.value.set(conversationId, updatedMessages);
+      // Update local state
+      const thread = threads.value.get(threadId);
+      if (thread) {
+        thread.unreadCounts[userId] = 0;
       }
 
-      // Reset unread counter locally if present
-      const conversation = conversations.value.get(conversationId);
-      if (conversation?.unreadCount) {
-        // Assuming current user id will be handled in UI using auth store to index
-        // We'll zero out all keys (frontend responsibility to target correct key).
-        Object.keys(conversation.unreadCount).forEach((k) => {
-          conversation.unreadCount[k] = 0;
+      // Mark all messages in thread as read by this user
+      const threadMessages = messages.value.get(threadId);
+      if (threadMessages) {
+        threadMessages.forEach((message) => {
+          if (!message.readBy.includes(userId)) {
+            message.readBy.push(userId);
+          }
         });
       }
     } catch (error) {
-      console.error("Error marking messages as read:", error);
+      console.error("Failed to mark as read:", error);
+      throw error;
     }
   };
 
-  // Add a new message (e.g., real-time push)
-  const addMessage = (conversationId, message) => {
-    if (!conversationId || !message) return;
+  /**
+   * Delete a message
+   */
+  const deleteMessage = async (messageId) => {
+    try {
+      await apiService.delete(`/messages/${messageId}`);
 
-    const existingMessages = messages.value.get(conversationId) || [];
-    messages.value.set(conversationId, [...existingMessages, message]);
-
-    const conversation = conversations.value.get(conversationId);
-    if (conversation) {
-      conversation.updatedAt = message.createdAt;
-      conversation.lastMessage = message.content; // keep as string
-      conversation.lastMessageBy = message.senderId;
-      conversation.lastMessageAt = message.createdAt;
+      // Update local state - mark as deleted
+      for (const [threadId, threadMessages] of messages.value.entries()) {
+        const messageIndex = threadMessages.findIndex(
+          (m) => m.id === messageId
+        );
+        if (messageIndex !== -1) {
+          threadMessages[messageIndex].isDeleted = true;
+          break;
+        }
+      }
+    } catch (error) {
+      console.error("Failed to delete message:", error);
+      throw error;
     }
   };
 
-  // Clear all data (e.g., on logout)
-  const clearAllData = () => {
-    conversations.value.clear();
+  /**
+   * Get or create thread with a user
+   */
+  const getOrCreateThread = async (otherUserId) => {
+    // Look for existing thread
+    for (const thread of threads.value.values()) {
+      if (thread.participants.includes(otherUserId)) {
+        return thread.id;
+      }
+    }
+
+    // Create new thread by sending an empty message (which creates the thread)
+    const message = await sendMessage(otherUserId, "👋"); // Friendly default
+    return message.threadId;
+  };
+
+  /**
+   * Auto-load threads when user is authenticated
+   */
+  const autoLoadThreads = async () => {
+    // Only load if user is authenticated and threads aren't already loading/loaded
+    if (!authStore?.user?.uid || loading.value.threads) return;
+
+    try {
+      await loadThreads();
+    } catch (error) {
+      console.error("Auto-load threads failed:", error);
+      // Don't throw error to avoid disrupting app startup
+    }
+  };
+
+  /**
+   * Clear all data (e.g., on logout)
+   */
+  const clearAll = () => {
+    threads.value.clear();
     messages.value.clear();
-    loadingStates.value.clear();
-    loadingConversations.value = false;
-    error.value = null;
+    loading.value.threads = false;
+    loading.value.messages.clear();
   };
 
   return {
     // State
-    loadingConversations,
-    error,
+    threadsList,
+    loading: computed(() => loading.value),
 
     // Getters
-    getConversation,
-    getMessages,
+    getThread,
+    getThreadMessages,
     isLoadingMessages,
-    getConversationsList,
+    getUnreadCount,
+    totalUnreadCount,
+    hasUnreadMessages,
 
     // Actions
-    loadConversations,
+    loadThreads,
     loadMessages,
-    startConversation,
     sendMessage,
-    markAsRead,
-    addMessage,
-    clearAllData,
-    clearError,
-
-    // Direct access (debugging)
-    conversations: computed(() => conversations.value),
-    messages: computed(() => messages.value),
+    markThreadAsRead,
+    deleteMessage,
+    getOrCreateThread,
+    autoLoadThreads,
+    clearAll,
   };
 });

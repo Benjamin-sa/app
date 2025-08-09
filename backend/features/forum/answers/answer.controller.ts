@@ -80,6 +80,7 @@ class AnswerController extends BaseController {
   async deleteAnswer(req: Request, res: Response) {
     try {
       const { id: answerId } = req.params as any;
+      console.log(`Deleting answer with ID: ${answerId}`);
       const { topicId } = req.body as any;
       const result = await answerService.deleteAnswer(answerId);
       await this.invalidateCaches(topicId, (req as any).user.uid);

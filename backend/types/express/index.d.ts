@@ -1,4 +1,5 @@
 import * as express from "express";
+import type { ImageUrls, UploadedImageRecord } from "..";
 
 declare global {
   namespace Express {
@@ -13,13 +14,8 @@ declare global {
 
     interface Request {
       user?: UserAuthInfo | null;
-      imageData?: any;
-      oldAvatar?: { url?: string; thumbnailUrl?: string } | null;
-      newImageDetails?: {
-        url?: string;
-        thumbnailUrl?: string;
-        mediumUrl?: string;
-      } | null;
+      imageData?: UploadedImageRecord | UploadedImageRecord[] | null;
+      // Avoid leaking controller-specific fields onto Request; pass via service returns instead
     }
   }
 }

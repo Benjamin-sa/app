@@ -17,6 +17,9 @@
       </router-view>
     </main>
 
+    <!-- Footer -->
+    <Footer />
+
     <!-- Global Notifications -->
     <NotificationContainer />
   </div>
@@ -26,13 +29,16 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useMessagingStore } from '@/stores/messaging'
 import { useThemeStore } from '@/stores/ui/theme'
 import { useNavbarStore } from '@/stores/ui/navbar'
 import NavBar from '@/components/common/nav/NavBar.vue'
+import Footer from '@/components/common/Footer.vue'
 import NotificationContainer from '@/components/common/NotificationContainer.vue'
 
 const route = useRoute()
 const authStore = useAuthStore()
+const messagingStore = useMessagingStore()
 const themeStore = useThemeStore()
 const navbarStore = useNavbarStore()
 
@@ -87,19 +93,37 @@ onMounted(async () => {
   await authStore.initialize()
   authStore.setupAuthListener()
 })
+
+// Watch for authentication state changes to auto-load messaging data
+watch(() => authStore.user, async (newUser, oldUser) => {
+  if (newUser && newUser.uid) {
+    // User just logged in - auto-load messaging threads
+    await messagingStore.autoLoadThreads()
+  } else if (oldUser && !newUser) {
+    // User just logged out - clear messaging data
+    messagingStore.clearAll()
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>
 .app-layout {
-  @apply min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200;
+  min-height: 100vh;
+  background-color: rgb(249 250 251);
+  transition: colors 0.2s;
+}
+
+.dark .app-layout {
+  background-color: rgb(17 24 39);
 }
 
 .main-content {
-  @apply relative w-full;
+  position: relative;
+  width: 100%;
 }
 
 .page-component {
-  @apply w-full;
+  width: 100%;
 }
 
 /* Instant transition for reduced motion */

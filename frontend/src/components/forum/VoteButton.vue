@@ -60,8 +60,6 @@ const notificationStore = useNotificationStore();
 
 
 
-// Computed properties from voting store
-const voteData = computed(() => votingStore.getVoteData(props.targetId, props.targetType));
 const currentVoteCount = computed(() => votingStore.getNetVotes(props.targetId, props.targetType));
 const currentUserVote = computed(() => votingStore.getUserVote(props.targetId, props.targetType));
 const loading = computed(() => votingStore.isLoading(props.targetId, props.targetType));
@@ -171,6 +169,10 @@ const handleVote = async (voteType) => {
         return;
     }
 
+    if (voteType === currentUserVote.value) {
+        voteType = null; // Remove vote if already voted
+    }
+
     const previousVote = currentUserVote.value;
     const targetName = props.targetType === 'topic' ? 'topic' :
         props.targetType === 'bike' ? 'bike' :
@@ -178,7 +180,7 @@ const handleVote = async (voteType) => {
                 props.targetType === 'comment' ? 'comment' : 'answer';
 
     try {
-        const result = await votingStore.toggleVote(props.targetId, props.targetType, voteType);
+        const result = await votingStore.castVote(props.targetId, props.targetType, voteType);
 
         if (result) {
             const newVote = currentUserVote.value;

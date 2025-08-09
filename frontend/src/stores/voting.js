@@ -90,14 +90,19 @@ export const useVotingStore = defineStore("voting", () => {
     }
   };
 
-  // Cast a vote (up or down)
+  // Cast a vote (up, down, or remove when voteType is null)
   const castVote = async (entityId, entityType, voteType) => {
-    if (!entityId || !entityType || !["up", "down"].includes(voteType)) {
+    if (
+      !entityId ||
+      !entityType ||
+      !(voteType === null || ["up", "down"].includes(voteType))
+    ) {
       setError("Invalid vote parameters");
       return false;
     }
 
     const key = `${entityType}_${entityId}`;
+
     setLoading(entityId, entityType, true);
     clearError();
 
@@ -105,14 +110,14 @@ export const useVotingStore = defineStore("voting", () => {
       const response = await apiService.post("/votes", {
         targetId: entityId,
         targetType: entityType,
-        voteType,
+        voteType, // null removes the vote on backend
       });
 
       if (response.success && response.data) {
         const voteData = {
           upvotes: response.data.upvotes || 0,
           downvotes: response.data.downvotes || 0,
-          userVote: response.data.userVote || null,
+          userVote: response.data.userVote ?? null,
           netVotes:
             response.data.netVotes ||
             response.data.upvotes - response.data.downvotes,
@@ -130,60 +135,6 @@ export const useVotingStore = defineStore("voting", () => {
       return false;
     } finally {
       setLoading(entityId, entityType, false);
-    }
-  };
-
-  // Remove a vote (toggle off)
-  const removeVote = async (entityId, entityType) => {
-    if (!entityId || !entityType) {
-      setError("Invalid parameters");
-      return false;
-    }
-
-    const key = `${entityType}_${entityId}`;
-    setLoading(entityId, entityType, true);
-    clearError();
-
-    try {
-      const response = await apiService.delete(
-        `/votes/${entityId}/${entityType}`
-      );
-
-      if (response.success && response.data) {
-        const voteData = {
-          upvotes: response.data.upvotes || 0,
-          downvotes: response.data.downvotes || 0,
-          userVote: null,
-          netVotes:
-            response.data.netVotes ||
-            response.data.upvotes - response.data.downvotes,
-        };
-
-        votes.value.set(key, voteData);
-        return voteData;
-      } else {
-        setError("Failed to remove vote");
-        return false;
-      }
-    } catch (error) {
-      console.error("Error removing vote:", error);
-      setError("Failed to remove vote");
-      return false;
-    } finally {
-      setLoading(entityId, entityType, false);
-    }
-  };
-
-  // Toggle vote (handles up/down/remove logic)
-  const toggleVote = async (entityId, entityType, voteType) => {
-    const currentVote = getUserVote.value(entityId, entityType);
-
-    if (currentVote === voteType) {
-      // Same vote type - remove it
-      return await removeVote(entityId, entityType);
-    } else {
-      // Different vote type or no vote - cast new vote
-      return await castVote(entityId, entityType, voteType);
     }
   };
 
@@ -263,8 +214,6 @@ export const useVotingStore = defineStore("voting", () => {
     // Actions
     loadVotes,
     castVote,
-    removeVote,
-    toggleVote,
     loadBatchVotes,
     updateVoteData,
     clearVoteData,

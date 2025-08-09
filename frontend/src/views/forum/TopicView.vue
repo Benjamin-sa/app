@@ -138,7 +138,7 @@
                                     </div>
                                     <div>
                                         <span class="text-xs sm:text-sm">Last activity {{ formatDate(topic.lastActivity)
-                                            }}</span>
+                                        }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -166,12 +166,6 @@
                         Delete
                     </ActionButton>
                 </div>
-
-                <ActionButton v-if="!topic.isLocked" @click="showAnswerModal = true" size="md"
-                    class="w-full sm:w-auto bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 hover:from-primary-700 hover:via-primary-800 hover:to-primary-900 text-white shadow-lg">
-                    <ChatBubbleLeftIcon class="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                    Post Answer
-                </ActionButton>
             </div>
 
             <!-- Enhanced Answers Section -->
@@ -188,8 +182,36 @@
                     </h2>
                 </div>
 
-                <AnswerList :topic-id="topic.id" :topic-author-id="topic.author?.id"
-                    @answer-count-changed="updateAnswerCount" />
+                <AnswerList :topic-id="topic.id" :topic-author-id="topic.userId"
+                    @answer-count-changed="updateAnswerCount" @reply-to="handleReplyTo" />
+
+                <!-- Post Answer section - inline like Reddit -->
+                <div v-if="authStore.isAuthenticated && !topic.isLocked"
+                    class="border-t border-gray-200/50 dark:border-gray-700/50">
+
+                    <!-- Show/Hide Answer Form Button -->
+                    <div v-if="!showAnswerForm" class="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+                        <ActionButton @click="showAnswerForm = true" size="md"
+                            class="w-full sm:w-auto bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 hover:from-primary-700 hover:via-primary-800 hover:to-primary-900 text-white shadow-lg">
+                            <ChatBubbleLeftIcon class="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                            Post Answer
+                        </ActionButton>
+                    </div>
+
+                    <!-- Inline Answer Form -->
+                    <div v-if="showAnswerForm"
+                        class="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-gray-50/50 dark:bg-gray-900/50">
+                        <div v-if="replyingTo"
+                            class="mb-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                            Replying to <span class="font-medium text-gray-900 dark:text-gray-200">@{{ replyingTo.userId
+                            }}</span>
+                            <button class="underline hover:text-primary-600" @click="clearReply">clear</button>
+                        </div>
+
+                        <AnswerForm v-if="topic" :topic-id="topic.id" :parent-answer-id="replyingTo?.id"
+                            @success="handleAnswerSuccess" @cancel="handleAnswerCancel" />
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -216,14 +238,8 @@
             <TopicForm v-if="topic" :topic="topic" @success="handleTopicEditSuccess" @cancel="showEditTopic = false" />
         </Modal>
 
-        <!-- Post Answer Modal -->
-        <Modal v-model="showAnswerModal" title="Post Your Answer" size="xl">
-            <AnswerForm v-if="topic" :topic-id="topic.id" @success="handleAnswerSuccess"
-                @cancel="showAnswerModal = false" />
-        </Modal>
-
         <!-- Delete Confirmation Modal -->
-        <Modal v-if="showDeleteConfirm" title="Delete Topic" @close="showDeleteConfirm = false">
+        <Modal v-model="showDeleteConfirm" title="Delete Topic" @close="showDeleteConfirm = false">
             <div class="space-y-4">
                 <p class="text-sm text-gray-600 dark:text-gray-400">
                     Are you sure you want to delete this topic? This action cannot be undone.
@@ -282,12 +298,13 @@ const notificationStore = useNotificationStore();
 const navbarStore = useNavbarStore();
 
 // Local state
-const showAnswerModal = ref(false);
+const showAnswerForm = ref(false);
 const showEditTopic = ref(false);
 const showDeleteConfirm = ref(false);
 const showImageViewer = ref(false);
 const selectedImageIndex = ref(0);
 const deleting = ref(false);
+const replyingTo = ref(null);
 
 // Computed properties from store
 const topic = computed(() => forumStore.getTopic(route.params.id));
@@ -335,8 +352,23 @@ const updateAnswerCount = (newCount) => {
     // when answers are loaded/added/removed
 };
 
+const handleReplyTo = (answer) => {
+    replyingTo.value = answer;
+    showAnswerForm.value = true;
+};
+
+const clearReply = () => {
+    replyingTo.value = null;
+};
+
+const handleAnswerCancel = () => {
+    showAnswerForm.value = false;
+    replyingTo.value = null;
+};
+
 const handleAnswerSuccess = () => {
-    showAnswerModal.value = false;
+    showAnswerForm.value = false;
+    replyingTo.value = null;
     // The store will automatically update the answer count
     notificationStore.success('Answer posted!', 'Your answer has been added successfully.');
 };

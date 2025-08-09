@@ -58,16 +58,17 @@
                             <div class="flex items-center justify-between">
                                 <p
                                     class="text-sm text-gray-600 dark:text-gray-400 truncate flex-1 transition-colors duration-200">
-                                    <span v-if="conversation.lastMessageBy === authStore.user?.uid"
+                                    <span v-if="conversation.lastMessageSentBy === authStore.user?.uid"
                                         class="text-gray-500">You: </span>
-                                    {{ conversation.lastMessage || 'No messages yet' }}
+                                    {{ conversation.lastMessageContent || 'No messages yet' }}
                                 </p>
 
                                 <!-- Unread badge -->
                                 <Transition name="badge" mode="out-in">
-                                    <div v-if="getUnreadCount(conversation) > 0" class="bg-primary-600 text-white text-xs rounded-full px-2 py-0.5 ml-2 flex-shrink-0 min-w-[20px] text-center 
-                                               transform transition-all duration-300 hover:scale-110 animate-pulse">
-                                        {{ getUnreadCount(conversation) }}
+                                    <div v-if="getUnreadCount(conversation) > 0"
+                                        class="bg-red-500 text-white text-xs rounded-full px-2 py-1 ml-2 flex-shrink-0 min-w-[1.25rem] h-5 text-center 
+                                               transform transition-all duration-300 hover:scale-110 flex items-center justify-center font-semibold shadow-sm">
+                                        {{ getUnreadCount(conversation) > 99 ? '99+' : getUnreadCount(conversation) }}
                                     </div>
                                 </Transition>
                             </div>
@@ -115,7 +116,7 @@ const getOtherParticipantName = (conversation) => {
 };
 
 const getUnreadCount = (conversation) => {
-    return conversation.unreadCount?.[authStore.user?.uid] || 0;
+    return conversation.unreadCounts?.[authStore.user?.uid] || 0;
 };
 
 // Preload user data for all participants when conversations change

@@ -1,6 +1,8 @@
 import BaseController from "../../core/controller/base.controller";
 import userService from "./user.service";
 import { Request, Response } from "express";
+import type { UploadedImageRecord } from "../../types/services/image.types";
+import type { UpdateProfileInput } from "../../types/services/auth.types";
 
 class AuthController extends BaseController {
   constructor() {
@@ -50,7 +52,7 @@ class AuthController extends BaseController {
         allow_messages,
       } = req.body;
 
-      let updateData: Record<string, any> = this._cleanUpdateData({
+      const updateData: UpdateProfileInput = this._cleanUpdateData({
         username,
         displayName,
         bio,
@@ -60,56 +62,28 @@ class AuthController extends BaseController {
         allow_messages: allow_messages === "true" || allow_messages === true,
       });
 
-      if ((req as any).imageData) {
-        const currentUser = await userService.getUserProfile(req.user.uid);
-        const oldAvatar = currentUser?.avatar
-          ? {
-              url: currentUser.avatar,
-              thumbnailUrl: (currentUser as any).avatarThumbnail,
-            }
-          : null;
-
-        const imageData = Array.isArray((req as any).imageData)
-          ? (req as any).imageData[0]
-          : (req as any).imageData;
-
-        if (imageData && imageData.url) updateData.avatar = imageData.url;
-        if (imageData && imageData.thumbnailUrl)
-          updateData.avatarThumbnail = imageData.thumbnailUrl;
-        if (imageData && imageData.mediumUrl)
-          updateData.avatarMediumUrl = imageData.mediumUrl;
-
-        (req as any).oldAvatar = oldAvatar;
-        (req as any).newImageDetails = imageData
-          ? {
-              url: imageData.url,
-              thumbnailUrl: imageData.thumbnailUrl,
-              mediumUrl: imageData.mediumUrl,
-            }
-          : null;
+      // Normalize optional image input (uploaded via middleware)
+      let newImage: UploadedImageRecord | null = null;
+      const incoming = (req as any).imageData as
+        | UploadedImageRecord
+        | UploadedImageRecord[]
+        | null;
+      if (incoming) {
+        newImage = Array.isArray(incoming) ? incoming[0] : incoming;
       }
 
-      const updatedUser = await userService.updateUserProfile(
+      const result = await (userService as any).updateProfileWithAvatar(
         req.user.uid,
-        updateData
+        updateData,
+        newImage
       );
       await this.deleteCache(`user_profile:${req.user.uid}`);
 
-      if ((req as any).oldAvatar?.url) {
-        try {
-          const imageService = require("../../core/services/image.service");
-          await imageService.deleteImage((req as any).oldAvatar);
-        } catch (deleteError: any) {
-          console.warn("Failed to delete old avatar:", deleteError.message);
-        }
-      }
-
-      const responseData: any = { user: updatedUser };
-      if ((req as any).newImageDetails) {
-        responseData.avatar_url = (req as any).newImageDetails.url;
-        responseData.avatar_thumbnail = (
-          req as any
-        ).newImageDetails.thumbnailUrl;
+      const responseData: any = { user: result.user };
+      if (result.avatar) {
+        responseData.avatar_url = result.avatar.url;
+        if (result.avatar.thumbnailUrl)
+          responseData.avatar_thumbnail = result.avatar.thumbnailUrl;
       }
 
       return this.sendSuccess(

@@ -6,6 +6,7 @@ import {
   validateId,
   validatePaginationOptions,
 } from "../../../utils/validation.utils";
+import { Answer } from "../../../types/entities/forum.types";
 
 interface CreateAnswerData {
   content: string;
@@ -27,9 +28,9 @@ class AnswerService {
 
   async createAnswer(answerData: CreateAnswerData) {
     try {
-      const validatedAnswer: any = createAnswerSchema(answerData);
-      validatedAnswer.createdAt = new Date().toISOString();
-      validatedAnswer.updatedAt = new Date().toISOString();
+      const validatedAnswer: Answer = createAnswerSchema(answerData);
+      // Note: createdAt and updatedAt will be handled by Firestore serverTimestamp
+      // Remove the manual timestamp setting as it should be handled by the database layer
       const docRef = await this.queries.createAnswer(validatedAnswer);
       const created = { id: docRef.id, ...validatedAnswer };
       await this.updateTopicAndCategoryActivity(
@@ -55,8 +56,26 @@ class AnswerService {
       const answers = await this.queries.getAnswersByTopic(validatedTopicId, {
         limit,
       });
+
+      // Keep soft-deleted answers in the list but mask their content (Reddit-like behavior)
+      const arrayAnswers = Array.isArray(answers)
+        ? answers
+        : answers
+        ? [answers]
+        : [];
+      const mappedAnswers = arrayAnswers.map((answer: any) => {
+        if (answer?.isDeleted) {
+          return {
+            ...answer,
+            content: "<p>[deleted]</p>",
+            images: [], // remove images for deleted answers
+          };
+        }
+        return answer;
+      });
+
       return {
-        answers: Array.isArray(answers) ? answers : [answers],
+        answers: mappedAnswers,
         lastDoc: null,
         hasMore: false,
       };
@@ -82,13 +101,13 @@ class AnswerService {
           "ANSWER_SERVICE_VALIDATION_ERROR: Update data is required and must be a non-empty object"
         );
       }
-      const validatedData: any = updateAnswerSchema(updateData);
+      const validatedData: Partial<Answer> = updateAnswerSchema(updateData);
       if (Object.keys(validatedData).length === 0) {
         throw new Error(
           "ANSWER_SERVICE_VALIDATION_ERROR: No valid fields provided for update."
         );
       }
-      validatedData.updatedAt = new Date().toISOString();
+      // Remove manual timestamp setting - let Firestore handle it via the updateAnswer query
       return await this.queries.updateAnswer(validatedAnswerId, validatedData);
     } catch (error: any) {
       if (error instanceof ValidationError)
@@ -124,7 +143,7 @@ class AnswerService {
       const topic = await this.queries.getTopicById(topicId);
       if (!topic || topic.isDeleted) return;
       await this.queries.updateTopic(topicId, {
-        lastActivity: new Date().toISOString(),
+        lastActivity: this.queries.FieldValue.serverTimestamp(),
       });
       const userData = await this.queries.getUserById(userId);
       const activityData = {

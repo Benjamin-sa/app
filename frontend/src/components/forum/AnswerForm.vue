@@ -30,7 +30,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useForumStore } from '@/stores/forum';
-import { useRichTextEditor } from '@/composables/useRichTextEditor';
 import ActionButton from '@/components/common/buttons/ActionButton.vue';
 import RichTextEditor from '@/components/common/forms/RichTextEditor.vue';
 import ErrorSection from '@/components/common/sections/ErrorSection.vue';
@@ -43,6 +42,11 @@ const props = defineProps({
     },
     answer: {
         type: Object,
+        default: null
+    },
+    // Optional parent answer identifier when replying to a specific answer
+    parentAnswerId: {
+        type: String,
         default: null
     }
 });
@@ -98,6 +102,11 @@ const handleSubmit = async () => {
         // Add topic ID for create operations
         if (!isEditing.value && props.topicId) {
             formData.append('topicId', props.topicId);
+        }
+
+        // Add parent answer ID if replying to a specific answer
+        if (!isEditing.value && props.parentAnswerId) {
+            formData.append('parentAnswerId', props.parentAnswerId);
         }
 
         // Handle images

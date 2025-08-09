@@ -143,13 +143,15 @@ const Bike = {
 const Message = {
   id: "", // Auto-generated document ID
   senderId: "", // User UID who sent the message
-  receiverId: "", // User UID who receives the message
-  conversationId: "", // Reference to conversation
+  receiverId: "", // User UID who receives the message (legacy - for backward compatibility)
+  conversationId: "", // Reference to conversation (legacy)
+  threadId: "", // Reference to thread (new system)
   content: "", // Message content
   messageType: "text", // 'text', 'image', 'file'
   attachments: [], // Array of file/image objects
   createdAt: "", // Firestore timestamp
-  readAt: null, // Timestamp when message was read
+  readAt: null, // Timestamp when message was read (legacy)
+  readBy: [], // Array of user IDs who have read this message (new system)
   isDeleted: false,
   editedAt: null, // Timestamp if message was edited
 };
@@ -166,6 +168,19 @@ const Conversation = {
   unreadCount: {}, // Object with userId: count for unread messages
 };
 
+// Simplified Message Thread (new messaging system)
+const MessageThread = {
+  id: "", // Auto-generated document ID
+  participants: [], // Array of exactly 2 user UIDs (always sorted)
+  lastMessageId: "", // ID of the last message
+  lastMessageContent: "", // Last message content preview (max 100 chars)
+  lastMessageSentBy: "", // UID of user who sent last message
+  lastMessageAt: "", // Timestamp of last message
+  createdAt: "", // Firestore timestamp
+  updatedAt: "", // Firestore timestamp
+  unreadCounts: {}, // Object with userId: count for unread messages
+};
+
 // Firestore collection names
 const COLLECTIONS = {
   USERS: "forum_users",
@@ -178,6 +193,7 @@ const COLLECTIONS = {
   BIKE_LIKES: "bike_likes",
   MESSAGES: "forum_messages",
   CONVERSATIONS: "forum_conversations",
+  THREADS: "forum_threads", // New simplified messaging threads
 };
 
 module.exports = {
@@ -191,5 +207,6 @@ module.exports = {
   Bike,
   Message,
   Conversation,
+  MessageThread,
   COLLECTIONS,
 };

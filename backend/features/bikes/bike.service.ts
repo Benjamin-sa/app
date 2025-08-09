@@ -7,23 +7,11 @@ import {
   validateId,
   validatePaginationOptions,
   Bike,
-} from "../../utils/validation.utils";
-
-interface UploadedImage {
-  id?: string;
-  url: string;
-  thumbnailUrl?: string;
-  mediumUrl?: string;
-  [key: string]: any;
-}
-
-interface GetAllBikeOptions {
-  page?: number;
-  limit?: number;
-  sort?: "recent" | "popular" | "featured";
-  search?: string;
-  engineSize?: string | number;
-}
+} from "../../types";
+import type {
+  UploadedImage,
+  GetAllBikeOptions,
+} from "../../types/services/bike.types";
 
 class BikeService {
   async getUserBikes(userId: string) {

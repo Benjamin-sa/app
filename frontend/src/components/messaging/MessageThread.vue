@@ -4,6 +4,12 @@
         <div
             class="border-b border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800/50 transition-all duration-300">
             <div class="flex items-center space-x-3">
+                <!-- Back button for mobile -->
+                <button v-if="isMobile" @click="$emit('back')"
+                    class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors duration-200 md:hidden">
+                    <ArrowLeftIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                </button>
+
                 <div class="transition-transform duration-200 hover:scale-105">
                     <AuthorDisplay :user-id="getOtherParticipant()" size="sm" :show-name="false" />
                 </div>
@@ -72,7 +78,7 @@
                                         <!-- Read receipts for sent messages -->
                                         <div v-if="message.senderId === authStore.user?.uid" class="flex items-center">
                                             <Transition name="check" mode="out-in">
-                                                <CheckIcon v-if="message.readAt"
+                                                <CheckIcon v-if="isMessageRead(message)"
                                                     class="w-3 h-3 text-green-400 transition-all duration-300" />
                                                 <div v-else
                                                     class="w-3 h-3 rounded-full border border-current opacity-50 animate-pulse">
@@ -165,7 +171,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, watch, computed, onMounted } from 'vue';
+import { ref, nextTick, watch, computed, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useMessagingStore } from '@/stores/messaging';
 import { useUsersStore } from '@/stores/users';
@@ -175,7 +181,8 @@ import {
     ChatBubbleLeftIcon,
     PaperAirplaneIcon,
     EllipsisVerticalIcon,
-    CheckIcon
+    CheckIcon,
+    ArrowLeftIcon
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -189,7 +196,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['message-sent']);
+const emit = defineEmits(['message-sent', 'back']);
 
 const authStore = useAuthStore();
 const messagingStore = useMessagingStore();
@@ -202,16 +209,31 @@ const showTypingIndicator = ref(false);
 const sendingMessage = ref(false);
 const inputFocused = ref(false);
 const messageContent = ref(''); // For temporary message display
+const screenWidth = ref(window.innerWidth);
 
-// Get conversation and messages from store
-const conversation = computed(() => messagingStore.getConversation(props.conversationId));
-const messages = computed(() => messagingStore.getMessages(props.conversationId));
+// Mobile breakpoint detection
+const isMobile = computed(() => screenWidth.value < 768);
+
+// Handle window resize
+const handleResize = () => {
+    screenWidth.value = window.innerWidth;
+};
+
+// Get thread and messages from store
+const thread = computed(() => {
+    // First try to get from store
+    const storeThread = messagingStore.getThread(props.conversationId);
+    // Fallback to the passed conversation prop if not in store yet
+    return storeThread || props.conversation;
+});
+const messages = computed(() => messagingStore.getThreadMessages(props.conversationId));
 const loadingMessages = computed(() => messagingStore.isLoadingMessages(props.conversationId));
 
 // Get other participant info
 const otherParticipantId = computed(() => {
-    if (!conversation.value?.participants) return null;
-    return conversation.value.participants.find(
+    const currentThread = thread.value;
+    if (!currentThread?.participants) return null;
+    return currentThread.participants.find(
         participantId => participantId !== authStore.user?.uid
     );
 });
@@ -226,7 +248,15 @@ const messageGroups = computed(() => {
     const groups = [];
     let currentGroup = null;
 
-    messages.value.forEach(message => {
+    // Ensure messages are in chronological order (oldest first)
+    const sortedMessages = [...messages.value].sort((a, b) => {
+        const dateA = convertFirestoreTimestamp(a.createdAt);
+        const dateB = convertFirestoreTimestamp(b.createdAt);
+        if (!dateA || !dateB) return 0;
+        return dateA.getTime() - dateB.getTime();
+    });
+
+    sortedMessages.forEach(message => {
         const messageDate = convertFirestoreTimestamp(message.createdAt);
         if (!messageDate) return; // Skip invalid timestamps
 
@@ -248,16 +278,21 @@ const messageGroups = computed(() => {
 });
 
 const participantCount = computed(() => {
-    return props.conversation?.participants?.length || 2;
+    return thread.value?.participants?.length || 2;
 });
 
-// Load messages when conversation changes
+// Load messages when thread changes
 const loadMessages = async () => {
     if (!props.conversationId) return;
 
     await messagingStore.loadMessages(props.conversationId);
     await nextTick();
     scrollToBottom();
+
+    // Mark thread as read when messages are loaded
+    if (authStore.user?.uid) {
+        await messagingStore.markThreadAsRead(props.conversationId, authStore.user.uid);
+    }
 };
 
 const sendMessage = async () => {
@@ -314,9 +349,10 @@ const smoothScrollToBottom = () => {
 };
 
 const getOtherParticipant = () => {
-    if (!props.conversation?.participants) return null;
+    const currentThread = thread.value;
+    if (!currentThread?.participants) return null;
 
-    return props.conversation.participants.find(
+    return currentThread.participants.find(
         participantId => participantId !== authStore.user?.uid
     );
 };
@@ -376,7 +412,16 @@ const formatMessageDate = (date) => {
     }
 };
 
-// Watch for conversation changes
+// Check if message has been read by the other participant
+const isMessageRead = (message) => {
+    if (!message.readBy || !Array.isArray(message.readBy)) return false;
+
+    // For sent messages, check if the other participant has read it
+    const otherParticipantId = getOtherParticipant();
+    return otherParticipantId && message.readBy.includes(otherParticipantId);
+};
+
+// Watch for thread changes
 watch(() => props.conversationId, async () => {
     if (props.conversationId) {
         await loadMessages();
@@ -393,6 +438,11 @@ onMounted(async () => {
     if (participantId) {
         await usersStore.getUser(participantId);
     }
+    window.addEventListener('resize', handleResize);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('resize', handleResize);
 });
 </script>
 

@@ -1,45 +1,18 @@
 /**
- * TypeScript Messaging Service
- * Handles messaging business logic with type safety and Zod validation
+ * Simplified Messaging Service
+ * Clean, focused business logic for messaging
  */
 
 import {
-  createMessage,
-  createConversation,
-  validateId,
-  validatePaginationOptions,
-  ValidationError,
+  MessageThread,
   Message,
-  Conversation,
-  PaginationOptions,
-} from "../../utils/validation.utils";
+  SendMessageRequest,
+  GetMessagesRequest,
+  ThreadListResponse,
+  MessagesResponse,
+} from "../../types/entities/messaging.types";
 
 const firebaseQueries = require("../../queries/FirebaseQueries");
-
-// =================== TYPE DEFINITIONS ===================
-
-interface UserProfile {
-  uid: string;
-  allow_messages?: boolean;
-  [key: string]: any;
-}
-
-interface ConversationWithParticipants extends Conversation {
-  id: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface MessageWithMetadata extends Message {
-  id: string;
-  createdAt: string;
-}
-
-interface GetMessagesOptions extends PaginationOptions {
-  startAfter?: string;
-}
-
-// =================== SERVICE CLASS ===================
 
 class MessagingService {
   private queries: any;
@@ -48,338 +21,200 @@ class MessagingService {
     this.queries = firebaseQueries;
   }
 
-  // =================== PRIVATE HELPER METHODS ===================
-
   /**
-   * Validate participants and check permissions
-   */
-  private async _validateParticipants(
-    senderId: string,
-    receiverId: string
-  ): Promise<{
-    validatedSenderId: string;
-    validatedReceiverId: string;
-    receiver: UserProfile;
-  }> {
-    try {
-      const validatedSenderId = validateId(senderId);
-      const validatedReceiverId = validateId(receiverId);
-
-      if (validatedSenderId === validatedReceiverId) {
-        throw new Error(
-          "MESSAGE_SERVICE_ERROR: Cannot start conversation with yourself"
-        );
-      }
-
-      const receiver = await this.queries.getUserById(validatedReceiverId);
-      if (!receiver || !receiver.allow_messages) {
-        throw new Error("MESSAGE_SERVICE_ERROR: User does not accept messages");
-      }
-
-      return { validatedSenderId, validatedReceiverId, receiver };
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        throw new Error(`MESSAGE_SERVICE_VALIDATION_ERROR: ${error.message}`);
-      }
-      throw error;
-    }
-  }
-
-  /**
-   * Get existing conversation or create a new one
-   */
-  private async _getOrCreateConversation(
-    validatedSenderId: string,
-    validatedReceiverId: string
-  ): Promise<ConversationWithParticipants> {
-    let conversation = await this.queries.getConversationBetweenUsers(
-      validatedSenderId,
-      validatedReceiverId
-    );
-
-    if (!conversation) {
-      const conversationData = createConversation({
-        participants: [validatedSenderId, validatedReceiverId],
-        unreadCount: { [validatedReceiverId]: 0, [validatedSenderId]: 0 },
-      });
-
-      const now = new Date().toISOString();
-      const conversationWithMetadata = {
-        ...conversationData,
-        createdAt: now,
-        updatedAt: now,
-      };
-
-      const conversationRef = await this.queries.createConversation(
-        conversationWithMetadata
-      );
-      conversation = { id: conversationRef.id, ...conversationWithMetadata };
-    }
-
-    return conversation;
-  }
-
-  // =================== PUBLIC METHODS ===================
-
-  /**
-   * Start a new conversation with a user
-   */
-  async startConversationWithUser(
-    senderId: string,
-    receiverId: string,
-    initialMessage?: string
-  ): Promise<ConversationWithParticipants> {
-    try {
-      const { validatedSenderId, validatedReceiverId } =
-        await this._validateParticipants(senderId, receiverId);
-
-      const conversation = await this._getOrCreateConversation(
-        validatedSenderId,
-        validatedReceiverId
-      );
-
-      if (initialMessage && initialMessage.trim()) {
-        await this.sendMessage(
-          validatedSenderId,
-          validatedReceiverId,
-          initialMessage
-        );
-      }
-
-      return conversation;
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        throw new Error(`MESSAGE_SERVICE_VALIDATION_ERROR: ${error.message}`);
-      }
-      throw new Error(
-        `MESSAGE_SERVICE_ERROR: Failed to start conversation - ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
-    }
-  }
-
-  /**
-   * Send a message between users
+   * Send a message - creates thread if needed
    */
   async sendMessage(
     senderId: string,
-    receiverId: string,
-    content: string,
-    attachments: string[] = []
-  ): Promise<MessageWithMetadata> {
-    try {
-      const { validatedSenderId, validatedReceiverId } =
-        await this._validateParticipants(senderId, receiverId);
+    request: SendMessageRequest
+  ): Promise<Message> {
+    const { receiverId, content } = request;
 
-      const conversation = await this._getOrCreateConversation(
-        validatedSenderId,
-        validatedReceiverId
-      );
+    if (senderId === receiverId) {
+      throw new Error("Cannot send message to yourself");
+    }
 
-      // Create and validate message using validation system
-      const validatedMessage = createMessage({
-        senderId: validatedSenderId,
-        receiverId: validatedReceiverId,
-        conversationId: conversation.id,
-        content,
-        attachments,
-      });
+    if (!content.trim() || content.length > 5000) {
+      throw new Error("Invalid message content");
+    }
 
-      const messageWithMetadata = {
-        ...validatedMessage,
+    // Get or create thread
+    const thread = await this.getOrCreateThread(senderId, receiverId);
+
+    // Create message
+    const message: Message = {
+      id: this.generateId(),
+      threadId: thread.id,
+      senderId,
+      content: content.trim(),
+      createdAt: new Date().toISOString(),
+      isDeleted: false,
+      readBy: [senderId], // Sender has "read" their own message
+    };
+
+    // Save message and update thread
+    await Promise.all([
+      this.saveMessage(message),
+      this.updateThreadAfterMessage(thread.id, message),
+    ]);
+
+    return message;
+  }
+
+  /**
+   * Get user's message threads
+   */
+  async getUserThreads(
+    userId: string,
+    limit = 20
+  ): Promise<ThreadListResponse> {
+    const threads = await this.queries.getUserThreads(userId, limit + 1);
+
+    return {
+      threads: threads.slice(0, limit),
+      hasMore: threads.length > limit,
+    };
+  }
+
+  /**
+   * Get messages in a thread
+   */
+  async getThreadMessages(
+    userId: string,
+    request: GetMessagesRequest
+  ): Promise<MessagesResponse> {
+    const { threadId, limit = 50, before } = request;
+
+    // Verify user has access to thread
+    const thread = await this.queries.getThreadById(threadId);
+    if (!thread || !thread.participants.includes(userId)) {
+      throw new Error("Thread not found or access denied");
+    }
+
+    const messages = await this.queries.getThreadMessages(
+      threadId,
+      limit + 1,
+      before
+    );
+
+    return {
+      messages: messages.slice(0, limit),
+      hasMore: messages.length > limit,
+    };
+  }
+
+  /**
+   * Mark thread as read for user
+   */
+  async markThreadAsRead(userId: string, threadId: string): Promise<void> {
+    const thread = await this.queries.getThreadById(threadId);
+    if (!thread || !thread.participants.includes(userId)) {
+      throw new Error("Thread not found or access denied");
+    }
+
+    // Get unread messages and mark them as read
+    const unreadMessages = await this.queries.getUnreadMessages(
+      threadId,
+      userId
+    );
+
+    if (unreadMessages.length > 0) {
+      await Promise.all([
+        // Mark messages as read
+        this.queries.markMessagesAsRead(
+          unreadMessages.map((m: any) => m.id),
+          userId
+        ),
+        // Reset unread counter
+        this.queries.resetUnreadCounter(threadId, userId),
+      ]);
+    }
+  }
+
+  /**
+   * Delete message (soft delete)
+   */
+  async deleteMessage(userId: string, messageId: string): Promise<void> {
+    const message = await this.queries.getMessageById(messageId);
+    if (!message) {
+      throw new Error("Message not found");
+    }
+
+    if (message.senderId !== userId) {
+      throw new Error("Can only delete your own messages");
+    }
+
+    await this.queries.softDeleteMessage(messageId);
+  }
+
+  // Private helper methods
+
+  private async getOrCreateThread(
+    userId1: string,
+    userId2: string
+  ): Promise<MessageThread> {
+    // Always order participants consistently for lookups
+    const participants: [string, string] =
+      userId1 < userId2 ? [userId1, userId2] : [userId2, userId1];
+
+    let thread = await this.queries.getThreadByParticipants(participants);
+
+    if (!thread) {
+      thread = {
+        id: this.generateId(),
+        participants,
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        unreadCounts: {
+          [userId1]: 0,
+          [userId2]: 0,
+        },
       };
 
-      const messageRef = await this.queries.createMessage(messageWithMetadata);
-
-      await this.queries.updateConversationLastMessage(
-        conversation.id,
-        messageWithMetadata
-      );
-
-      return { id: messageRef.id, ...messageWithMetadata };
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        throw new Error(`MESSAGE_SERVICE_VALIDATION_ERROR: ${error.message}`);
-      }
-      throw new Error(
-        `MESSAGE_SERVICE_ERROR: Failed to send message - ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      await this.queries.createThread(thread);
     }
+
+    return thread;
   }
 
-  /**
-   * Get user's conversations
-   */
-  async getUserConversations(
-    userId: string,
-    options: PaginationOptions = {}
-  ): Promise<ConversationWithParticipants[]> {
-    try {
-      const validatedUserId = validateId(userId);
-      const validatedOptions = validatePaginationOptions(options);
-
-      return await this.queries.getUserConversations(
-        validatedUserId,
-        validatedOptions
-      );
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        throw new Error(`MESSAGE_SERVICE_VALIDATION_ERROR: ${error.message}`);
-      }
-      throw new Error(
-        `MESSAGE_SERVICE_ERROR: Failed to get conversations - ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
-    }
-  }
-
-  /**
-   * Get messages in a conversation
-   */
-  async getConversationMessages(
-    conversationId: string,
-    userId: string,
-    options: GetMessagesOptions = {}
-  ): Promise<MessageWithMetadata[]> {
-    try {
-      const validatedConversationId = validateId(conversationId);
-      const validatedUserId = validateId(userId);
-      const validatedOptions = validatePaginationOptions(options);
-
-      const conversation = await this.queries.getConversationById(
-        validatedConversationId
-      );
-
-      if (!conversation.participants.includes(validatedUserId)) {
-        throw new Error("MESSAGE_SERVICE_UNAUTHORIZED: Access denied");
-      }
-
-      return await this.queries.getConversationMessages(
-        validatedConversationId,
-        validatedOptions
-      );
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        throw new Error(`MESSAGE_SERVICE_VALIDATION_ERROR: ${error.message}`);
-      }
-      throw new Error(
-        `MESSAGE_SERVICE_ERROR: Failed to get messages - ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
-    }
-  }
-
-  /**
-   * Get conversation with access validation (utility method)
-   */
-  async getConversationWithAccess(
-    conversationId: string,
-    userId: string
-  ): Promise<ConversationWithParticipants | null> {
-    try {
-      const validatedConversationId = validateId(conversationId);
-      const validatedUserId = validateId(userId);
-
-      const conversation = await this.queries.getConversationById(
-        validatedConversationId
-      );
-
-      if (!conversation) {
-        return null;
-      }
-
-      if (!conversation.participants.includes(validatedUserId)) {
-        throw new Error("MESSAGE_SERVICE_UNAUTHORIZED: Access denied");
-      }
-
-      return conversation;
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        throw new Error(`MESSAGE_SERVICE_VALIDATION_ERROR: ${error.message}`);
-      }
-      throw new Error(
-        `MESSAGE_SERVICE_ERROR: Failed to get conversation - ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
-    }
-  }
-
-  /**
-   * Mark conversation as read for a user
-   */
-  async markConversationAsRead(
-    conversationId: string,
-    userId: string
+  private async updateThreadAfterMessage(
+    threadId: string,
+    message: Message
   ): Promise<void> {
-    try {
-      const validatedConversationId = validateId(conversationId);
-      const validatedUserId = validateId(userId);
+    const receiverId = await this.getOtherParticipant(
+      threadId,
+      message.senderId
+    );
 
-      const conversation = await this.getConversationWithAccess(
-        validatedConversationId,
-        validatedUserId
-      );
-
-      if (!conversation) {
-        throw new Error(
-          "MESSAGE_SERVICE_NOT_FOUND_ERROR: Conversation not found"
-        );
-      }
-
-      await this.queries.markConversationAsRead(
-        validatedConversationId,
-        validatedUserId
-      );
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        throw new Error(`MESSAGE_SERVICE_VALIDATION_ERROR: ${error.message}`);
-      }
-      throw new Error(
-        `MESSAGE_SERVICE_ERROR: Failed to mark as read - ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
-    }
+    await this.queries.updateThread(threadId, {
+      lastMessageId: message.id,
+      lastMessageContent: message.content.substring(0, 100), // Preview
+      lastMessageSentBy: message.senderId,
+      lastMessageAt: message.createdAt,
+      updatedAt: message.createdAt,
+      [`unreadCounts.${receiverId}`]: this.incrementCounter(1), // Firestore increment
+    });
   }
 
-  /**
-   * Delete a message (soft delete)
-   */
-  async deleteMessage(messageId: string, userId: string): Promise<void> {
-    try {
-      const validatedMessageId = validateId(messageId);
-      const validatedUserId = validateId(userId);
+  private async getOtherParticipant(
+    threadId: string,
+    userId: string
+  ): Promise<string> {
+    const thread = await this.queries.getThreadById(threadId);
+    return thread.participants.find((p: any) => p !== userId)!;
+  }
 
-      const message = await this.queries.getMessageById(validatedMessageId);
+  private async saveMessage(message: Message): Promise<void> {
+    await this.queries.createMessage(message);
+  }
 
-      if (!message) {
-        throw new Error("MESSAGE_SERVICE_NOT_FOUND_ERROR: Message not found");
-      }
+  private generateId(): string {
+    return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
 
-      if (message.senderId !== validatedUserId) {
-        throw new Error(
-          "MESSAGE_SERVICE_UNAUTHORIZED: Can only delete your own messages"
-        );
-      }
-
-      await this.queries.softDeleteMessage(validatedMessageId);
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        throw new Error(`MESSAGE_SERVICE_VALIDATION_ERROR: ${error.message}`);
-      }
-      throw new Error(
-        `MESSAGE_SERVICE_ERROR: Failed to delete message - ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
-    }
+  private incrementCounter(value: number) {
+    // Return Firestore increment operation
+    return { _increment: value };
   }
 }
 

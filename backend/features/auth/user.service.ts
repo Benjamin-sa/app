@@ -6,22 +6,15 @@ import {
   updateUserProfile as updateUserProfileSchema,
   ValidationError,
   validateId,
-} from '../../utils/validation.utils';
+  UserProfile,
+} from '../../types';
+import type { SyncUserData } from '../../types/services/auth.types';
+import type { UploadedImageRecord } from '../../types/services/image.types';
+import * as imageService from '../../core/services/image.service';
 
 // Keep JS queries for now (will be migrated later)
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const firebaseQueries = require('../../queries/FirebaseQueries');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { UserProfile } = require('../../models/forum.models');
-
-interface SyncUserData {
-  firebaseUid: string;
-  email: string;
-  displayName?: string;
-  photoURL?: string;
-  emailVerified?: boolean;
-  providerData?: { providerId: string }[] | null;
-}
 
 class UserService {
   private queries: any;
@@ -79,8 +72,6 @@ class UserService {
 
   async getUserByUsername(username: string) {
     try {
-      // Basic reuse of schema to validate username
-      createUserProfileSchema({ username, uid: 'temp', email: 'temp@temp.com' });
       const user = await this.queries.getUserByUsername(username);
       if (!user) throw new Error('USER_SERVICE_NOT_FOUND_ERROR: User not found');
       return user;
@@ -88,36 +79,6 @@ class UserService {
       if (error instanceof ValidationError) throw new Error(`USER_SERVICE_VALIDATION_ERROR: ${error.message}`);
       if (error.message?.startsWith('USER_SERVICE_')) throw error;
       throw new Error(`USER_SERVICE_ERROR: Failed to get user by username - ${error.message}`);
-    }
-  }
-
-  async updateUserActivity(uid: string) {
-    try {
-      const validatedUid = validateId(uid);
-      await this.queries.updateUserActivity(validatedUid);
-    } catch (error: any) {
-      if (error instanceof ValidationError) throw new Error(`USER_SERVICE_VALIDATION_ERROR: ${error.message}`);
-      if (error.message?.startsWith('USER_SERVICE_')) throw error;
-      console.error('Failed to update user activity:', error);
-    }
-  }
-
-  async incrementUserStats(uid: string, field: string) {
-    try {
-      const validatedUid = validateId(uid);
-      if (!field || typeof field !== 'string') {
-        throw new Error('USER_SERVICE_VALIDATION_ERROR: Field is required and must be a string');
-      }
-      const validFields = ['topicsCount', 'answersCount', 'votesReceived', 'reputation'];
-      if (!validFields.includes(field)) {
-        throw new Error('USER_SERVICE_VALIDATION_ERROR: Invalid field for user stats');
-      }
-      await this.queries.incrementUserStats(validatedUid, field);
-    } catch (error: any) {
-      if (error instanceof ValidationError) throw new Error(`USER_SERVICE_VALIDATION_ERROR: ${error.message}`);
-      if (error.message?.startsWith('USER_SERVICE_')) throw error;
-      console.error(`Failed to increment user stat ${field}:`, error);
-      throw new Error(`USER_SERVICE_ERROR: Failed to increment user stat - ${error.message}`);
     }
   }
 
@@ -144,6 +105,66 @@ class UserService {
     }
   }
 
+  /**
+   * Update profile fields and optionally replace the avatar.
+   * Handles deriving old avatar URLs and cleaning them up after a successful update.
+   */
+  async updateProfileWithAvatar(
+    uid: string,
+    updateFields: Record<string, any>,
+    newImage?: UploadedImageRecord | null
+  ) {
+    try {
+      const validatedUid = validateId(uid);
+      const userBefore = await this.queries.getUserById(validatedUid);
+      if (!userBefore) throw new Error('USER_SERVICE_NOT_FOUND_ERROR: User profile not found');
+
+      // Capture old avatar URLs, if present
+      const oldAvatar = userBefore.avatar
+        ? {
+            url: userBefore.avatar as string,
+            thumbnailUrl: (userBefore as any).avatarThumbnail as string | undefined,
+            mediumUrl: (userBefore as any).avatarMediumUrl as string | undefined,
+          }
+        : null;
+
+      const imageUpdates: Record<string, any> = {};
+      if (newImage && newImage.url) {
+        imageUpdates.avatar = newImage.url;
+        if (newImage.thumbnailUrl) imageUpdates.avatarThumbnail = newImage.thumbnailUrl;
+        if (newImage.mediumUrl) imageUpdates.avatarMediumUrl = newImage.mediumUrl;
+      }
+
+      // Validate and persist
+      const updatedUser = await this.updateUserProfile(validatedUid, {
+        ...updateFields,
+        ...imageUpdates,
+      });
+
+      // If avatar changed, cleanup the previous files (best-effort)
+      if (newImage?.url && oldAvatar?.url && oldAvatar.url !== newImage.url) {
+        try {
+          await imageService.deleteImage(oldAvatar);
+        } catch (e: any) {
+          // Log and continue; not fatal for profile update
+          // eslint-disable-next-line no-console
+          console.warn('USER_SERVICE_IMAGE_CLEANUP_WARNING:', e?.message || e);
+        }
+      }
+
+      return {
+        user: updatedUser,
+        avatar: newImage
+          ? { url: newImage.url, thumbnailUrl: newImage.thumbnailUrl, mediumUrl: newImage.mediumUrl }
+          : undefined,
+      };
+    } catch (error: any) {
+      if (error instanceof ValidationError) throw new Error(`USER_SERVICE_VALIDATION_ERROR: ${error.message}`);
+      if (error.message?.startsWith('USER_SERVICE_')) throw error;
+      throw new Error(`USER_SERVICE_ERROR: Failed to update profile with avatar - ${error.message}`);
+    }
+  }
+
   async syncUser(syncData: SyncUserData) {
     try {
       const { firebaseUid, email, displayName, photoURL, emailVerified, providerData } = syncData;
@@ -166,7 +187,7 @@ class UserService {
         const newUserData = {
           uid: validatedUid,
           email,
-            username,
+          username,
           displayName: displayName || username,
           avatar: photoURL || '',
           emailVerified,

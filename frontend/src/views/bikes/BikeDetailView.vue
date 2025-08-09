@@ -178,12 +178,6 @@
                             <ShareIcon class="w-5 h-5" />
                             <span>Share</span>
                         </ActionButton>
-
-                        <ActionButton @click="showCommentModal = true" variant="outline"
-                            class="flex items-center justify-center space-x-2 flex-1">
-                            <ChatBubbleLeftIcon class="w-5 h-5" />
-                            <span>Comment</span>
-                        </ActionButton>
                     </div>
                 </div>
             </div>
@@ -207,7 +201,49 @@
 
                     <!-- Reuse AnswerList for comments -->
                     <AnswerList :topic-id="bike.id" :topic-user-id="bike.owner?.id || bike.userId"
-                        @answer-count-changed="updateCommentCount" />
+                        @answer-count-changed="updateCommentCount" @reply-to="handleReplyTo" />
+
+                    <!-- Post Comment section - inline like Reddit/TopicView -->
+                    <div v-if="authStore.isAuthenticated" class="border-t border-gray-200/50 dark:border-gray-700/50">
+
+                        <!-- Show/Hide Comment Form Button -->
+                        <div v-if="!showCommentForm" class="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+                            <ActionButton @click="showCommentForm = true" size="md"
+                                class="w-full sm:w-auto bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 hover:from-primary-700 hover:via-primary-800 hover:to-primary-900 text-white shadow-lg">
+                                <ChatBubbleLeftIcon class="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                                Add Comment
+                            </ActionButton>
+                        </div>
+
+                        <!-- Inline Comment Form -->
+                        <div v-if="showCommentForm"
+                            class="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-gray-50/50 dark:bg-gray-900/50">
+                            <div v-if="replyingTo"
+                                class="mb-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                                Replying to <span class="font-medium text-gray-900 dark:text-gray-200">@{{
+                                    replyingTo.userId
+                                    }}</span>
+                                <button class="underline hover:text-primary-600" @click="clearReply">clear</button>
+                            </div>
+
+                            <AnswerForm v-if="bike" :topic-id="bike.id" :parent-answer-id="replyingTo?.id"
+                                @success="handleCommentSuccess" @cancel="handleCommentCancel" />
+                        </div>
+                    </div>
+
+                    <!-- Not authenticated message -->
+                    <div v-else
+                        class="border-t border-gray-200/50 dark:border-gray-700/50 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 text-center">
+                        <div class="py-8">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Join the Discussion
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400 mb-4">Please sign in to share your thoughts about
+                                this bike.</p>
+                            <ActionButton @click="$router.push('/login')" variant="primary">
+                                Sign In to Comment
+                            </ActionButton>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -215,20 +251,6 @@
         <!-- Image Viewer (only opens when clicking main image) -->
         <ImageViewer :images="allImages" :initialIndex="selectedImageIndex" :isOpen="showImageViewer"
             @close="closeImageViewer" @change="handleImageChange" />
-
-        <!-- Comment Modal -->
-        <Modal v-model="showCommentModal" title="Add Comment" size="xl">
-            <AnswerForm v-if="bike && authStore.isAuthenticated" :topic-id="bike.id" @success="handleCommentSuccess"
-                @cancel="showCommentModal = false" />
-            <div v-else-if="!authStore.isAuthenticated" class="text-center py-8">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Join the Discussion</h3>
-                <p class="text-gray-600 dark:text-gray-400 mb-4">Please sign in to share your thoughts about this bike.
-                </p>
-                <ActionButton @click="$router.push('/login')" variant="primary">
-                    Sign In to Comment
-                </ActionButton>
-            </div>
-        </Modal>
     </div>
 </template>
 
@@ -246,7 +268,6 @@ import ImageViewer from '@/components/common/images/ImageViewer.vue'
 import VoteButton from '@/components/forum/VoteButton.vue'
 import AnswerList from '@/components/forum/AnswerList.vue'
 import AnswerForm from '@/components/forum/AnswerForm.vue'
-import Modal from '@/components/common/Modal.vue'
 import { useNavbarStore } from '@/stores/ui/navbar'
 import {
     CameraIcon,
@@ -388,9 +409,10 @@ const formatDate = (dateString) => {
     })
 }
 
-// Comment state
-const showCommentModal = ref(false)
+// Comment state - inline mechanism
+const showCommentForm = ref(false)
 const commentCount = ref(0)
+const replyingTo = ref(null)
 
 onMounted(() => {
     fetchBike()
@@ -400,8 +422,23 @@ const updateCommentCount = (newCount) => {
     commentCount.value = newCount
 }
 
+const handleReplyTo = (comment) => {
+    replyingTo.value = comment
+    showCommentForm.value = true
+}
+
+const clearReply = () => {
+    replyingTo.value = null
+}
+
+const handleCommentCancel = () => {
+    showCommentForm.value = false
+    replyingTo.value = null
+}
+
 const handleCommentSuccess = () => {
-    showCommentModal.value = false
+    showCommentForm.value = false
+    replyingTo.value = null
     commentCount.value += 1
     notificationStore.success('Comment posted!', 'Your comment has been added successfully.')
 }

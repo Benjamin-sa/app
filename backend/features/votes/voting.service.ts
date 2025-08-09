@@ -1,20 +1,10 @@
 import firebaseQueries = require("../../queries/FirebaseQueries");
-import {
-  createVote,
-  ValidationError,
-  validateId,
-} from "../../utils/validation.utils";
-
-export interface VoteCounts {
-  upvotes: number;
-  downvotes: number;
-  score: number;
-}
-export interface VoteResult extends VoteCounts {
-  success: boolean;
-  userVote: string | null;
-  newVoteCount: number;
-}
+import { createVote, ValidationError, validateId } from "../../types";
+import type {
+  VoteCounts,
+  VoteResult,
+  VoteType,
+} from "../../types/services/voting.types";
 
 class VotingService {
   private queries: any;
@@ -26,7 +16,7 @@ class VotingService {
     userId: string,
     targetId: string,
     targetType: string,
-    voteType: string | null
+    voteType: VoteType | null
   ): Promise<VoteResult> {
     try {
       const validatedVote: any = createVote({
@@ -79,7 +69,10 @@ class VotingService {
     }
   }
 
-  async getUserVote(userId: string, targetId: string): Promise<string | null> {
+  async getUserVote(
+    userId: string,
+    targetId: string
+  ): Promise<VoteType | null> {
     try {
       const validatedUserId = validateId(userId);
       const validatedTargetId = validateId(targetId);
@@ -87,7 +80,8 @@ class VotingService {
         validatedUserId,
         validatedTargetId
       );
-      return vote ? vote.voteType : null;
+      const type = vote?.voteType;
+      return type === "up" || type === "down" ? type : null;
     } catch (error: any) {
       if (error instanceof ValidationError)
         throw new Error(`VOTING_SERVICE_VALIDATION_ERROR: ${error.message}`);
