@@ -1,4 +1,4 @@
-import multer from "multer";
+import multer, { FileFilterCallback } from "multer";
 import * as imageService from "../services/image.service";
 import { Request, Response, NextFunction } from "express";
 
@@ -18,7 +18,12 @@ const allowedTypes = [
   "image/webp",
   "image/gif",
 ];
-const fileFilter: multer.Options["fileFilter"] = (_req, file, cb) => {
+
+const fileFilter = (
+  _req: Request,
+  file: Express.Multer.File,
+  cb: FileFilterCallback
+) => {
   if (allowedTypes.includes(file.mimetype)) cb(null, true);
   else
     cb(
