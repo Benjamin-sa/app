@@ -106,7 +106,8 @@
         </div>
 
         <!-- Enhanced Create Topic Modal -->
-        <Modal v-model="showCreateTopic" :title="$t('forum.modal.createTitle')" size="xl" :closable="true" :close-on-backdrop="true">
+        <Modal v-model="showCreateTopic" :title="$t('forum.modal.createTitle')" size="xl" :closable="true"
+            :close-on-backdrop="true">
             <TopicForm :category="currentCategory" @success="handleTopicCreated" @cancel="showCreateTopic = false" />
         </Modal>
     </div>

@@ -8,8 +8,8 @@
         <!-- Enhanced Form -->
         <form v-else @submit.prevent="handleSubmit" class="space-y-8">
             <!-- Enhanced Title -->
-            <FormField id="title" v-model="form.title" :label="$t('forum.form.title')" type="text" required variant="enhanced"
-                :placeholder="$t('forum.form.titlePlaceholder')" :disabled="loading"
+            <FormField id="title" v-model="form.title" :label="$t('forum.form.title')" type="text" required
+                variant="enhanced" :placeholder="$t('forum.form.titlePlaceholder')" :disabled="loading"
                 :help-text="form.title && form.title.length < 10 ? $t('forum.form.titleHelpShort') : ''" />
 
             <!-- Category Display (read-only when category is provided) -->
@@ -20,29 +20,29 @@
                 <div
                     class="px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl">
                     <span class="text-gray-900 dark:text-white font-medium">{{ getCategoryLabel(props.category)
-                    }}</span>
+                        }}</span>
                 </div>
             </div>
 
             <!-- Enhanced Category (only show when no category is provided) -->
-            <FormField v-else id="category" v-model="form.category" :label="$t('forum.form.categoryLabel')" type="select" required
-                variant="enhanced" :placeholder="$t('forum.form.categoryPlaceholder')" :disabled="loading" :options="categoryOptions" />
+            <FormField v-else id="category" v-model="form.category" :label="$t('forum.form.categoryLabel')"
+                type="select" required variant="enhanced" :placeholder="$t('forum.form.categoryPlaceholder')"
+                :disabled="loading" :options="categoryOptions" />
 
             <!-- Content -->
             <div>
                 <RichTextEditor :key="`rich-editor-${isEditMode ? 'edit' : 'create'}-${formInitialized}`"
                     v-model="form.content" :label="$t('forum.form.contentLabel')"
-                    :placeholder="$t('forum.form.contentPlaceholder')"
-                    :disabled="loading" :min-length="20" :max-length="5000" />
+                    :placeholder="$t('forum.form.contentPlaceholder')" :disabled="loading" :min-length="20"
+                    :max-length="5000" />
             </div>
 
             <!-- Enhanced Tags -->
             <div class="space-y-3">
-                <FormField id="tags" v-model="tagInput" :label="$t('forum.form.tagsLabel')" type="text" variant="enhanced"
-                    :placeholder="$t('forum.form.tagsPlaceholder')"
-                    :disabled="loading"
-                    :help-text="$t('forum.form.tagsHelp')"
-                    @keydown.enter.prevent="addTag" @keydown.comma.prevent="addTag" />
+                <FormField id="tags" v-model="tagInput" :label="$t('forum.form.tagsLabel')" type="text"
+                    variant="enhanced" :placeholder="$t('forum.form.tagsPlaceholder')" :disabled="loading"
+                    :help-text="$t('forum.form.tagsHelp')" @keydown.enter.prevent="addTag"
+                    @keydown.comma.prevent="addTag" />
 
                 <!-- Enhanced Tag Display -->
                 <div v-if="form.tags.length > 0" class="flex flex-wrap gap-2">
@@ -59,8 +59,9 @@
             </div>
 
             <!-- Enhanced Images -->
-            <ImageUpload v-model:images="allImages" :label="$t('forum.form.imagesLabel')" variant="enhanced" :max-files="5"
-                :max-file-size="isEditMode ? 10 * 1024 * 1024 : 5 * 1024 * 1024" @error="(err) => error = err" />
+            <ImageUpload v-model:images="allImages" :label="$t('forum.form.imagesLabel')" variant="enhanced"
+                :max-files="5" :max-file-size="isEditMode ? 10 * 1024 * 1024 : 5 * 1024 * 1024"
+                @error="(err) => error = err" />
 
             <!-- Enhanced Error Message -->
             <div v-if="error"

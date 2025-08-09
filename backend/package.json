@@ -8,6 +8,7 @@
     "dev": "nodemon server.js",
     "dev:ts": "nodemon --exec ts-node server.ts",
     "start:ts": "ts-node server.ts",
+    "build": "tsc",
     "init-forum": "node scripts/init-db.js"
   },
   "dependencies": {

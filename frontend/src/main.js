@@ -8,8 +8,9 @@ import en from "./locales/en.json";
 import nl from "./locales/nl.json";
 
 // Load preferred locale from localStorage or default to 'en'
-const storedLocale = typeof window !== 'undefined' ? localStorage.getItem('locale') : null;
-const defaultLocale = storedLocale === 'nl' ? 'nl' : 'en';
+const storedLocale =
+  typeof window !== "undefined" ? localStorage.getItem("locale") : null;
+const defaultLocale = storedLocale === "nl" ? "nl" : "en";
 
 const i18n = createI18n({
   legacy: false,
@@ -27,9 +28,11 @@ const app = createApp(App);
 
 // Expose a small helper to change language globally
 app.config.globalProperties.$setLocale = (locale) => {
-  if (!['en', 'nl'].includes(locale)) return;
+  if (!["en", "nl"].includes(locale)) return;
   i18n.global.locale.value = locale;
-  try { localStorage.setItem('locale', locale); } catch {}
+  try {
+    localStorage.setItem("locale", locale);
+  } catch {}
 };
 
 // Create Pinia store

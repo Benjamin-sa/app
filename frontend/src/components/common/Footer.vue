@@ -49,7 +49,8 @@
 
                 <!-- Quick Links -->
                 <div>
-                    <h3 class="text-white font-semibold text-sm uppercase tracking-wider mb-4">{{ $t('footer.sections.community') }}</h3>
+                    <h3 class="text-white font-semibold text-sm uppercase tracking-wider mb-4">{{
+                        $t('footer.sections.community') }}</h3>
                     <ul class="space-y-3">
                         <li>
                             <router-link to="/forum"
@@ -86,7 +87,8 @@
 
                 <!-- Products & Gear -->
                 <div>
-                    <h3 class="text-white font-semibold text-sm uppercase tracking-wider mb-4">{{ $t('footer.sections.products') }}</h3>
+                    <h3 class="text-white font-semibold text-sm uppercase tracking-wider mb-4">{{
+                        $t('footer.sections.products') }}</h3>
                     <ul class="space-y-3">
                         <li>
                             <router-link to="/products"
@@ -123,7 +125,8 @@
 
                 <!-- Support & Info -->
                 <div>
-                    <h3 class="text-white font-semibold text-sm uppercase tracking-wider mb-4">{{ $t('footer.sections.support') }}</h3>
+                    <h3 class="text-white font-semibold text-sm uppercase tracking-wider mb-4">{{
+                        $t('footer.sections.support') }}</h3>
                     <ul class="space-y-3">
                         <li>
                             <router-link to="/about"
@@ -228,7 +231,7 @@ const onLangChange = (e) => {
     const value = e.target.value;
     if (value === 'en' || value === 'nl') {
         locale.value = value;
-        try { localStorage.setItem('locale', value); } catch {}
+        try { localStorage.setItem('locale', value); } catch { }
         notificationStore.info(`Language changed to ${value === 'en' ? 'English' : 'Nederlands'}`);
     }
 };

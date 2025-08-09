@@ -45,7 +45,8 @@
                             class="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                             <ChatBubbleLeftRightIcon class="w-8 h-8 text-primary-600 dark:text-primary-500" />
                         </div>
-                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">{{ $t('home.features.forumTitle') }}</h3>
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">{{
+                            $t('home.features.forumTitle') }}</h3>
                         <p class="text-gray-600 dark:text-gray-400">
                             {{ $t('home.features.forumDesc') }}
                         </p>
@@ -56,7 +57,8 @@
                             class="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                             <ShoppingBagIcon class="w-8 h-8 text-primary-600 dark:text-primary-500" />
                         </div>
-                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">{{ $t('home.features.productsTitle') }}</h3>
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">{{
+                            $t('home.features.productsTitle') }}</h3>
                         <p class="text-gray-600 dark:text-gray-400">
                             {{ $t('home.features.productsDesc') }}
                         </p>
@@ -67,7 +69,8 @@
                             class="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                             <UserGroupIcon class="w-8 h-8 text-primary-600 dark:text-primary-500" />
                         </div>
-                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">{{ $t('home.features.communityTitle') }}</h3>
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">{{
+                            $t('home.features.communityTitle') }}</h3>
                         <p class="text-gray-600 dark:text-gray-400">
                             {{ $t('home.features.communityDesc') }}
                         </p>
@@ -83,7 +86,8 @@
                     <!-- Recent Forum Topics -->
                     <div>
                         <div class="flex items-center justify-between mb-6">
-                            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $t('home.recentActivityTitle') }}</h2>
+                            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{
+                                $t('home.recentActivityTitle') }}</h2>
                             <ActionButton variant="outline" size="sm" @click="$router.push('/forum')">
                                 {{ $t('home.viewAll') }}
                             </ActionButton>
@@ -94,10 +98,11 @@
                             <div v-for="topic in recentTopics" :key="topic.id"
                                 class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-4 sm:p-6 hover:shadow-xl dark:hover:shadow-gray-900/25 transition-all duration-200 cursor-pointer hover:scale-[1.02] transform"
                                 @click="$router.push(`/forum/topic/${topic.id}`)">
-                                <h3 class="font-semibold text-gray-900 dark:text-white mb-2 text-lg">{{ topic.title }}</h3>
+                                <h3 class="font-semibold text-gray-900 dark:text-white mb-2 text-lg">{{ topic.title }}
+                                </h3>
                                 <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">{{
                                     stripHtml(topic.content).substring(0, 150) }}{{ stripHtml(topic.content).length >
-                                    150 ? '...' : '' }}
+                                        150 ? '...' : '' }}
                                 </p>
                                 <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                                     <div class="flex items-center space-x-4">
