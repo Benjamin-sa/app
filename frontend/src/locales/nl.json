@@ -1,0 +1,152 @@
+{
+  "home": {
+    "welcome": "Welkom bij Motordash",
+    "tagline": "Het ultieme platform voor motorliefhebbers waar enthousiastelingen verbinden, kennis delen en de nieuwste uitrusting ontdekken.",
+    "exploreForum": "Forum verkennen",
+    "browseProducts": "Producten bekijken",
+    "featuresTitle": "Alles wat je nodig hebt op één plek",
+    "featuresSubtitle": "Sluit je aan bij duizenden motorliefhebbers die hun passie, kennis en ervaringen delen.",
+    "features": {
+      "forumTitle": "Actief forum",
+      "forumDesc": "Ga in gesprek met mede-rijders, stel vragen, deel ervaringen en leer van de community.",
+      "productsTitle": "Productcatalogus",
+      "productsDesc": "Ontdek en beoordeel de nieuwste motorgear, onderdelen en accessoires van betrouwbare merken.",
+      "communityTitle": "Community",
+      "communityDesc": "Verbind met gelijkgestemde rijders, bouw je reputatie op en word onderdeel van de familie."
+    },
+    "recentActivityTitle": "Recente forumactiviteit",
+    "viewAll": "Alles bekijken",
+    "loadingTopics": "Recente topics laden...",
+    "noTopics": "Geen recente topics gevonden",
+    "exploreCategories": "Categorieën verkennen",
+    "ctaTitle": "Klaar om je bij de community aan te sluiten?",
+    "ctaDesc": "Maak vandaag nog je account aan en word onderdeel van de meest levendige motorcommunity online.",
+    "getStarted": "Aan de slag",
+    "startContributing": "Begin met bijdragen",
+    "replies": "reacties"
+  },
+  "footer": {
+    "brandDesc": "Het ultieme motorcommunity-platform dat enthousiastelingen wereldwijd verbindt. Deel je passie, ontdek gear en ga mee op reis.",
+    "sections": {
+      "community": "Community",
+      "products": "Producten & Gear",
+      "support": "Support"
+    },
+    "links": {
+      "discussionForum": "Discussieforum",
+      "bikeGallery": "Motoren galerij",
+      "generalDiscussion": "Algemene discussie",
+      "maintenanceTips": "Onderhoudstips",
+      "groupRides": "Groepsritten"
+    },
+    "products": {
+      "browseProducts": "Producten bekijken",
+      "helmets": "Helmen & Veiligheid",
+      "gear": "Rijkleding",
+      "parts": "Onderdelen & Accessoires",
+      "tools": "Gereedschap & Onderhoud"
+    },
+    "support": {
+      "about": "Over Motordash",
+      "help": "Helpcentrum",
+      "contact": "Contact",
+      "privacy": "Privacybeleid",
+      "terms": "Algemene voorwaarden"
+    },
+    "newsletter": {
+      "title": "Blijf verbonden",
+      "desc": "Ontvang het laatste motornieuws, tips en community-updates in je inbox.",
+      "placeholder": "Voer je e-mailadres in",
+      "join": "Deelnemen",
+      "joining": "Bezig..."
+    },
+    "bottom": {
+      "rights": "Alle rechten voorbehouden.",
+      "madeBy": "Gemaakt voor rijders, door rijders",
+      "backToTop": "Terug naar boven"
+    },
+    "messages": {
+      "subscribedTitle": "Succesvol geabonneerd",
+      "subscribedBody": "Bedankt voor je inschrijving op onze nieuwsbrief!",
+      "subscribeFailed": "Abonneren mislukt. Probeer het opnieuw."
+    }
+  },
+  "nav": {
+    "home": "Home",
+    "forum": "Forum",
+    "bikes": "Motoren",
+    "products": "Producten",
+    "messages": "Berichten",
+    "searchPlaceholder": "Zoeken...",
+    "profile": "Profiel",
+    "signOut": "Uitloggen",
+    "login": "Inloggen",
+    "signUp": "Registreren",
+    "logoutSuccess": "Succesvol uitgelogd"
+  },
+  "forum": {
+    "breadcrumb": "Forum",
+    "newTopic": "Nieuw topic",
+    "signInToPost": "Meld je aan om te plaatsen",
+    "searchPlaceholder": "Zoek topics...",
+    "sort": {
+      "createdAt": "Nieuwste",
+      "updatedAt": "Recent actief",
+      "voteCount": "Meest populair"
+    },
+    "loadingTopics": "Topics laden...",
+    "empty": {
+      "title": "Geen topics gevonden",
+      "searchHint": "Probeer je zoektermen aan te passen.",
+      "startFirst": "Wees de eerste om een discussie te starten!",
+      "createFirst": "Eerste topic maken"
+    },
+    "pagination": {
+      "previous": "Vorige",
+      "page": "Pagina {page}",
+      "next": "Volgende"
+    },
+    "modal": {
+      "createTitle": "Nieuw topic aanmaken"
+    },
+    "categories": {
+      "general": "Algemene discussies over motoren, rijervaringen en community onderwerpen",
+      "technical": "Technische ondersteuning, troubleshooting en mechanische discussies",
+      "maintenance": "Onderhoudsschema's, doe-het-zelf reparaties en service-aanbevelingen",
+      "reviews": "Motorreviews, gear-aanbevelingen en productbesprekingen",
+      "events": "Motorevenementen, meetups, ritten en community-bijeenkomsten",
+      "marketplace": "Koop, verkoop en ruil motoren, onderdelen en accessoires",
+      "default": "Ga in gesprek met andere motorliefhebbers"
+    },
+    "topicCard": {
+      "pinned": "Vastgezet",
+      "locked": "Gesloten",
+      "moreTags": "{count} meer",
+      "linkCopiedTitle": "Link gekopieerd",
+      "linkCopiedBody": "Topiclink gekopieerd naar het klembord"
+    },
+    "form": {
+      "title": "Titel van topic",
+      "titlePlaceholder": "Voer een beschrijvende titel in voor je topic",
+      "titleHelpShort": "De titel moet minimaal 10 tekens lang zijn",
+      "categoryLabel": "Categorie",
+      "categoryPlaceholder": "Selecteer een categorie",
+      "contentLabel": "Inhoud",
+      "contentPlaceholder": "Beschrijf je topic in detail. Wees specifiek en geef context zodat anderen kunnen begrijpen en reageren.",
+      "tagsLabel": "Tags (optioneel)",
+      "tagsPlaceholder": "Voer tags in, gescheiden door komma's (bijv. honda, onderhoud, olie-verversen)",
+      "tagsHelp": "Druk op Enter of komma om tags toe te voegen. Gebruik relevante trefwoorden zodat anderen je topic kunnen vinden.",
+      "imagesLabel": "Afbeeldingen (optioneel)",
+      "actions": {
+        "cancel": "Annuleren",
+        "saveChanges": "Wijzigingen opslaan",
+        "postTopic": "Topic plaatsen"
+      }
+    }
+  },
+  "common": {
+    "loading": "Laden...",
+    "back": "Terug",
+    "close": "Sluiten"
+  }
+}

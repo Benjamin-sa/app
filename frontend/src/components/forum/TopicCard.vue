@@ -16,12 +16,12 @@
                     <span v-if="topic.isPinned"
                         class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
                         <MapPinIcon class="w-3 h-3 mr-1" />
-                        Pinned
+                        {{ $t('forum.topicCard.pinned') }}
                     </span>
                     <span v-if="topic.isLocked"
                         class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
                         <LockClosedIcon class="w-3 h-3 mr-1" />
-                        Locked
+                        {{ $t('forum.topicCard.locked') }}
                     </span>
                 </div>
             </div>
@@ -72,7 +72,7 @@
                 </span>
                 <span v-if="topic.tags.length > 3"
                     class="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-                    +{{ topic.tags.length - 3 }} more
+                    +{{ topic.tags.length - 3 }} {{ $t('forum.topicCard.moreTags', { count: topic.tags.length - 3 }) }}
                 </span>
             </div>
         </div>
@@ -80,6 +80,7 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { useNotificationStore } from '@/stores/ui/notification';
 import { formatDate, getCategoryLabel } from '@/utils/helpers';
 import ActionButton from '@/components/common/buttons/ActionButton.vue';
@@ -91,6 +92,8 @@ import {
     MapPinIcon,
     ShareIcon,
 } from '@heroicons/vue/24/outline';
+
+const { t } = useI18n()
 
 const props = defineProps({
     topic: {
@@ -119,7 +122,7 @@ const sharePost = () => {
     } else {
         // Fallback to clipboard
         navigator.clipboard.writeText(window.location.origin + `/forum/topic/${props.topic.id}`);
-        notificationStore.success('Link copied', 'Topic link copied to clipboard');
+        notificationStore.success(t('forum.topicCard.linkCopiedTitle'), t('forum.topicCard.linkCopiedBody'));
     }
 };
 </script>

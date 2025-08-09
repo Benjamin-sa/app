@@ -10,7 +10,7 @@
                         <!-- Breadcrumb Navigation -->
                         <nav class="flex items-center space-x-2 text-primary-200 text-sm mb-3">
                             <router-link to="/forum" class="hover:text-white transition-colors">
-                                Forum
+                                {{ $t('forum.breadcrumb') }}
                             </router-link>
                             <ChevronRightIcon class="w-4 h-4" />
                             <span class="text-white font-medium">{{ getCategoryLabel(currentCategory) }}</span>
@@ -25,11 +25,11 @@
                         <ActionButton v-if="authStore.isAuthenticated" @click="showCreateTopic = true" variant="white"
                             size="lg" class="w-full sm:w-auto">
                             <PlusIcon class="w-5 h-5 mr-2" />
-                            New Topic
+                            {{ $t('forum.newTopic') }}
                         </ActionButton>
                         <ActionButton v-else @click="$router.push('/login')" variant="outline" size="lg"
                             class="w-full sm:w-auto border-white text-white hover:bg-white hover:text-gray-900">
-                            Sign in to post
+                            {{ $t('forum.signInToPost') }}
                         </ActionButton>
                     </div>
                 </div>
@@ -45,7 +45,7 @@
                     <div class="relative group">
                         <MagnifyingGlassIcon
                             class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500 transition-colors group-focus-within:text-primary-500" />
-                        <input v-model="searchQuery" type="text" placeholder="Search topics..."
+                        <input v-model="searchQuery" type="text" :placeholder="$t('forum.searchPlaceholder')"
                             class="pl-12 pr-4 py-3 w-full border border-gray-300/50 dark:border-gray-600/50 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 bg-white/50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200 backdrop-blur-sm"
                             @input="debouncedSearch">
                     </div>
@@ -55,9 +55,9 @@
                 <div class="flex flex-wrap gap-4">
                     <select v-model="sortBy"
                         class="border border-gray-300/50 dark:border-gray-600/50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 bg-white/50 dark:bg-gray-700/50 text-gray-900 dark:text-white backdrop-blur-sm transition-all duration-200">
-                        <option value="createdAt">Latest</option>
-                        <option value="updatedAt">Recently Active</option>
-                        <option value="voteCount">Most Popular</option>
+                        <option value="createdAt">{{ $t('forum.sort.createdAt') }}</option>
+                        <option value="updatedAt">{{ $t('forum.sort.updatedAt') }}</option>
+                        <option value="voteCount">{{ $t('forum.sort.voteCount') }}</option>
                     </select>
                 </div>
             </div>
@@ -65,18 +65,18 @@
 
         <!-- Topics List -->
         <div class="space-y-4">
-            <LoadingSection v-if="loading" message="Loading topics..." />
+            <LoadingSection v-if="loading" :message="$t('forum.loadingTopics')" />
 
             <div v-else-if="topics.length === 0" class="text-center py-12">
                 <ChatBubbleLeftRightIcon class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
-                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No topics found</h3>
+                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">{{ $t('forum.empty.title') }}</h3>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    {{ searchQuery ? 'Try adjusting your search terms.' : 'Be the first to start a discussion!' }}
+                    {{ searchQuery ? $t('forum.empty.searchHint') : $t('forum.empty.startFirst') }}
                 </p>
                 <div class="mt-6">
                     <Button v-if="authStore.isAuthenticated && !searchQuery" @click="showCreateTopic = true">
                         <PlusIcon class="w-4 h-4 mr-2" />
-                        Create First Topic
+                        {{ $t('forum.empty.createFirst') }}
                     </Button>
                 </div>
             </div>
@@ -90,23 +90,23 @@
                 class="flex items-center space-x-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-4">
                 <ActionButton variant="outline" size="sm" :disabled="currentPage === 1"
                     @click="loadPage(currentPage - 1)" class="disabled:opacity-50">
-                    Previous
+                    {{ $t('forum.pagination.previous') }}
                 </ActionButton>
 
                 <span
                     class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100/50 dark:bg-gray-700/50 rounded-lg backdrop-blur-sm">
-                    Page {{ currentPage }}
+                    {{ $t('forum.pagination.page', { page: currentPage }) }}
                 </span>
 
                 <ActionButton variant="outline" size="sm" :disabled="!hasMore" @click="loadPage(currentPage + 1)"
                     class="disabled:opacity-50">
-                    Next
+                    {{ $t('forum.pagination.next') }}
                 </ActionButton>
             </nav>
         </div>
 
         <!-- Enhanced Create Topic Modal -->
-        <Modal v-model="showCreateTopic" title="Create New Topic" size="xl" :closable="true" :close-on-backdrop="true">
+        <Modal v-model="showCreateTopic" :title="$t('forum.modal.createTitle')" size="xl" :closable="true" :close-on-backdrop="true">
             <TopicForm :category="currentCategory" @success="handleTopicCreated" @cancel="showCreateTopic = false" />
         </Modal>
     </div>
@@ -165,15 +165,15 @@ const error = computed(() => forumStore.error);
 
 // Category descriptions
 const getCategoryDescription = (categoryId) => {
-    const descriptions = {
-        'general': 'General discussions about motorcycles, riding experiences, and community topics',
-        'technical': 'Technical support, troubleshooting, and mechanical discussions',
-        'maintenance': 'Maintenance schedules, DIY repairs, and service recommendations',
-        'reviews': 'Bike reviews, gear recommendations, and product discussions',
-        'events': 'Motorcycle events, meetups, rides, and community gatherings',
-        'marketplace': 'Buy, sell, and trade motorcycles, parts, and accessories'
-    };
-    return descriptions[categoryId] || 'Join the conversation with fellow motorcycle enthusiasts';
+    const desc = {
+        'general': 'forum.categories.general',
+        'technical': 'forum.categories.technical',
+        'maintenance': 'forum.categories.maintenance',
+        'reviews': 'forum.categories.reviews',
+        'events': 'forum.categories.events',
+        'marketplace': 'forum.categories.marketplace'
+    }[categoryId] || 'forum.categories.default';
+    return $t(desc);
 };
 
 const debouncedSearch = debounce(() => {

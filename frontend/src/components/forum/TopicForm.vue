@@ -8,14 +8,14 @@
         <!-- Enhanced Form -->
         <form v-else @submit.prevent="handleSubmit" class="space-y-8">
             <!-- Enhanced Title -->
-            <FormField id="title" v-model="form.title" label="Topic Title" type="text" required variant="enhanced"
-                placeholder="Enter a descriptive title for your topic" :disabled="loading"
-                :help-text="form.title && form.title.length < 10 ? 'Title should be at least 10 characters long' : ''" />
+            <FormField id="title" v-model="form.title" :label="$t('forum.form.title')" type="text" required variant="enhanced"
+                :placeholder="$t('forum.form.titlePlaceholder')" :disabled="loading"
+                :help-text="form.title && form.title.length < 10 ? $t('forum.form.titleHelpShort') : ''" />
 
             <!-- Category Display (read-only when category is provided) -->
             <div v-if="props.category" class="space-y-3">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Category
+                    {{ $t('forum.form.categoryLabel') }}
                 </label>
                 <div
                     class="px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl">
@@ -25,23 +25,23 @@
             </div>
 
             <!-- Enhanced Category (only show when no category is provided) -->
-            <FormField v-else id="category" v-model="form.category" label="Category" type="select" required
-                variant="enhanced" placeholder="Select a category" :disabled="loading" :options="categoryOptions" />
+            <FormField v-else id="category" v-model="form.category" :label="$t('forum.form.categoryLabel')" type="select" required
+                variant="enhanced" :placeholder="$t('forum.form.categoryPlaceholder')" :disabled="loading" :options="categoryOptions" />
 
             <!-- Content -->
             <div>
                 <RichTextEditor :key="`rich-editor-${isEditMode ? 'edit' : 'create'}-${formInitialized}`"
-                    v-model="form.content" label="Content"
-                    placeholder="Describe your topic in detail. Be specific and provide context to help others understand and respond."
+                    v-model="form.content" :label="$t('forum.form.contentLabel')"
+                    :placeholder="$t('forum.form.contentPlaceholder')"
                     :disabled="loading" :min-length="20" :max-length="5000" />
             </div>
 
             <!-- Enhanced Tags -->
             <div class="space-y-3">
-                <FormField id="tags" v-model="tagInput" label="Tags (optional)" type="text" variant="enhanced"
-                    placeholder="Enter tags separated by commas (e.g., honda, maintenance, oil-change)"
+                <FormField id="tags" v-model="tagInput" :label="$t('forum.form.tagsLabel')" type="text" variant="enhanced"
+                    :placeholder="$t('forum.form.tagsPlaceholder')"
                     :disabled="loading"
-                    help-text="Press Enter or comma to add tags. Use relevant keywords to help others find your topic."
+                    :help-text="$t('forum.form.tagsHelp')"
                     @keydown.enter.prevent="addTag" @keydown.comma.prevent="addTag" />
 
                 <!-- Enhanced Tag Display -->
@@ -59,7 +59,7 @@
             </div>
 
             <!-- Enhanced Images -->
-            <ImageUpload v-model:images="allImages" label="Images (optional)" variant="enhanced" :max-files="5"
+            <ImageUpload v-model:images="allImages" :label="$t('forum.form.imagesLabel')" variant="enhanced" :max-files="5"
                 :max-file-size="isEditMode ? 10 * 1024 * 1024 : 5 * 1024 * 1024" @error="(err) => error = err" />
 
             <!-- Enhanced Error Message -->
@@ -74,11 +74,11 @@
             <!-- Enhanced Actions -->
             <div class="flex justify-end space-x-4 pt-8 border-t border-gray-200/50 dark:border-gray-600/50">
                 <ActionButton type="button" @click="$emit('cancel')" variant="outline" size="lg" :disabled="loading">
-                    Cancel
+                    {{ $t('forum.form.actions.cancel') }}
                 </ActionButton>
                 <ActionButton type="submit" size="lg" :loading="loading" :disabled="!isFormValid"
                     class="bg-gradient-to-r from-primary-600 to-accent-600 hover:from-primary-700 hover:to-accent-700 text-white shadow-lg">
-                    {{ isEditMode ? 'Save Changes' : 'Post Topic' }}
+                    {{ isEditMode ? $t('forum.form.actions.saveChanges') : $t('forum.form.actions.postTopic') }}
                 </ActionButton>
             </div>
         </form>

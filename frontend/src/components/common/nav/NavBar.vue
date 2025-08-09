@@ -26,35 +26,35 @@
                             :class="$route.name === 'Home'
                                 ? 'text-primary-600 dark:text-primary-400 border-primary-500'
                                 : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'">
-                            Home
+                            {{ $t('nav.home') }}
                         </RouterLink>
                         <RouterLink to="/forum"
                             class="inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2 transition-colors duration-200"
                             :class="$route.name?.startsWith('Forum') || $route.name === 'Topic' || $route.name === 'ForumCategories'
                                 ? 'text-primary-600 dark:text-primary-400 border-primary-500'
                                 : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'">
-                            Forum
+                            {{ $t('nav.forum') }}
                         </RouterLink>
                         <RouterLink to="/bikes"
                             class="inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2 transition-colors duration-200"
                             :class="$route.name === 'BikeGallery' || $route.name === 'BikeDetail'
                                 ? 'text-primary-600 dark:text-primary-400 border-primary-500'
                                 : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'">
-                            Bikes
+                            {{ $t('nav.bikes') }}
                         </RouterLink>
                         <RouterLink to="/products"
                             class="inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2 transition-colors duration-200"
                             :class="$route.name?.startsWith('Product')
                                 ? 'text-primary-600 dark:text-primary-400 border-primary-500'
                                 : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'">
-                            Products
+                            {{ $t('nav.products') }}
                         </RouterLink>
                         <RouterLink to="/messages"
                             class="inline-flex items-center gap-2 px-1 pt-1 text-sm font-medium border-b-2 transition-colors duration-200"
                             :class="$route.name === 'Messages'
                                 ? 'text-primary-600 dark:text-primary-400 border-primary-500'
                                 : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'">
-                            <span>Messages</span>
+                            <span>{{ $t('nav.messages') }}</span>
                             <!-- Unread Messages Badge -->
                             <span v-if="authStore.isAuthenticated && messagingStore.hasUnreadMessages"
                                 class="inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-semibold text-white bg-red-500 rounded-full min-w-[1.125rem] h-4.5 shadow-sm">
@@ -72,7 +72,7 @@
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <MagnifyingGlassIcon class="h-5 w-5 text-gray-400 dark:text-gray-500" />
                             </div>
-                            <input v-model="searchQuery" type="text" placeholder="Search..."
+                            <input v-model="searchQuery" type="text" :placeholder="$t('nav.searchPlaceholder')"
                                 class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm placeholder-gray-500 dark:placeholder-gray-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400 transition-colors"
                                 @keydown.enter="handleSearch" />
                         </div>
@@ -114,14 +114,14 @@
                                 <RouterLink to="/profile"
                                     class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                                     <UserIcon class="w-4 h-4" />
-                                    Profile
+                                    {{ $t('nav.profile') }}
                                 </RouterLink>
                                 <hr class="my-1 border-gray-100 dark:border-gray-700" />
                                 <button @click="handleLogout"
                                     class="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
                                     type="button">
                                     <ArrowRightOnRectangleIcon class="w-4 h-4" />
-                                    Sign Out
+                                    {{ $t('nav.signOut') }}
                                 </button>
                             </div>
                         </Transition>
@@ -131,10 +131,10 @@
                     <div v-else class="hidden sm:flex sm:items-center sm:gap-2">
                         <RouterLink to="/login"
                             class="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200">
-                            Login
+                            {{ $t('nav.login') }}
                         </RouterLink>
                         <RouterLink to="/register" class="btn btn-primary text-sm">
-                            Sign Up
+                            {{ $t('nav.signUp') }}
                         </RouterLink>
                     </div>
 
@@ -161,7 +161,7 @@
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <MagnifyingGlassIcon class="h-5 w-5 text-gray-400 dark:text-gray-500" />
                                 </div>
-                                <input v-model="searchQuery" type="text" placeholder="Search..."
+                                <input v-model="searchQuery" type="text" :placeholder="$t('nav.searchPlaceholder')"
                                     class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm placeholder-gray-500 dark:placeholder-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-400 dark:focus:border-primary-400"
                                     @keydown.enter="handleSearch" />
                             </div>
@@ -174,7 +174,7 @@
                                 ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
                                 : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'"
                             @click="closeMobileMenu">
-                            Home
+                            {{ $t('nav.home') }}
                         </RouterLink>
                         <RouterLink to="/forum"
                             class="block px-3 py-2 text-base font-medium rounded-lg transition-colors duration-200"
@@ -182,7 +182,7 @@
                                 ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
                                 : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'"
                             @click="closeMobileMenu">
-                            Forum
+                            {{ $t('nav.forum') }}
                         </RouterLink>
                         <RouterLink to="/bikes"
                             class="block px-3 py-2 text-base font-medium rounded-lg transition-colors duration-200"
@@ -190,7 +190,7 @@
                                 ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
                                 : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'"
                             @click="closeMobileMenu">
-                            Bikes
+                            {{ $t('nav.bikes') }}
                         </RouterLink>
                         <RouterLink to="/products"
                             class="block px-3 py-2 text-base font-medium rounded-lg transition-colors duration-200"
@@ -198,7 +198,7 @@
                                 ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
                                 : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'"
                             @click="closeMobileMenu">
-                            Products
+                            {{ $t('nav.products') }}
                         </RouterLink>
                         <RouterLink to="/messages"
                             class="flex items-center justify-between px-3 py-2 text-base font-medium rounded-lg transition-colors duration-200"
@@ -206,7 +206,7 @@
                                 ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
                                 : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'"
                             @click="closeMobileMenu">
-                            <span>Messages</span>
+                            <span>{{ $t('nav.messages') }}</span>
                             <!-- Unread Messages Badge -->
                             <span v-if="authStore.isAuthenticated && messagingStore.hasUnreadMessages"
                                 class="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold text-white bg-red-500 rounded-full min-w-[1.5rem] h-6 shadow-sm">
@@ -237,24 +237,24 @@
                             <RouterLink to="/profile"
                                 class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                                 @click="closeMobileMenu">
-                                Profile
+                                {{ $t('nav.profile') }}
                             </RouterLink>
                             <button @click="handleLogout"
                                 class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                                 type="button">
-                                Sign Out
+                                {{ $t('nav.signOut') }}
                             </button>
                         </div>
                         <div v-else class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4 space-y-1">
                             <RouterLink to="/login"
                                 class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                                 @click="closeMobileMenu">
-                                Login
+                                {{ $t('nav.login') }}
                             </RouterLink>
                             <RouterLink to="/register"
                                 class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                                 @click="closeMobileMenu">
-                                Sign Up
+                                {{ $t('nav.signUp') }}
                             </RouterLink>
                         </div>
                     </div>
@@ -272,6 +272,7 @@ import { useMessagingStore } from '@/stores/messaging';
 import { useNotification } from '@/composables/useNotification';
 import ThemeToggle from '@/components/common/nav/ThemeToggle.vue';
 import { useNavbarStore } from '@/stores/ui/navbar';
+import { useI18n } from 'vue-i18n';
 import {
     MagnifyingGlassIcon,
     UserIcon,
@@ -282,6 +283,8 @@ import {
     XMarkIcon,
     ChatBubbleLeftRightIcon // potential future use
 } from '@heroicons/vue/24/outline';
+
+const { t } = useI18n();
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -326,7 +329,7 @@ const handleSearch = () => {
 const handleLogout = async () => {
     const result = await authStore.logout();
     if (result.success) {
-        success('Successfully logged out');
+        success(t('nav.logoutSuccess'));
         router.push('/');
     } else {
         error(result.message);

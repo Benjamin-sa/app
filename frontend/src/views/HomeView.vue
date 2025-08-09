@@ -8,20 +8,19 @@
                 <div class="text-center">
                     <h1
                         class="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-white to-primary-100 bg-clip-text text-transparent">
-                        Welcome to Motordash
+                        {{ $t('home.welcome') }}
                     </h1>
                     <p class="text-xl md:text-2xl text-primary-100 mb-8 max-w-3xl mx-auto leading-relaxed">
-                        The ultimate motorcycle community platform where enthusiasts connect, share knowledge, and
-                        discover the latest gear.
+                        {{ $t('home.tagline') }}
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 justify-center">
                         <ActionButton size="lg" @click="$router.push('/forum')" variant="white"
                             class="transform hover:scale-105 transition-all duration-200">
-                            Explore Forum
+                            {{ $t('home.exploreForum') }}
                         </ActionButton>
                         <ActionButton size="lg" variant="outline" @click="$router.push('/products')"
                             class="border-white/50 text-white hover:bg-white/10 hover:border-white backdrop-blur-sm transform hover:scale-105 transition-all duration-200">
-                            Browse Products
+                            {{ $t('home.browseProducts') }}
                         </ActionButton>
                     </div>
                 </div>
@@ -33,10 +32,10 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-12">
                     <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                        Everything You Need in One Place
+                        {{ $t('home.featuresTitle') }}
                     </h2>
                     <p class="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                        Join thousands of motorcycle enthusiasts sharing their passion, knowledge, and experiences.
+                        {{ $t('home.featuresSubtitle') }}
                     </p>
                 </div>
 
@@ -46,9 +45,9 @@
                             class="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                             <ChatBubbleLeftRightIcon class="w-8 h-8 text-primary-600 dark:text-primary-500" />
                         </div>
-                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Active Forum</h3>
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">{{ $t('home.features.forumTitle') }}</h3>
                         <p class="text-gray-600 dark:text-gray-400">
-                            Engage with fellow riders, ask questions, share experiences, and learn from the community.
+                            {{ $t('home.features.forumDesc') }}
                         </p>
                     </div>
 
@@ -57,9 +56,9 @@
                             class="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                             <ShoppingBagIcon class="w-8 h-8 text-primary-600 dark:text-primary-500" />
                         </div>
-                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Product Catalog</h3>
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">{{ $t('home.features.productsTitle') }}</h3>
                         <p class="text-gray-600 dark:text-gray-400">
-                            Discover and review the latest motorcycle gear, parts, and accessories from trusted brands.
+                            {{ $t('home.features.productsDesc') }}
                         </p>
                     </div>
 
@@ -68,9 +67,9 @@
                             class="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                             <UserGroupIcon class="w-8 h-8 text-primary-600 dark:text-primary-500" />
                         </div>
-                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Community</h3>
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">{{ $t('home.features.communityTitle') }}</h3>
                         <p class="text-gray-600 dark:text-gray-400">
-                            Connect with like-minded riders, build your reputation, and become part of the family.
+                            {{ $t('home.features.communityDesc') }}
                         </p>
                     </div>
                 </div>
@@ -84,22 +83,22 @@
                     <!-- Recent Forum Topics -->
                     <div>
                         <div class="flex items-center justify-between mb-6">
-                            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Recent Forum Activity</h2>
+                            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $t('home.recentActivityTitle') }}</h2>
                             <ActionButton variant="outline" size="sm" @click="$router.push('/forum')">
-                                View All
+                                {{ $t('home.viewAll') }}
                             </ActionButton>
                         </div>
 
-                        <LoadingSection v-if="loadingTopics" message="Loading recent topics..." />
+                        <LoadingSection v-if="loadingTopics" :message="$t('home.loadingTopics')" />
                         <div v-else-if="recentTopics.length > 0" class="space-y-4">
                             <div v-for="topic in recentTopics" :key="topic.id"
                                 class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-4 sm:p-6 hover:shadow-xl dark:hover:shadow-gray-900/25 transition-all duration-200 cursor-pointer hover:scale-[1.02] transform"
                                 @click="$router.push(`/forum/topic/${topic.id}`)">
-                                <h3 class="font-semibold text-gray-900 dark:text-white mb-2 text-lg">{{ topic.title }}
-                                </h3>
+                                <h3 class="font-semibold text-gray-900 dark:text-white mb-2 text-lg">{{ topic.title }}</h3>
                                 <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">{{
-                                    topic.content.substring(0,
-                                        150) }}...</p>
+                                    stripHtml(topic.content).substring(0, 150) }}{{ stripHtml(topic.content).length >
+                                    150 ? '...' : '' }}
+                                </p>
                                 <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                                     <div class="flex items-center space-x-4">
                                         <span class="flex items-center space-x-1">
@@ -110,7 +109,7 @@
                                         </span>
                                         <span
                                             class="flex items-center space-x-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">
-                                            <span>{{ topic.answerCount || 0 }} replies</span>
+                                            <span>{{ topic.answerCount || 0 }} {{ $t('home.replies') }}</span>
                                         </span>
                                     </div>
                                 </div>
@@ -119,10 +118,10 @@
                         <div v-else class="text-center py-12">
                             <div
                                 class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-8">
-                                <p class="text-gray-500 dark:text-gray-400 text-lg">No recent topics found</p>
+                                <p class="text-gray-500 dark:text-gray-400 text-lg">{{ $t('home.noTopics') }}</p>
                                 <ActionButton v-if="authStore.isAuthenticated" @click="$router.push('/forum')"
                                     variant="primary" size="sm" class="mt-4">
-                                    Explore Categories
+                                    {{ $t('home.exploreCategories') }}
                                 </ActionButton>
                             </div>
                         </div>
@@ -135,17 +134,17 @@
         <!-- CTA Section -->
         <section class="bg-primary-600 text-white py-16">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                <h2 class="text-3xl font-bold mb-4">Ready to Join the Community?</h2>
+                <h2 class="text-3xl font-bold mb-4">{{ $t('home.ctaTitle') }}</h2>
                 <p class="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
-                    Create your account today and become part of the most vibrant motorcycle community online.
+                    {{ $t('home.ctaDesc') }}
                 </p>
                 <ActionButton v-if="!authStore.isAuthenticated" size="lg" @click="$router.push('/register')"
                     class="bg-white text-primary-600 hover:bg-gray-50">
-                    Get Started
+                    {{ $t('home.getStarted') }}
                 </ActionButton>
                 <ActionButton v-else size="lg" @click="$router.push('/forum')"
                     class="bg-white text-primary-600 hover:bg-gray-50">
-                    Start Contributing
+                    {{ $t('home.startContributing') }}
                 </ActionButton>
             </div>
         </section>
@@ -155,7 +154,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import { useNavbarStore } from '@/stores/ui/navbar';
 import { apiService } from '@/services/api.service';
 import { formatDate } from '@/utils/helpers';
 import ActionButton from '@/components/common/buttons/ActionButton.vue';
@@ -163,8 +161,7 @@ import LoadingSection from '@/components/common/sections/LoadingSection.vue';
 import {
     ChatBubbleLeftRightIcon,
     ShoppingBagIcon,
-    UserGroupIcon,
-    StarIcon
+    UserGroupIcon
 } from '@heroicons/vue/24/outline';
 
 const authStore = useAuthStore();
@@ -186,6 +183,17 @@ const loadRecentTopics = async () => {
     }
 };
 
+// Utility function to strip HTML tags from content
+const stripHtml = (html) => {
+    if (!html) return '';
+
+    // Create a temporary DOM element to parse HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+
+    // Get text content and clean up extra whitespace
+    return tempDiv.textContent || tempDiv.innerText || '';
+};
 
 onMounted(() => {
     loadRecentTopics();

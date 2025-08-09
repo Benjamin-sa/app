@@ -1,0 +1,152 @@
+{
+  "home": {
+    "welcome": "Welcome to Motordash",
+    "tagline": "The ultimate motorcycle community platform where enthusiasts connect, share knowledge, and discover the latest gear.",
+    "exploreForum": "Explore Forum",
+    "browseProducts": "Browse Products",
+    "featuresTitle": "Everything You Need in One Place",
+    "featuresSubtitle": "Join thousands of motorcycle enthusiasts sharing their passion, knowledge, and experiences.",
+    "features": {
+      "forumTitle": "Active Forum",
+      "forumDesc": "Engage with fellow riders, ask questions, share experiences, and learn from the community.",
+      "productsTitle": "Product Catalog",
+      "productsDesc": "Discover and review the latest motorcycle gear, parts, and accessories from trusted brands.",
+      "communityTitle": "Community",
+      "communityDesc": "Connect with like-minded riders, build your reputation, and become part of the family."
+    },
+    "recentActivityTitle": "Recent Forum Activity",
+    "viewAll": "View All",
+    "loadingTopics": "Loading recent topics...",
+    "noTopics": "No recent topics found",
+    "exploreCategories": "Explore Categories",
+    "ctaTitle": "Ready to Join the Community?",
+    "ctaDesc": "Create your account today and become part of the most vibrant motorcycle community online.",
+    "getStarted": "Get Started",
+    "startContributing": "Start Contributing",
+    "replies": "replies"
+  },
+  "footer": {
+    "brandDesc": "The ultimate motorcycle community platform connecting enthusiasts worldwide. Share your passion, discover gear, and join the ride.",
+    "sections": {
+      "community": "Community",
+      "products": "Products & Gear",
+      "support": "Support"
+    },
+    "links": {
+      "discussionForum": "Discussion Forum",
+      "bikeGallery": "Bike Gallery",
+      "generalDiscussion": "General Discussion",
+      "maintenanceTips": "Maintenance Tips",
+      "groupRides": "Group Rides"
+    },
+    "products": {
+      "browseProducts": "Browse Products",
+      "helmets": "Helmets & Safety",
+      "gear": "Riding Gear",
+      "parts": "Parts & Accessories",
+      "tools": "Tools & Maintenance"
+    },
+    "support": {
+      "about": "About Motordash",
+      "help": "Help Center",
+      "contact": "Contact Us",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service"
+    },
+    "newsletter": {
+      "title": "Stay Connected",
+      "desc": "Get the latest motorcycle news, tips, and community updates delivered to your inbox.",
+      "placeholder": "Enter your email",
+      "join": "Join",
+      "joining": "Joining..."
+    },
+    "bottom": {
+      "rights": "All rights reserved.",
+      "madeBy": "Made for riders, by riders",
+      "backToTop": "Back to top"
+    },
+    "messages": {
+      "subscribedTitle": "Subscribed successfully",
+      "subscribedBody": "Thanks for subscribing to our newsletter!",
+      "subscribeFailed": "Failed to subscribe. Please try again."
+    }
+  },
+  "nav": {
+    "home": "Home",
+    "forum": "Forum",
+    "bikes": "Bikes",
+    "products": "Products",
+    "messages": "Messages",
+    "searchPlaceholder": "Search...",
+    "profile": "Profile",
+    "signOut": "Sign Out",
+    "login": "Login",
+    "signUp": "Sign Up",
+    "logoutSuccess": "Successfully logged out"
+  },
+  "forum": {
+    "breadcrumb": "Forum",
+    "newTopic": "New Topic",
+    "signInToPost": "Sign in to post",
+    "searchPlaceholder": "Search topics...",
+    "sort": {
+      "createdAt": "Latest",
+      "updatedAt": "Recently Active",
+      "voteCount": "Most Popular"
+    },
+    "loadingTopics": "Loading topics...",
+    "empty": {
+      "title": "No topics found",
+      "searchHint": "Try adjusting your search terms.",
+      "startFirst": "Be the first to start a discussion!",
+      "createFirst": "Create First Topic"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "page": "Page {page}",
+      "next": "Next"
+    },
+    "modal": {
+      "createTitle": "Create New Topic"
+    },
+    "categories": {
+      "general": "General discussions about motorcycles, riding experiences, and community topics",
+      "technical": "Technical support, troubleshooting, and mechanical discussions",
+      "maintenance": "Maintenance schedules, DIY repairs, and service recommendations",
+      "reviews": "Bike reviews, gear recommendations, and product discussions",
+      "events": "Motorcycle events, meetups, rides, and community gatherings",
+      "marketplace": "Buy, sell, and trade motorcycles, parts, and accessories",
+      "default": "Join the conversation with fellow motorcycle enthusiasts"
+    },
+    "topicCard": {
+      "pinned": "Pinned",
+      "locked": "Locked",
+      "moreTags": "{count} more",
+      "linkCopiedTitle": "Link copied",
+      "linkCopiedBody": "Topic link copied to clipboard"
+    },
+    "form": {
+      "title": "Topic Title",
+      "titlePlaceholder": "Enter a descriptive title for your topic",
+      "titleHelpShort": "Title should be at least 10 characters long",
+      "categoryLabel": "Category",
+      "categoryPlaceholder": "Select a category",
+      "contentLabel": "Content",
+      "contentPlaceholder": "Describe your topic in detail. Be specific and provide context to help others understand and respond.",
+      "tagsLabel": "Tags (optional)",
+      "tagsPlaceholder": "Enter tags separated by commas (e.g., honda, maintenance, oil-change)",
+      "tagsHelp": "Press Enter or comma to add tags. Use relevant keywords to help others find your topic.",
+      "imagesLabel": "Images (optional)",
+      "actions": {
+        "cancel": "Cancel",
+        "saveChanges": "Save Changes",
+        "postTopic": "Post Topic"
+      }
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "back": "Back",
+    "close": "Close"
+  }
+}

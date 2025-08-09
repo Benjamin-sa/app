@@ -13,8 +13,7 @@
                         <span class="text-xl font-bold">Motordash</span>
                     </div>
                     <p class="text-gray-400 mb-6 text-sm leading-relaxed">
-                        The ultimate motorcycle community platform connecting enthusiasts worldwide. Share your passion,
-                        discover gear, and join the ride.
+                        {{ $t('footer.brandDesc') }}
                     </p>
                     <div class="flex space-x-4">
                         <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200"
@@ -50,36 +49,36 @@
 
                 <!-- Quick Links -->
                 <div>
-                    <h3 class="text-white font-semibold text-sm uppercase tracking-wider mb-4">Community</h3>
+                    <h3 class="text-white font-semibold text-sm uppercase tracking-wider mb-4">{{ $t('footer.sections.community') }}</h3>
                     <ul class="space-y-3">
                         <li>
                             <router-link to="/forum"
                                 class="text-gray-400 hover:text-white transition-colors duration-200 text-sm">
-                                Discussion Forum
+                                {{ $t('footer.links.discussionForum') }}
                             </router-link>
                         </li>
                         <li>
                             <router-link to="/bikes"
                                 class="text-gray-400 hover:text-white transition-colors duration-200 text-sm">
-                                Bike Gallery
+                                {{ $t('footer.links.bikeGallery') }}
                             </router-link>
                         </li>
                         <li>
                             <router-link to="/forum/category/general"
                                 class="text-gray-400 hover:text-white transition-colors duration-200 text-sm">
-                                General Discussion
+                                {{ $t('footer.links.generalDiscussion') }}
                             </router-link>
                         </li>
                         <li>
                             <router-link to="/forum/category/maintenance"
                                 class="text-gray-400 hover:text-white transition-colors duration-200 text-sm">
-                                Maintenance Tips
+                                {{ $t('footer.links.maintenanceTips') }}
                             </router-link>
                         </li>
                         <li>
                             <router-link to="/forum/category/rides"
                                 class="text-gray-400 hover:text-white transition-colors duration-200 text-sm">
-                                Group Rides
+                                {{ $t('footer.links.groupRides') }}
                             </router-link>
                         </li>
                     </ul>
@@ -87,36 +86,36 @@
 
                 <!-- Products & Gear -->
                 <div>
-                    <h3 class="text-white font-semibold text-sm uppercase tracking-wider mb-4">Products & Gear</h3>
+                    <h3 class="text-white font-semibold text-sm uppercase tracking-wider mb-4">{{ $t('footer.sections.products') }}</h3>
                     <ul class="space-y-3">
                         <li>
                             <router-link to="/products"
                                 class="text-gray-400 hover:text-white transition-colors duration-200 text-sm">
-                                Browse Products
+                                {{ $t('footer.products.browseProducts') }}
                             </router-link>
                         </li>
                         <li>
                             <router-link to="/products?category=helmets"
                                 class="text-gray-400 hover:text-white transition-colors duration-200 text-sm">
-                                Helmets & Safety
+                                {{ $t('footer.products.helmets') }}
                             </router-link>
                         </li>
                         <li>
                             <router-link to="/products?category=gear"
                                 class="text-gray-400 hover:text-white transition-colors duration-200 text-sm">
-                                Riding Gear
+                                {{ $t('footer.products.gear') }}
                             </router-link>
                         </li>
                         <li>
                             <router-link to="/products?category=parts"
                                 class="text-gray-400 hover:text-white transition-colors duration-200 text-sm">
-                                Parts & Accessories
+                                {{ $t('footer.products.parts') }}
                             </router-link>
                         </li>
                         <li>
                             <router-link to="/products?category=tools"
                                 class="text-gray-400 hover:text-white transition-colors duration-200 text-sm">
-                                Tools & Maintenance
+                                {{ $t('footer.products.tools') }}
                             </router-link>
                         </li>
                     </ul>
@@ -124,36 +123,36 @@
 
                 <!-- Support & Info -->
                 <div>
-                    <h3 class="text-white font-semibold text-sm uppercase tracking-wider mb-4">Support</h3>
+                    <h3 class="text-white font-semibold text-sm uppercase tracking-wider mb-4">{{ $t('footer.sections.support') }}</h3>
                     <ul class="space-y-3">
                         <li>
                             <router-link to="/about"
                                 class="text-gray-400 hover:text-white transition-colors duration-200 text-sm">
-                                About Motordash
+                                {{ $t('footer.support.about') }}
                             </router-link>
                         </li>
                         <li>
                             <router-link to="/help"
                                 class="text-gray-400 hover:text-white transition-colors duration-200 text-sm">
-                                Help Center
+                                {{ $t('footer.support.help') }}
                             </router-link>
                         </li>
                         <li>
                             <router-link to="/contact"
                                 class="text-gray-400 hover:text-white transition-colors duration-200 text-sm">
-                                Contact Us
+                                {{ $t('footer.support.contact') }}
                             </router-link>
                         </li>
                         <li>
                             <router-link to="/privacy"
                                 class="text-gray-400 hover:text-white transition-colors duration-200 text-sm">
-                                Privacy Policy
+                                {{ $t('footer.support.privacy') }}
                             </router-link>
                         </li>
                         <li>
                             <router-link to="/terms"
                                 class="text-gray-400 hover:text-white transition-colors duration-200 text-sm">
-                                Terms of Service
+                                {{ $t('footer.support.terms') }}
                             </router-link>
                         </li>
                     </ul>
@@ -163,16 +162,15 @@
             <!-- Newsletter Signup -->
             <div class="border-t border-gray-800 mt-12 pt-8">
                 <div class="max-w-md mx-auto text-center">
-                    <h3 class="text-white font-semibold mb-2">Stay Connected</h3>
-                    <p class="text-gray-400 text-sm mb-4">Get the latest motorcycle news, tips, and community updates
-                        delivered to your inbox.</p>
+                    <h3 class="text-white font-semibold mb-2">{{ $t('footer.newsletter.title') }}</h3>
+                    <p class="text-gray-400 text-sm mb-4">{{ $t('footer.newsletter.desc') }}</p>
                     <form @submit.prevent="handleNewsletterSignup" class="flex">
-                        <input v-model="newsletterEmail" type="email" placeholder="Enter your email"
+                        <input v-model="newsletterEmail" type="email" :placeholder="$t('footer.newsletter.placeholder')"
                             class="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-l-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             required>
                         <button type="submit" :disabled="subscribing"
                             class="px-6 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-800 disabled:cursor-not-allowed rounded-r-lg font-medium transition-colors duration-200">
-                            {{ subscribing ? 'Joining...' : 'Join' }}
+                            {{ subscribing ? $t('footer.newsletter.joining') : $t('footer.newsletter.join') }}
                         </button>
                     </form>
                 </div>
@@ -184,27 +182,25 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
                     <div class="flex items-center space-x-4 text-sm text-gray-400">
-                        <span>&copy; {{ currentYear }} Motordash. All rights reserved.</span>
+                        <span>&copy; {{ currentYear }} Motordash. {{ $t('footer.bottom.rights') }}</span>
                         <span class="hidden md:inline">•</span>
                         <span class="flex items-center space-x-1">
                             <HeartIcon class="w-4 h-4 text-red-500" />
-                            <span>Made for riders, by riders</span>
+                            <span>{{ $t('footer.bottom.madeBy') }}</span>
                         </span>
                     </div>
                     <div class="flex items-center space-x-6 text-sm">
                         <button @click="scrollToTop"
                             class="text-gray-400 hover:text-white transition-colors duration-200 flex items-center space-x-1">
                             <ArrowUpIcon class="w-4 h-4" />
-                            <span>Back to top</span>
+                            <span>{{ $t('footer.bottom.backToTop') }}</span>
                         </button>
                         <div class="flex items-center space-x-2 text-gray-400">
                             <span>🌐</span>
-                            <select v-model="selectedLanguage" @change="handleLanguageChange"
-                                class="bg-transparent border-none text-gray-400 text-sm focus:outline-none cursor-pointer">
+                            <select :value="locale" @change="onLangChange"
+                                class="bg-transparent border border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500">
                                 <option value="en">English</option>
                                 <option value="nl">Nederlands</option>
-                                <option value="de">Deutsch</option>
-                                <option value="fr">Français</option>
                             </select>
                         </div>
                     </div>
@@ -215,7 +211,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { HeartIcon, ArrowUpIcon } from '@heroicons/vue/24/outline';
 import { useNotificationStore } from '@/stores/ui/notification';
 
@@ -225,8 +222,16 @@ const notificationStore = useNotificationStore();
 const newsletterEmail = ref('');
 const subscribing = ref(false);
 
-// Language selection
-const selectedLanguage = ref('en');
+// i18n locale reactive binding
+const { locale, t } = useI18n();
+const onLangChange = (e) => {
+    const value = e.target.value;
+    if (value === 'en' || value === 'nl') {
+        locale.value = value;
+        try { localStorage.setItem('locale', value); } catch {}
+        notificationStore.info(`Language changed to ${value === 'en' ? 'English' : 'Nederlands'}`);
+    }
+};
 
 // Current year for copyright
 const currentYear = computed(() => new Date().getFullYear());
@@ -240,19 +245,14 @@ const handleNewsletterSignup = async () => {
         // Simulate API call - replace with actual implementation
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        notificationStore.success('Subscribed successfully', 'Thanks for subscribing to our newsletter!');
+        notificationStore.success(t('footer.messages.subscribedTitle'), t('footer.messages.subscribedBody'));
 
         newsletterEmail.value = '';
     } catch (error) {
-        notificationStore.error('Failed to subscribe. Please try again.');
+        notificationStore.error(t('footer.messages.subscribeFailed'));
     } finally {
         subscribing.value = false;
     }
-};
-
-const handleLanguageChange = () => {
-    // Implement language change logic here
-    notificationStore.info(`Language changed to ${selectedLanguage.value.toUpperCase()}`);
 };
 
 const scrollToTop = () => {

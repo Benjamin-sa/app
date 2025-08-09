@@ -31,7 +31,7 @@
                                 <button v-if="closable" @click="close"
                                     class="ml-4 text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 focus:outline-none focus:text-gray-500 dark:focus:text-gray-400 transition ease-in-out duration-150"
                                     type="button">
-                                    <span class="sr-only">Close</span>
+                                    <span class="sr-only">{{ $t('common.close') }}</span>
                                     <XMarkIcon class="w-6 h-6" />
                                 </button>
                             </div>

@@ -3,26 +3,31 @@
         <ActionButton type="button" @click="handleBack" variant="secondary" size="sm"
             class="flex items-center space-x-2">
             <ArrowLeftIcon class="w-4 h-4" />
-            <span>{{ label }}</span>
+            <span>{{ labelText }}</span>
         </ActionButton>
     </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import ActionButton from '@/components/common/buttons/ActionButton.vue'
 import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
     label: {
         type: String,
-        default: 'Back'
+        default: ''
     },
     fallbackPath: {
         type: String,
         default: null
     }
 })
+
+const { t } = useI18n()
+const labelText = computed(() => props.label || t('common.back'))
 
 const router = useRouter()
 
