@@ -116,6 +116,7 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/stores/auth';
 import { useForumStore } from '@/stores/forum';
 import { debounce, getCategoryLabel } from '@/utils/helpers';
@@ -136,6 +137,7 @@ import {
 import { useNavbarStore } from '@/stores/ui/navbar';
 
 const route = useRoute();
+const { t } = useI18n();
 const authStore = useAuthStore();
 const navbarStore = useNavbarStore();
 const forumStore = useForumStore();
@@ -174,7 +176,7 @@ const getCategoryDescription = (categoryId) => {
         'events': 'forum.categories.events',
         'marketplace': 'forum.categories.marketplace'
     }[categoryId] || 'forum.categories.default';
-    return $t(desc);
+    return t(desc);
 };
 
 const debouncedSearch = debounce(() => {

@@ -46,26 +46,20 @@ export const handleUploadError = (
 ) => {
   if (error instanceof multer.MulterError) {
     if (error.code === "LIMIT_FILE_SIZE")
-      return res
-        .status(400)
-        .json({
-          error: "File too large",
-          message: "File size must be less than 5MB",
-        });
+      return res.status(400).json({
+        error: "File too large",
+        message: "File size must be less than 5MB",
+      });
     if (error.code === "LIMIT_FILE_COUNT")
-      return res
-        .status(400)
-        .json({
-          error: "Too many files",
-          message: "Maximum 5 files allowed per request",
-        });
+      return res.status(400).json({
+        error: "Too many files",
+        message: "Maximum 5 files allowed per request",
+      });
     if (error.code === "LIMIT_UNEXPECTED_FILE")
-      return res
-        .status(400)
-        .json({
-          error: "Unexpected field",
-          message: "Unexpected file field in request",
-        });
+      return res.status(400).json({
+        error: "Unexpected field",
+        message: "Unexpected file field in request",
+      });
   }
   if (error.message?.includes("Invalid file type"))
     return res
@@ -92,14 +86,12 @@ export const processImages = (folder = "forum/images") => {
       delete req.files;
       next();
     } catch (error: any) {
-      return res
-        .status(400)
-        .json({
-          error: "Image processing failed",
-          message: error.message?.includes("IMAGE_SERVICE_")
-            ? error.message.split("IMAGE_SERVICE_")[1].split(":")[1].trim()
-            : "Failed to process uploaded images",
-        });
+      return res.status(400).json({
+        error: "Image processing failed",
+        message: error.message?.includes("IMAGE_SERVICE_")
+          ? error.message.split("IMAGE_SERVICE_")[1].split(":")[1].trim()
+          : "Failed to process uploaded images",
+      });
     }
   };
 };
