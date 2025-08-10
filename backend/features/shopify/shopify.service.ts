@@ -84,7 +84,7 @@ function _formatProduct(
     title: product.title,
     handle: product.handle,
     description: product.description,
-    price: product.variants.edges[0]?.node.price || "0.00",
+    price: product.variants.edges[0]?.node.price.amount || "0.00",
   };
   if (includeImages && product.images) {
     formatted.images = product.images.edges.map((img: any) => ({
@@ -200,7 +200,7 @@ export async function getProductByIdWithImages(productId: string) {
 export async function getProductVariants(productId: string) {
   try {
     const validatedProductId = validateId(productId);
-    const query = queries.GET_PRODUCT_BY_ID_WITH_IMAGES(validatedProductId);
+    const query = queries.GET_PRODUCT_VARIANTS(validatedProductId);
     const data = await _executeShopifyQuery(query);
     if (!data.data)
       throw new Error(
@@ -218,8 +218,8 @@ export async function getProductVariants(productId: string) {
     return product.variants.edges.map((edge: any) => ({
       id: edge.node.id.split("/").pop(),
       title: edge.node.title,
-      price: edge.node.price,
-      compareAtPrice: edge.node.compareAtPrice,
+      price: edge.node.price.amount,
+      compareAtPrice: edge.node.compareAtPrice?.amount,
       sku: edge.node.sku,
       barcode: edge.node.barcode,
       availableForSale: edge.node.availableForSale,

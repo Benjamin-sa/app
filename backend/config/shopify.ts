@@ -3,7 +3,7 @@ dotenv.config();
 
 interface ShopifyConfig {
   shop?: string;
-  accessToken?: string;
+  storefrontAccessToken?: string;
   apiVersion: string;
   url: string;
   headers: Record<string, string>;
@@ -11,12 +11,13 @@ interface ShopifyConfig {
 
 const config: ShopifyConfig = {
   shop: process.env.SHOPIFY_STORE_NAME,
-  accessToken: process.env.SHOPIFY_ACCESS_TOKEN,
+  storefrontAccessToken: process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN,
   apiVersion: "2025-04",
-  url: `https://${process.env.SHOPIFY_STORE_NAME}.myshopify.com/admin/api/2025-04/graphql.json`,
+  url: `https://${process.env.SHOPIFY_STORE_NAME}.myshopify.com/api/2025-04/graphql.json`,
   headers: {
     "Content-Type": "application/json",
-    "X-Shopify-Access-Token": process.env.SHOPIFY_ACCESS_TOKEN || "",
+    "X-Shopify-Storefront-Access-Token":
+      process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN || "",
   },
 };
 

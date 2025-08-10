@@ -14,7 +14,9 @@ const GET_PRODUCTS_WITH_IMAGES = (limit = 200) => `{
         variants(first: 1) {
           edges {
             node {
-              price
+              price {
+                amount
+              }
             }
           }
         }
@@ -51,7 +53,9 @@ const GET_PRODUCT_BY_ID_WITH_IMAGES = (productId) => `{
     variants(first: 1) {
       edges {
         node {
-          price
+          price {
+            amount
+          }
         }
       }
     }
@@ -91,7 +95,9 @@ const GET_PRODUCTS_BY_COLLECTION = (collectionHandle) => `{
           variants(first: 1) {
             edges {
               node {
-                price
+                price {
+                  amount
+                }
               }
             }
           }
@@ -125,9 +131,41 @@ const GET_ALL_COLLECTIONS = () => `{
   }
 }`;
 
+const GET_PRODUCT_VARIANTS = (productId) => `{
+  product(id: "gid://shopify/Product/${productId}") {
+    variants(first: 25) {
+      edges {
+        node {
+          id
+          title
+          price {
+            amount
+            currencyCode
+          }
+          compareAtPrice {
+            amount
+            currencyCode
+          }
+          sku
+          barcode
+          availableForSale
+          quantityAvailable
+          weight
+          weightUnit
+          selectedOptions {
+            name
+            value
+          }
+        }
+      }
+    }
+  }
+}`;
+
 module.exports = {
   GET_PRODUCTS_WITH_IMAGES,
   GET_PRODUCT_BY_ID_WITH_IMAGES,
   GET_PRODUCTS_BY_COLLECTION,
   GET_ALL_COLLECTIONS,
+  GET_PRODUCT_VARIANTS,
 };

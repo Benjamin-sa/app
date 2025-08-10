@@ -15,7 +15,7 @@
     "build-frontend": "cd frontend && npx vite build && mkdir -p ../backend/public && cp -r dist/* ../backend/public/",
     "dev": "concurrently \"cd backend && npm run dev:ts\" \"cd frontend && npm run dev\"",
     "init-forum": "cd backend && npm run init-forum",
-    "heroku-postbuild": "npm run build",
+    "heroku-postbuild": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend && mkdir -p backend/dist/public && cp -r frontend/dist/* backend/dist/public && npm run build --prefix backend",
     "clean": "rm -rf backend/public/* && rm -rf frontend/dist/* && rm -rf backend/dist/*"
   },
   "keywords": [
