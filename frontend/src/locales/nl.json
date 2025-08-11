@@ -208,5 +208,85 @@
     "profile": "Profiel",
     "bikes": "Motoren",
     "easterEgg": "🏍️ \"Niet alle dwalenden zijn verdwaald... maar deze pagina wel!\" 🏍️"
+  },
+  "products": {
+    "title": "Productgalerij",
+    "subtitle": "Ontdek de beste motorgear, onderdelen en accessoires. Van helmen tot prestatie-upgrades, vind alles wat je nodig hebt voor je rit.",
+    "searchPlaceholder": "Zoek producten op naam, beschrijving...",
+    "category": "Categorie:",
+    "priceRange": "Prijsbereik:",
+    "sortBy": "Sorteer op:",
+    "sort": {
+      "name": "Naam",
+      "priceAsc": "Prijs: Laag naar Hoog",
+      "priceDesc": "Prijs: Hoog naar Laag",
+      "rating": "Beoordeling",
+      "newest": "Nieuwste"
+    },
+    "categories": {
+      "all": "Alle categorieën",
+      "helmets": "Helmen",
+      "jackets": "Jassen",
+      "gloves": "Handschoenen",
+      "boots": "Laarzen",
+      "accessories": "Accessoires",
+      "parts": "Onderdelen"
+    },
+    "filters": {
+      "title": "Filters & Zoeken",
+      "subtitle": "Vind je perfecte product",
+      "reset": "Filters resetten"
+    },
+    "stats": {
+      "productsAvailable": "{count} producten beschikbaar",
+      "premiumQuality": "Premium kwaliteit"
+    },
+    "empty": {
+      "title": "Geen producten gevonden",
+      "description": "Probeer je zoektermen of filters aan te passen.",
+      "noProductsAvailable": "Momenteel zijn er geen producten beschikbaar."
+    },
+    "loading": "Geweldige producten laden..."
+  },
+  "bikes": {
+    "title": "Motorgalerij", 
+    "subtitle": "Ontdek geweldige motoren van onze gepassioneerde motorcommunity. Blader, verken en laat je inspireren door de ongelooflijke ritten gedeeld door mede-enthousiastelingen.",
+    "searchPlaceholder": "Zoek motoren op naam, merk...",
+    "sortBy": "Sorteer op:",
+    "engine": "Motor:",
+    "sort": {
+      "newest": "Recent",
+      "oldest": "Oudste",
+      "name": "Naam A-Z",
+      "nameDesc": "Naam Z-A",
+      "popular": "Populair",
+      "featured": "Uitgelicht"
+    },
+    "engineSizes": {
+      "all": "Alle CC",
+      "other": "Overig"
+    },
+    "filters": {
+      "title": "Filters & Zoeken",
+      "subtitle": "Vind je perfecte motor",
+      "clearAll": "Alles wissen"
+    },
+    "stats": {
+      "bikesAvailable": "{count} motoren beschikbaar",
+      "bikesFound": "{count} motor{plural} gevonden",
+      "communityDriven": "Community gedreven"
+    },
+    "empty": {
+      "title": "Geen motoren gevonden",
+      "description": "Probeer je zoektermen of filters aan te passen",
+      "noBikesAvailable": "Wees de eerste om je motor te delen met de community!"
+    },
+    "loading": "Geweldige motoren laden...",
+    "actions": {
+      "loadMore": "Meer motoren laden",
+      "loadingMore": "Meer motoren laden...",
+      "allLoaded": "Je hebt alle motoren gezien! 🏍️",
+      "addYourBike": "Voeg je motor toe"
+    }
   }
 }

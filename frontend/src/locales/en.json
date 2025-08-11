@@ -208,5 +208,85 @@
     "profile": "Profile",
     "bikes": "Bikes",
     "easterEgg": "🏍️ \"Not all those who wander are lost... but this page definitely is!\" 🏍️"
+  },
+  "products": {
+    "title": "Product Gallery",
+    "subtitle": "Discover the best motorcycle gear, parts, and accessories. From helmets to performance upgrades, find everything you need for your ride.",
+    "searchPlaceholder": "Search products by name, description...",
+    "category": "Category:",
+    "priceRange": "Price Range:",
+    "sortBy": "Sort by:",
+    "sort": {
+      "name": "Name",
+      "priceAsc": "Price: Low to High",
+      "priceDesc": "Price: High to Low",
+      "rating": "Rating",
+      "newest": "Newest"
+    },
+    "categories": {
+      "all": "All Categories",
+      "helmets": "Helmets",
+      "jackets": "Jackets",
+      "gloves": "Gloves",
+      "boots": "Boots",
+      "accessories": "Accessories",
+      "parts": "Parts"
+    },
+    "filters": {
+      "title": "Filters & Search",
+      "subtitle": "Find your perfect product",
+      "reset": "Reset Filters"
+    },
+    "stats": {
+      "productsAvailable": "{count} products available",
+      "premiumQuality": "Premium quality"
+    },
+    "empty": {
+      "title": "No products found",
+      "description": "Try adjusting your search terms or filters.",
+      "noProductsAvailable": "No products available at the moment."
+    },
+    "loading": "Loading awesome products..."
+  },
+  "bikes": {
+    "title": "Bike Gallery", 
+    "subtitle": "Discover amazing bikes from our passionate motorcycle community. Browse, explore, and get inspired by the incredible rides shared by fellow enthusiasts.",
+    "searchPlaceholder": "Search bikes by name, brand...",
+    "sortBy": "Sort by:",
+    "engine": "Engine:",
+    "sort": {
+      "newest": "Recent",
+      "oldest": "Oldest",
+      "name": "Name A-Z",
+      "nameDesc": "Name Z-A",
+      "popular": "Popular",
+      "featured": "Featured"
+    },
+    "engineSizes": {
+      "all": "All CC",
+      "other": "Other"
+    },
+    "filters": {
+      "title": "Filters & Search",
+      "subtitle": "Find your perfect bike",
+      "clearAll": "Clear All"
+    },
+    "stats": {
+      "bikesAvailable": "{count} bikes available",
+      "bikesFound": "{count} bike{plural} found",
+      "communityDriven": "Community driven"
+    },
+    "empty": {
+      "title": "No bikes found",
+      "description": "Try adjusting your search terms or filters",
+      "noBikesAvailable": "Be the first to share your bike with the community!"
+    },
+    "loading": "Loading awesome bikes...",
+    "actions": {
+      "loadMore": "Load More Bikes",
+      "loadingMore": "Loading more bikes...",
+      "allLoaded": "You've seen all the bikes! 🏍️",
+      "addYourBike": "Add Your Bike"
+    }
   }
 }
