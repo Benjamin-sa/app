@@ -148,5 +148,65 @@
     "loading": "Laden...",
     "back": "Terug",
     "close": "Sluiten"
+  },
+  "auth": {
+    "signIn": "Meld je aan bij je account",
+    "createAccount": "Maak je account aan",
+    "or": "Of",
+    "signInLink": "meld je aan bij je bestaande account",
+    "createAccountLink": "maak een nieuw account aan",
+    "emailAddress": "E-mailadres",
+    "password": "Wachtwoord",
+    "confirmPassword": "Bevestig wachtwoord",
+    "username": "Gebruikersnaam",
+    "rememberMe": "Onthoud mij",
+    "forgotPassword": "Wachtwoord vergeten?",
+    "signInButton": "Aanmelden",
+    "createAccountButton": "Account aanmaken",
+    "signInWithGoogle": "Aanmelden met Google",
+    "signUpWithGoogle": "Registreren met Google",
+    "welcomeBack": "Welkom terug!",
+    "welcomeToMotordash": "Welkom bij Motordash!",
+    "loginSuccess": "Je bent succesvol ingelogd.",
+    "googleLoginSuccess": "Je bent succesvol ingelogd met Google.",
+    "registerSuccess": "Je account is succesvol aangemaakt.",
+    "googleRegisterSuccess": "Je account is succesvol aangemaakt met Google.",
+    "loginError": "Er is een fout opgetreden tijdens het inloggen",
+    "registerError": "Er is een fout opgetreden tijdens de registratie",
+    "googleLoginError": "Er is een fout opgetreden tijdens het inloggen met Google",
+    "googleRegisterError": "Er is een fout opgetreden tijdens de registratie met Google",
+    "validation": {
+      "usernameInvalid": "Gebruikersnaam moet 3-20 tekens lang zijn en mag alleen letters, cijfers en underscores bevatten",
+      "emailInvalid": "Voer een geldig e-mailadres in",
+      "passwordTooShort": "Wachtwoord moet minimaal 6 tekens lang zijn",
+      "passwordsDontMatch": "Wachtwoorden komen niet overeen"
+    },
+    "placeholders": {
+      "emailAddress": "E-mailadres",
+      "password": "Wachtwoord",
+      "username": "Voer je gebruikersnaam in",
+      "email": "Voer je e-mailadres in",
+      "enterPassword": "Voer je wachtwoord in",
+      "confirmPassword": "Bevestig je wachtwoord"
+    },
+    "terms": {
+      "agreeToTerms": "Ik ga akkoord met de",
+      "termsOfService": "Algemene voorwaarden",
+      "and": "en",
+      "privacyPolicy": "Privacybeleid"
+    }
+  },
+  "notFound": {
+    "title": "Oeps! Pagina niet gevonden",
+    "description": "De pagina die je zoekt lijkt een omweg te hebben genomen. Maak je geen zorgen, zelfs de beste rijders nemen soms een verkeerde afslag!",
+    "goHome": "Ga naar startpagina",
+    "goBack": "Ga terug",
+    "maybeYouLookingFor": "Misschien zoek je naar:",
+    "forum": "Forum",
+    "products": "Producten",
+    "login": "Inloggen",
+    "profile": "Profiel",
+    "bikes": "Motoren",
+    "easterEgg": "🏍️ \"Niet alle dwalenden zijn verdwaald... maar deze pagina wel!\" 🏍️"
   }
 }

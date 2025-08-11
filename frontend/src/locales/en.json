@@ -148,5 +148,65 @@
     "loading": "Loading...",
     "back": "Back",
     "close": "Close"
+  },
+  "auth": {
+    "signIn": "Sign in to your account",
+    "createAccount": "Create your account",
+    "or": "Or",
+    "signInLink": "sign in to your existing account",
+    "createAccountLink": "create a new account",
+    "emailAddress": "Email address",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "username": "Username",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot your password?",
+    "signInButton": "Sign in",
+    "createAccountButton": "Create Account",
+    "signInWithGoogle": "Sign in with Google",
+    "signUpWithGoogle": "Sign up with Google",
+    "welcomeBack": "Welcome back!",
+    "welcomeToMotordash": "Welcome to Motordash!",
+    "loginSuccess": "You have been successfully logged in.",
+    "googleLoginSuccess": "You have been successfully logged in with Google.",
+    "registerSuccess": "Your account has been created successfully.",
+    "googleRegisterSuccess": "Your account has been created successfully with Google.",
+    "loginError": "An error occurred during login",
+    "registerError": "An error occurred during registration",
+    "googleLoginError": "An error occurred during Google login",
+    "googleRegisterError": "An error occurred during Google registration",
+    "validation": {
+      "usernameInvalid": "Username must be 3-20 characters and contain only letters, numbers, and underscores",
+      "emailInvalid": "Please enter a valid email address",
+      "passwordTooShort": "Password must be at least 6 characters long",
+      "passwordsDontMatch": "Passwords do not match"
+    },
+    "placeholders": {
+      "emailAddress": "Email address",
+      "password": "Password",
+      "username": "Enter your username",
+      "email": "Enter your email",
+      "enterPassword": "Enter your password",
+      "confirmPassword": "Confirm your password"
+    },
+    "terms": {
+      "agreeToTerms": "I agree to the",
+      "termsOfService": "Terms of Service",
+      "and": "and",
+      "privacyPolicy": "Privacy Policy"
+    }
+  },
+  "notFound": {
+    "title": "Oops! Page Not Found",
+    "description": "The page you're looking for seems to have taken a detour. Don't worry, even the best riders sometimes take a wrong turn!",
+    "goHome": "Go to Homepage",
+    "goBack": "Go Back",
+    "maybeYouLookingFor": "Maybe you're looking for:",
+    "forum": "Forum",
+    "products": "Products",
+    "login": "Login", 
+    "profile": "Profile",
+    "bikes": "Bikes",
+    "easterEgg": "🏍️ \"Not all those who wander are lost... but this page definitely is!\" 🏍️"
   }
 }

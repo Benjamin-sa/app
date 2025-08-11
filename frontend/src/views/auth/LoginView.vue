@@ -2,13 +2,13 @@
     <AuthLayout>
         <template #header>
             <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-                Sign in to your account
+                {{ $t('auth.signIn') }}
             </h2>
             <p class="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-                Or
+                {{ $t('auth.or') }}
                 <router-link to="/register"
                     class="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
-                    create a new account
+                    {{ $t('auth.createAccountLink') }}
                 </router-link>
             </p>
         </template>
@@ -18,21 +18,21 @@
                 <div class="rounded-md shadow-sm -space-y-px">
                     <div>
                         <label for="email-address" class="sr-only">
-                            Email address
+                            {{ $t('auth.emailAddress') }}
                         </label>
                         <input id="email-address" v-model="form.email" name="email" type="email" autocomplete="email"
                             required
                             class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-t-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                            placeholder="Email address" :disabled="loading">
+                            :placeholder="$t('auth.placeholders.emailAddress')" :disabled="loading">
                     </div>
                     <div>
                         <label for="password" class="sr-only">
-                            Password
+                            {{ $t('auth.password') }}
                         </label>
                         <input id="password" v-model="form.password" name="password" type="password"
                             autocomplete="current-password" required
                             class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-b-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                            placeholder="Password" :disabled="loading">
+                            :placeholder="$t('auth.placeholders.password')" :disabled="loading">
                     </div>
                 </div>
 
@@ -41,14 +41,14 @@
                         <input id="remember-me" v-model="form.rememberMe" name="remember-me" type="checkbox"
                             class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700">
                         <label for="remember-me" class="ml-2 block text-sm text-gray-900 dark:text-gray-300">
-                            Remember me
+                            {{ $t('auth.rememberMe') }}
                         </label>
                     </div>
 
                     <div class="text-sm">
                         <router-link to="/forgot-password"
                             class="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
-                            Forgot your password?
+                            {{ $t('auth.forgotPassword') }}
                         </router-link>
                     </div>
                 </div>
@@ -57,7 +57,7 @@
 
                 <div>
                     <Button type="submit" size="lg" class="w-full" :loading="loading" :disabled="!isFormValid">
-                        Sign in
+                        {{ $t('auth.signInButton') }}
                     </Button>
                 </div>
             </form>
@@ -76,7 +76,7 @@
                     <path fill="currentColor"
                         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                 </svg>
-                Sign in with Google
+                {{ $t('auth.signInWithGoogle') }}
             </Button>
         </template>
     </AuthLayout>
@@ -85,6 +85,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/ui/notification';
 import { validateEmail } from '@/utils/helpers';
@@ -93,6 +94,7 @@ import ErrorSection from '@/components/common/sections/ErrorSection.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 
 const router = useRouter();
+const { t } = useI18n();
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
 
@@ -124,7 +126,7 @@ const handleLogin = async () => {
         });
 
         if (result.success) {
-            notificationStore.success('Welcome back!', 'You have been successfully logged in.');
+            notificationStore.success(t('auth.welcomeBack'), t('auth.loginSuccess'));
 
             // Redirect to intended page or home
             const redirectTo = router.currentRoute.value.query.redirect || '/';
@@ -134,7 +136,7 @@ const handleLogin = async () => {
         }
     } catch (err) {
         console.error('Login error:', err);
-        error.value = err.message || 'An error occurred during login';
+        error.value = err.message || t('auth.loginError');
     } finally {
         loading.value = false;
     }
@@ -148,7 +150,7 @@ const handleGoogleLogin = async () => {
         const result = await authStore.loginWithGoogle();
 
         if (result.success) {
-            notificationStore.success('Welcome!', 'You have been successfully logged in with Google.');
+            notificationStore.success(t('auth.welcomeBack'), t('auth.googleLoginSuccess'));
 
             // Redirect to intended page or home
             const redirectTo = router.currentRoute.value.query.redirect || '/';
@@ -158,7 +160,7 @@ const handleGoogleLogin = async () => {
         }
     } catch (err) {
         console.error('Google login error:', err);
-        error.value = err.message || 'An error occurred during Google login';
+        error.value = err.message || t('auth.googleLoginError');
     } finally {
         googleLoading.value = false;
     }

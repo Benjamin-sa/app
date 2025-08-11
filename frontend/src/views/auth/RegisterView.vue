@@ -2,13 +2,13 @@
     <AuthLayout>
         <template #header>
             <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-                Create your account
+                {{ $t('auth.createAccount') }}
             </h2>
             <p class="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-                Or
+                {{ $t('auth.or') }}
                 <router-link to="/login"
                     class="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
-                    sign in to your existing account
+                    {{ $t('auth.signInLink') }}
                 </router-link>
             </p>
         </template>
@@ -18,53 +18,53 @@
                 <div class="space-y-4">
                     <div>
                         <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Username
+                            {{ $t('auth.username') }}
                         </label>
                         <input id="username" v-model="form.username" name="username" type="text" autocomplete="username"
                             required
                             class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                            placeholder="Enter your username" :disabled="loading">
+                            :placeholder="$t('auth.placeholders.username')" :disabled="loading">
                         <p v-if="form.username && !isUsernameValid" class="mt-1 text-sm text-red-600 dark:text-red-400">
-                            Username must be 3-20 characters and contain only letters, numbers, and underscores
+                            {{ $t('auth.validation.usernameInvalid') }}
                         </p>
                     </div>
 
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Email address
+                            {{ $t('auth.emailAddress') }}
                         </label>
                         <input id="email" v-model="form.email" name="email" type="email" autocomplete="email" required
                             class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                            placeholder="Enter your email" :disabled="loading">
+                            :placeholder="$t('auth.placeholders.email')" :disabled="loading">
                         <p v-if="form.email && !isEmailValid" class="mt-1 text-sm text-red-600 dark:text-red-400">
-                            Please enter a valid email address
+                            {{ $t('auth.validation.emailInvalid') }}
                         </p>
                     </div>
 
                     <div>
                         <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Password
+                            {{ $t('auth.password') }}
                         </label>
                         <input id="password" v-model="form.password" name="password" type="password"
                             autocomplete="new-password" required
                             class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                            placeholder="Enter your password" :disabled="loading">
+                            :placeholder="$t('auth.placeholders.enterPassword')" :disabled="loading">
                         <p v-if="form.password && !isPasswordValid" class="mt-1 text-sm text-red-600 dark:text-red-400">
-                            Password must be at least 6 characters long
+                            {{ $t('auth.validation.passwordTooShort') }}
                         </p>
                     </div>
 
                     <div>
                         <label for="confirmPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Confirm Password
+                            {{ $t('auth.confirmPassword') }}
                         </label>
                         <input id="confirmPassword" v-model="form.confirmPassword" name="confirmPassword"
                             type="password" autocomplete="new-password" required
                             class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                            placeholder="Confirm your password" :disabled="loading">
+                            :placeholder="$t('auth.placeholders.confirmPassword')" :disabled="loading">
                         <p v-if="form.confirmPassword && !isPasswordMatch"
                             class="mt-1 text-sm text-red-600 dark:text-red-400">
-                            Passwords do not match
+                            {{ $t('auth.validation.passwordsDontMatch') }}
                         </p>
                     </div>
                 </div>
@@ -73,15 +73,15 @@
                     <input id="terms" v-model="form.acceptTerms" name="terms" type="checkbox" required
                         class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700">
                     <label for="terms" class="ml-2 block text-sm text-gray-900 dark:text-gray-300">
-                        I agree to the
+                        {{ $t('auth.terms.agreeToTerms') }}
                         <router-link to="/terms"
                             class="text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
-                            Terms of Service
+                            {{ $t('auth.terms.termsOfService') }}
                         </router-link>
-                        and
+                        {{ $t('auth.terms.and') }}
                         <router-link to="/privacy"
                             class="text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
-                            Privacy Policy
+                            {{ $t('auth.terms.privacyPolicy') }}
                         </router-link>
                     </label>
                 </div>
@@ -90,7 +90,7 @@
 
                 <div>
                     <ActionButton type="submit" size="lg" class="w-full" :loading="loading" :disabled="!isFormValid">
-                        Create Account
+                        {{ $t('auth.createAccountButton') }}
                     </ActionButton>
                 </div>
             </form>
@@ -109,7 +109,7 @@
                     <path fill="currentColor"
                         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                 </svg>
-                Sign up with Google
+                {{ $t('auth.signUpWithGoogle') }}
             </ActionButton>
         </template>
     </AuthLayout>
@@ -118,6 +118,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/ui/notification';
 import { validateEmail, validateUsername } from '@/utils/helpers';
@@ -127,6 +128,7 @@ import AuthLayout from '@/layouts/AuthLayout.vue';
 
 
 const router = useRouter();
+const { t } = useI18n();
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
 
@@ -168,14 +170,14 @@ const handleRegister = async () => {
             password: form.value.password
         });
 
-        notificationStore.success('Welcome to Motordash!', 'Your account has been created successfully.');
+        notificationStore.success(t('auth.welcomeToMotordash'), t('auth.registerSuccess'));
 
         // Redirect to home or intended page
         const redirectTo = router.currentRoute.value.query.redirect || '/';
         router.push(redirectTo);
     } catch (err) {
         console.error('Registration error:', err);
-        error.value = err.message || 'An error occurred during registration';
+        error.value = err.message || t('auth.registerError');
     } finally {
         loading.value = false;
     }
@@ -188,14 +190,14 @@ const handleGoogleRegister = async () => {
 
         await authStore.loginWithGoogle();
 
-        notificationStore.success('Welcome to Motordash!', 'Your account has been created successfully with Google.');
+        notificationStore.success(t('auth.welcomeToMotordash'), t('auth.googleRegisterSuccess'));
 
         // Redirect to home or intended page
         const redirectTo = router.currentRoute.value.query.redirect || '/';
         router.push(redirectTo);
     } catch (err) {
         console.error('Google registration error:', err);
-        error.value = err.message || 'An error occurred during Google registration';
+        error.value = err.message || t('auth.googleRegisterError');
     } finally {
         googleLoading.value = false;
     }
