@@ -70,19 +70,19 @@
                     <span class="text-2xl font-bold text-primary-600 dark:text-primary-400">
                         €{{ product.price }}
                     </span>
-                    <span class="text-xs text-gray-500 dark:text-gray-400">Best Price</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ $t('products.card.bestPrice') }}</span>
                 </div>
 
                 <div class="flex items-center space-x-2">
                     <!-- Share Button -->
                     <IconButton @click.stop="shareProduct" :icon="ShareIcon" variant="ghost"
-                        class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" title="Share product" />
+                        class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" :title="$t('products.card.shareProduct')" />
 
                     <!-- View Details Button -->
                     <ActionButton @click.stop="$router.push(`/products/${product.id}`)" variant="outline" size="sm"
                         class="bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:hover:bg-primary-900/30 text-primary-600 dark:text-primary-400">
                         <EyeIcon class="w-4 h-4 mr-1" />
-                        View
+                        {{ $t('products.card.view') }}
                     </ActionButton>
                 </div>
             </div>
@@ -92,6 +92,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/ui/notification';
 import { useProductStore } from '@/stores/products';
@@ -111,6 +112,7 @@ const props = defineProps({
     }
 });
 
+const { t } = useI18n();
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
 const productStore = useProductStore();
@@ -144,7 +146,7 @@ const primaryCollection = computed(() => {
 
 const toggleWishlist = async () => {
     if (!authStore.isAuthenticated) {
-        notificationStore.info('Sign in required', 'Please sign in to add products to your wishlist.');
+        notificationStore.info(t('products.card.signInRequired'), t('products.card.signInRequiredDesc'));
         return;
     }
 
@@ -152,20 +154,20 @@ const toggleWishlist = async () => {
         const newWishlistState = await productStore.toggleWishlist(props.product.id);
 
         notificationStore.success(
-            newWishlistState ? 'Added to wishlist' : 'Removed from wishlist',
+            newWishlistState ? t('products.card.wishlistAdded') : t('products.card.wishlistRemoved'),
             newWishlistState
-                ? 'Product added to your wishlist.'
-                : 'Product removed from your wishlist.'
+                ? t('products.card.wishlistAddedDesc')
+                : t('products.card.wishlistRemovedDesc')
         );
     } catch (error) {
-        notificationStore.error('Wishlist error', 'Unable to update wishlist. Please try again.');
+        notificationStore.error(t('products.card.wishlistError'), t('products.card.wishlistErrorDesc'));
     }
 };
 
 const shareProduct = async () => {
     const url = `${window.location.origin}/products/${props.product.id}`;
     const title = props.product.title;
-    const text = `Check out this ${props.product.title} on Motordash!`;
+    const text = t('products.card.checkOut', { product: props.product.title });
 
     if (navigator.share) {
         try {
@@ -182,9 +184,9 @@ const shareProduct = async () => {
 
 const fallbackShare = (url) => {
     navigator.clipboard.writeText(url).then(() => {
-        notificationStore.success('Link copied', 'Product link copied to clipboard.');
+        notificationStore.success(t('products.card.linkCopied'), t('products.card.linkCopiedDesc'));
     }).catch(() => {
-        notificationStore.info('Share product', `Copy this link: ${url}`);
+        notificationStore.info(t('products.card.shareProductTitle'), t('products.card.shareProductDesc', { url }));
     });
 };
 </script>

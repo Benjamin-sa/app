@@ -8,7 +8,7 @@
             <div class="ml-3 flex-1">
                 <router-link :to="`/profile/${bike.user?.uid}`"
                     class="font-medium text-gray-900 dark:text-white hover:underline">
-                    {{ bike.user?.displayName || 'Anonymous' }}
+                    {{ bike.user?.displayName || t('bikes.card.anonymous') }}
                 </router-link>
                 <p class="text-sm text-gray-500 dark:text-gray-400">
                     {{ formatDate(bike.created_at) }}
@@ -16,7 +16,7 @@
             </div>
             <div v-if="bike.is_featured"
                 class="bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400 px-2 py-1 rounded-full text-xs font-medium">
-                Featured
+                {{ t('bikes.card.featured') }}
             </div>
         </div>
 
@@ -82,8 +82,11 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { formatDate } from '@/utils/helpers'
 import { CameraIcon, PhotoIcon, HeartIcon, EyeIcon, ShareIcon } from '@heroicons/vue/24/outline'
+
+const { t } = useI18n()
 
 defineProps({
     bike: {

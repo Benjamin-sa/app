@@ -148,5 +148,216 @@
     "loading": "Laden...",
     "back": "Terug",
     "close": "Sluiten"
+  },
+  "auth": {
+    "signIn": "Meld je aan bij je account",
+    "createAccount": "Maak je account aan",
+    "or": "Of",
+    "signInLink": "meld je aan bij je bestaande account",
+    "createAccountLink": "maak een nieuw account aan",
+    "emailAddress": "E-mailadres",
+    "password": "Wachtwoord",
+    "confirmPassword": "Bevestig wachtwoord",
+    "username": "Gebruikersnaam",
+    "rememberMe": "Onthoud mij",
+    "forgotPassword": "Wachtwoord vergeten?",
+    "signInButton": "Aanmelden",
+    "createAccountButton": "Account aanmaken",
+    "signInWithGoogle": "Aanmelden met Google",
+    "signUpWithGoogle": "Registreren met Google",
+    "welcomeBack": "Welkom terug!",
+    "welcomeToMotordash": "Welkom bij Motordash!",
+    "loginSuccess": "Je bent succesvol ingelogd.",
+    "googleLoginSuccess": "Je bent succesvol ingelogd met Google.",
+    "registerSuccess": "Je account is succesvol aangemaakt.",
+    "googleRegisterSuccess": "Je account is succesvol aangemaakt met Google.",
+    "loginError": "Er is een fout opgetreden tijdens het inloggen",
+    "registerError": "Er is een fout opgetreden tijdens de registratie",
+    "googleLoginError": "Er is een fout opgetreden tijdens het inloggen met Google",
+    "googleRegisterError": "Er is een fout opgetreden tijdens de registratie met Google",
+    "validation": {
+      "usernameInvalid": "Gebruikersnaam moet 3-20 tekens lang zijn en mag alleen letters, cijfers en underscores bevatten",
+      "emailInvalid": "Voer een geldig e-mailadres in",
+      "passwordTooShort": "Wachtwoord moet minimaal 6 tekens lang zijn",
+      "passwordsDontMatch": "Wachtwoorden komen niet overeen"
+    },
+    "placeholders": {
+      "emailAddress": "E-mailadres",
+      "password": "Wachtwoord",
+      "username": "Voer je gebruikersnaam in",
+      "email": "Voer je e-mailadres in",
+      "enterPassword": "Voer je wachtwoord in",
+      "confirmPassword": "Bevestig je wachtwoord"
+    },
+    "terms": {
+      "agreeToTerms": "Ik ga akkoord met de",
+      "termsOfService": "Algemene voorwaarden",
+      "and": "en",
+      "privacyPolicy": "Privacybeleid"
+    }
+  },
+  "notFound": {
+    "title": "Oeps! Pagina niet gevonden",
+    "description": "De pagina die je zoekt lijkt een omweg te hebben genomen. Maak je geen zorgen, zelfs de beste rijders nemen soms een verkeerde afslag!",
+    "goHome": "Ga naar startpagina",
+    "goBack": "Ga terug",
+    "maybeYouLookingFor": "Misschien zoek je naar:",
+    "forum": "Forum",
+    "products": "Producten",
+    "login": "Inloggen",
+    "profile": "Profiel",
+    "bikes": "Motoren",
+    "easterEgg": "🏍️ \"Niet alle dwalenden zijn verdwaald... maar deze pagina wel!\" 🏍️"
+  },
+  "products": {
+    "title": "Productgalerij",
+    "subtitle": "Ontdek de beste motorgear, onderdelen en accessoires. Van helmen tot prestatie-upgrades, vind alles wat je nodig hebt voor je rit.",
+    "searchPlaceholder": "Zoek producten op naam, beschrijving...",
+    "category": "Categorie:",
+    "priceRange": "Prijsbereik:",
+    "sortBy": "Sorteer op:",
+    "sort": {
+      "name": "Naam",
+      "priceAsc": "Prijs: Laag naar Hoog",
+      "priceDesc": "Prijs: Hoog naar Laag",
+      "rating": "Beoordeling",
+      "newest": "Nieuwste"
+    },
+    "categories": {
+      "all": "Alle categorieën",
+      "helmets": "Helmen",
+      "jackets": "Jassen",
+      "gloves": "Handschoenen",
+      "boots": "Laarzen",
+      "accessories": "Accessoires",
+      "parts": "Onderdelen"
+    },
+    "filters": {
+      "title": "Filters & Zoeken",
+      "subtitle": "Vind je perfecte product",
+      "reset": "Filters resetten"
+    },
+    "stats": {
+      "productsAvailable": "{count} producten beschikbaar",
+      "premiumQuality": "Premium kwaliteit"
+    },
+    "empty": {
+      "title": "Geen producten gevonden",
+      "description": "Probeer je zoektermen of filters aan te passen.",
+      "noProductsAvailable": "Momenteel zijn er geen producten beschikbaar."
+    },
+    "loading": "Geweldige producten laden...",
+    "card": {
+      "bestPrice": "Beste prijs",
+      "view": "Bekijken",
+      "shareProduct": "Product delen",
+      "addToWishlist": "Toevoegen aan verlanglijst",
+      "removeFromWishlist": "Verwijderen van verlanglijst",
+      "wishlistAdded": "Toegevoegd aan verlanglijst",
+      "wishlistRemoved": "Verwijderd van verlanglijst",
+      "wishlistAddedDesc": "Product toegevoegd aan je verlanglijst.",
+      "wishlistRemovedDesc": "Product verwijderd van je verlanglijst.",
+      "wishlistError": "Verlanglijst fout",
+      "wishlistErrorDesc": "Kan verlanglijst niet bijwerken. Probeer het opnieuw.",
+      "signInRequired": "Aanmelden vereist",
+      "signInRequiredDesc": "Meld je aan om producten toe te voegen aan je verlanglijst.",
+      "linkCopied": "Link gekopieerd",
+      "linkCopiedDesc": "Product link gekopieerd naar klembord.",
+      "shareProductTitle": "Product delen",
+      "shareProductDesc": "Kopieer deze link: {url}",
+      "checkOut": "Bekijk deze {product} op Motordash!"
+    }
+  },
+  "bikes": {
+    "title": "Motorgalerij", 
+    "subtitle": "Ontdek geweldige motoren van onze gepassioneerde motorcommunity. Blader, verken en laat je inspireren door de ongelooflijke ritten gedeeld door mede-enthousiastelingen.",
+    "searchPlaceholder": "Zoek motoren op naam, merk...",
+    "sortBy": "Sorteer op:",
+    "engine": "Motor:",
+    "sort": {
+      "newest": "Recent",
+      "oldest": "Oudste",
+      "name": "Naam A-Z",
+      "nameDesc": "Naam Z-A",
+      "popular": "Populair",
+      "featured": "Uitgelicht"
+    },
+    "engineSizes": {
+      "all": "Alle CC",
+      "other": "Overig"
+    },
+    "filters": {
+      "title": "Filters & Zoeken",
+      "subtitle": "Vind je perfecte motor",
+      "clearAll": "Alles wissen"
+    },
+    "stats": {
+      "bikesAvailable": "{count} motoren beschikbaar",
+      "bikesFound": "{count} motor{plural} gevonden",
+      "communityDriven": "Community gedreven"
+    },
+    "empty": {
+      "title": "Geen motoren gevonden",
+      "description": "Probeer je zoektermen of filters aan te passen",
+      "noBikesAvailable": "Wees de eerste om je motor te delen met de community!"
+    },
+    "loading": "Geweldige motoren laden...",
+    "actions": {
+      "loadMore": "Meer motoren laden",
+      "loadingMore": "Meer motoren laden...",
+      "allLoaded": "Je hebt alle motoren gezien! 🏍️",
+      "addYourBike": "Voeg je motor toe"
+    },
+    "card": {
+      "featured": "Uitgelicht",
+      "anonymous": "Anoniem"
+    }
+  },
+  "profile": {
+    "loading": "Profiel laden...",
+    "notFound": "Profiel niet gevonden",
+    "goHome": "Ga naar home",
+    "backToHome": "Terug naar home",
+    "back": "Terug",
+    "myProfile": "Mijn profiel",
+    "verified": "Geverifieerd",
+    "admin": "Admin",
+    "moderator": "Moderator",
+    "badges": {
+      "verified": "Geverifieerd",
+      "admin": "Admin",
+      "moderator": "Moderator"
+    },
+    "tabs": {
+      "overview": "Overzicht",
+      "bikes": "Motoren",
+      "posts": "Berichten",
+      "settings": "Instellingen"
+    },
+    "stats": {
+      "posts": "Berichten",
+      "bikes": "Motoren",
+      "likes": "Likes",
+      "joined": "Lid sinds"
+    },
+    "actions": {
+      "editProfile": "Profiel bewerken",
+      "sendMessage": "Bericht sturen",
+      "follow": "Volgen",
+      "unfollow": "Ontvolgen",
+      "block": "Blokkeren",
+      "report": "Rapporteren"
+    },
+    "bio": {
+      "title": "Over",
+      "noBio": "Geen bio beschikbaar"
+    },
+    "contact": {
+      "title": "Contactinfo",
+      "email": "E-mail",
+      "phone": "Telefoon",
+      "website": "Website",
+      "location": "Locatie"
+    }
   }
 }
