@@ -246,7 +246,27 @@
       "description": "Try adjusting your search terms or filters.",
       "noProductsAvailable": "No products available at the moment."
     },
-    "loading": "Loading awesome products..."
+    "loading": "Loading awesome products...",
+    "card": {
+      "bestPrice": "Best Price",
+      "view": "View",
+      "shareProduct": "Share product",
+      "addToWishlist": "Add to wishlist",
+      "removeFromWishlist": "Remove from wishlist",
+      "wishlistAdded": "Added to wishlist",
+      "wishlistRemoved": "Removed from wishlist",
+      "wishlistAddedDesc": "Product added to your wishlist.",
+      "wishlistRemovedDesc": "Product removed from your wishlist.",
+      "wishlistError": "Wishlist error",
+      "wishlistErrorDesc": "Unable to update wishlist. Please try again.",
+      "signInRequired": "Sign in required",
+      "signInRequiredDesc": "Please sign in to add products to your wishlist.",
+      "linkCopied": "Link copied",
+      "linkCopiedDesc": "Product link copied to clipboard.",
+      "shareProductTitle": "Share product",
+      "shareProductDesc": "Copy this link: {url}",
+      "checkOut": "Check out this {product} on Motordash!"
+    }
   },
   "bikes": {
     "title": "Bike Gallery", 
@@ -287,6 +307,57 @@
       "loadingMore": "Loading more bikes...",
       "allLoaded": "You've seen all the bikes! 🏍️",
       "addYourBike": "Add Your Bike"
+    },
+    "card": {
+      "featured": "Featured",
+      "anonymous": "Anonymous"
+    }
+  },
+  "profile": {
+    "loading": "Loading profile...",
+    "notFound": "Profile not found",
+    "goHome": "Go Home",
+    "backToHome": "Back to Home",
+    "back": "Back",
+    "myProfile": "My Profile",
+    "verified": "Verified",
+    "admin": "Admin",
+    "moderator": "Moderator",
+    "badges": {
+      "verified": "Verified",
+      "admin": "Admin",
+      "moderator": "Moderator"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "bikes": "Bikes",
+      "posts": "Posts",
+      "settings": "Settings"
+    },
+    "stats": {
+      "posts": "Posts",
+      "bikes": "Bikes",
+      "likes": "Likes",
+      "joined": "Joined"
+    },
+    "actions": {
+      "editProfile": "Edit Profile",
+      "sendMessage": "Send Message",
+      "follow": "Follow",
+      "unfollow": "Unfollow",
+      "block": "Block",
+      "report": "Report"
+    },
+    "bio": {
+      "title": "About",
+      "noBio": "No bio available"
+    },
+    "contact": {
+      "title": "Contact Info",
+      "email": "Email",
+      "phone": "Phone",
+      "website": "Website",
+      "location": "Location"
     }
   }
 }

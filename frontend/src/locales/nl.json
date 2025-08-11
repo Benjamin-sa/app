@@ -246,7 +246,27 @@
       "description": "Probeer je zoektermen of filters aan te passen.",
       "noProductsAvailable": "Momenteel zijn er geen producten beschikbaar."
     },
-    "loading": "Geweldige producten laden..."
+    "loading": "Geweldige producten laden...",
+    "card": {
+      "bestPrice": "Beste prijs",
+      "view": "Bekijken",
+      "shareProduct": "Product delen",
+      "addToWishlist": "Toevoegen aan verlanglijst",
+      "removeFromWishlist": "Verwijderen van verlanglijst",
+      "wishlistAdded": "Toegevoegd aan verlanglijst",
+      "wishlistRemoved": "Verwijderd van verlanglijst",
+      "wishlistAddedDesc": "Product toegevoegd aan je verlanglijst.",
+      "wishlistRemovedDesc": "Product verwijderd van je verlanglijst.",
+      "wishlistError": "Verlanglijst fout",
+      "wishlistErrorDesc": "Kan verlanglijst niet bijwerken. Probeer het opnieuw.",
+      "signInRequired": "Aanmelden vereist",
+      "signInRequiredDesc": "Meld je aan om producten toe te voegen aan je verlanglijst.",
+      "linkCopied": "Link gekopieerd",
+      "linkCopiedDesc": "Product link gekopieerd naar klembord.",
+      "shareProductTitle": "Product delen",
+      "shareProductDesc": "Kopieer deze link: {url}",
+      "checkOut": "Bekijk deze {product} op Motordash!"
+    }
   },
   "bikes": {
     "title": "Motorgalerij", 
@@ -287,6 +307,57 @@
       "loadingMore": "Meer motoren laden...",
       "allLoaded": "Je hebt alle motoren gezien! 🏍️",
       "addYourBike": "Voeg je motor toe"
+    },
+    "card": {
+      "featured": "Uitgelicht",
+      "anonymous": "Anoniem"
+    }
+  },
+  "profile": {
+    "loading": "Profiel laden...",
+    "notFound": "Profiel niet gevonden",
+    "goHome": "Ga naar home",
+    "backToHome": "Terug naar home",
+    "back": "Terug",
+    "myProfile": "Mijn profiel",
+    "verified": "Geverifieerd",
+    "admin": "Admin",
+    "moderator": "Moderator",
+    "badges": {
+      "verified": "Geverifieerd",
+      "admin": "Admin",
+      "moderator": "Moderator"
+    },
+    "tabs": {
+      "overview": "Overzicht",
+      "bikes": "Motoren",
+      "posts": "Berichten",
+      "settings": "Instellingen"
+    },
+    "stats": {
+      "posts": "Berichten",
+      "bikes": "Motoren",
+      "likes": "Likes",
+      "joined": "Lid sinds"
+    },
+    "actions": {
+      "editProfile": "Profiel bewerken",
+      "sendMessage": "Bericht sturen",
+      "follow": "Volgen",
+      "unfollow": "Ontvolgen",
+      "block": "Blokkeren",
+      "report": "Rapporteren"
+    },
+    "bio": {
+      "title": "Over",
+      "noBio": "Geen bio beschikbaar"
+    },
+    "contact": {
+      "title": "Contactinfo",
+      "email": "E-mail",
+      "phone": "Telefoon",
+      "website": "Website",
+      "location": "Locatie"
     }
   }
 }
